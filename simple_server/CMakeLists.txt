@@ -1,0 +1,19 @@
+cmake_minimum_required(VERSION 3.5)
+
+project(simple_server LANGUAGES C)
+
+add_executable(simple_server main.c
+    flags/flags.h
+    sig_handlers/reap.h
+    sig_handlers/reap.c
+    sockets/createSocket_v4.h
+    sockets/createSocket_v4.c
+    sockets/createSocket_v6.h
+    sockets/createSocket_v6.c
+)
+
+include(GNUInstallDirs)
+install(TARGETS simple_server
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
