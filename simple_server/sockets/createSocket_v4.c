@@ -28,7 +28,9 @@ int createSocket_v4(void)
 
     server_v4.sin_family = PF_INET;
     server_v4.sin_addr.s_addr = INADDR_ANY;
-    server_v4.sin_port = DEFAULT_PORT;
+    server_v4.sin_port = htons(DEFAULT_PORT);
+
+   // server_v4.sin_port = DEFAULT_PORT;
     if(bind(sock_v4, (struct sockaddr *)&server_v4, sizeof(server_v4)) != 0){
         perror("getting socket_v4 name");
         exit(EXIT_FAILURE);
