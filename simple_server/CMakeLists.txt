@@ -6,10 +6,13 @@ add_executable(simple_server main.c
     flags/flags.h
     sig_handlers/reap.h
     sig_handlers/reap.c
-    sockets/createSocket_v4.h
+
     sockets/createSocket_v4.c
-    sockets/createSocket_v6.h
+
     sockets/createSocket_v6.c
+    sockets/socket.h
+    sockets/handleSocket.c
+    sockets/handleConnection.c
 )
 
 include(GNUInstallDirs)
