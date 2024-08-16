@@ -13,6 +13,11 @@ add_executable(simple_server main.c
     sockets/socket.h
     sockets/handleSocket.c
     sockets/handleConnection.c
+    requests/requests.h
+    requests/parseRequest.c
+    requests/checkMethod.c
+    requests/checkHttp.c
+    requests/getURI.c
 )
 
 include(GNUInstallDirs)

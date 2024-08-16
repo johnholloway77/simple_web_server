@@ -48,9 +48,9 @@ int main(int argc, char* argv[])
             handleSocket(sock_v4, TYPE_SOCK_V4);
         } else if(FD_ISSET(sock_v6, &ready)){
             handleSocket(sock_v6, TYPE_SOCK_V6);
-        } else {
+        } /*else {
             (void)printf("Waiting for either IPv4 or IPv6 connections...\n");
-        }
+        }*/
 
     }
 

@@ -28,6 +28,7 @@ void handleSocket(int sock, enum sockType sockType){
         handleConnection(fd, &client, sockType);
 
     } else{
+        //if parent close fd
         (void)close(fd);
     }
 

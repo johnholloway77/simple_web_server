@@ -6,13 +6,16 @@
 #include <unistd.h>
 
 #include "./socket.h"
+#include "../requests/requests.h"
 
+#define BUFFER_SIZE 1024
 
 void handleConnection(int fd, union sockaddr_union *client, enum sockType sockType)
 {
     const char *rip;
     int rval;
     char claddr[INET6_ADDRSTRLEN];
+    int bytes_sent = 0;
 
     memset(claddr, 0, INET6_ADDRSTRLEN);
 
@@ -31,7 +34,7 @@ void handleConnection(int fd, union sockaddr_union *client, enum sockType sockTy
 
     }
 
-    do{
+   // do{
         char buf[BUFSIZ];
         memset(&buf, 0, BUFSIZ);
 
@@ -43,7 +46,32 @@ void handleConnection(int fd, union sockaddr_union *client, enum sockType sockTy
         } else{
             printf("Client %s sent:\n\n%s", rip, buf);
         }
-    } while( rval != 0);
+
+        char *req_token = strtok(buf, "\r\n");
+
+        if(req_token){
+            printf("request: %s\n", req_token);
+        }
+
+        FILE *file_ptr = NULL;
+        char *response = parseRequest(req_token, &file_ptr);
+        bytes_sent += send(fd, response, strlen(response), 0);
+
+        if(file_ptr){
+            char buffer[BUFFER_SIZE];
+            size_t bytes_read;
+            while((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file_ptr)) > 0){
+                if(send(fd, buffer, bytes_read, 0) < 0){
+                    perror("error sending body");
+                    break;
+                }
+
+                bytes_sent += bytes_read;
+            }
+
+            fclose(file_ptr);
+        }
+
 
     (void)close(fd);
 
