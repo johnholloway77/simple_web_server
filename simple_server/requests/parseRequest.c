@@ -7,43 +7,47 @@
 char *parseRequest(const char *req_str, FILE **file_ptr) {
   char *str;
   str = strdup(req_str);
-  char *body;
+
+  if (!str) {
+    return "HTTP/1.0 500 Internal Error\r\n"
+           "Content-Length: 0\r\n\r\n";
+  }
 
   char *method = strtok(str, " ");
   char *URI = strtok(NULL, " ");
   char *http = strtok(NULL, " ");
-
-  free(str);
 
   if (method && URI && http) {
     printf("Method: '%s'\n", method);
     printf("URI: '%s'\n", URI);
     printf("http: '%s'\n", http);
   } else {
+    free(str);
     printf("invalid request");
     return "HTTP/1.0 400 Bad Request\r\n"
            "Content-Length: 0\r\n\r\n";
   }
 
   if (checkMethod(method) == 0) {
+    free(str);
     return "HTTP/1.0 400 Bad Request\r\n"
            "Content-Length: 0\r\n\r\n";
   }
 
   if (checkHttp(http) == 0) {
+    free(str);
     return "HTTP/1.0 400 Bad Request\r\n"
            "Content-Length: 0\r\n\r\n";
   }
 
-
-  //should now get index by default
-  if(strcmp(URI, "/") == 0){
-      *file_ptr = fopen("index.html", "r");
+  // should now get index by default
+  if (strcmp(URI, "/") == 0) {
+    *file_ptr = fopen("index.html", "r");
   } else {
-      *file_ptr = fopen(++URI, "r");
+    *file_ptr = fopen(URI + 1, "r");
   }
 
-
+  free(str);
 
   if (*file_ptr) {
     return "HTTP/1.0 200\r\n"
