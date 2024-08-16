@@ -3,12 +3,29 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <sys/wait.h>
 
 #include "./sig_handlers/reap.h"
 #include "./sockets/socket.h"
 
 #define SLEEP 5
 
+
+void sigchld_handler(int sig) {
+    // Reap all terminated child processes
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+}
+
+void setup_sigchld_handler() {
+    struct sigaction sa;
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART; // Automatically restart interrupted system calls
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -20,6 +37,8 @@ int main(int argc, char* argv[])
         perror("SIGCHLD reap");
         exit(EXIT_FAILURE);
     }
+
+    setup_sigchld_handler();
 
     sock_v4 = createSocket_v4();
     sock_v6 = createSocket_v6();

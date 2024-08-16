@@ -34,7 +34,6 @@ void handleConnection(int fd, union sockaddr_union *client, enum sockType sockTy
 
     }
 
-   // do{
         char buf[BUFSIZ];
         memset(&buf, 0, BUFSIZ);
 
@@ -70,11 +69,11 @@ void handleConnection(int fd, union sockaddr_union *client, enum sockType sockTy
             }
 
             fclose(file_ptr);
+            (void)close(fd);
+            exit(EXIT_SUCCESS);
         }
 
 
     (void)close(fd);
-
-    //if we exit this process, it should kill the child process
     exit(EXIT_SUCCESS);
 }

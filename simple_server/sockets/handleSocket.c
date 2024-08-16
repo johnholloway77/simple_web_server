@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "./socket.h"
+#include "../sig_handlers/reap.h"
 
 void handleSocket(int sock, enum sockType sockType){
 
@@ -30,6 +31,7 @@ void handleSocket(int sock, enum sockType sockType){
     } else{
         //if parent close fd
         (void)close(fd);
+        reap();
     }
 
     //return 0;
