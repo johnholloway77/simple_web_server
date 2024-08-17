@@ -32,7 +32,7 @@ char *cgiExe(const char *file, char **args) {
 
     // Child process
     if (pid == 0) {
-        dup2(pipe_stdin[0], STDIN_FILENO);
+        //dup2(pipe_stdin[0], STDIN_FILENO);
         dup2(pipe_stdout[1], STDOUT_FILENO);  // Redirect stdout to pipe
 
         close(pipe_stdout[0]);  // Close unused read end
@@ -53,7 +53,7 @@ char *cgiExe(const char *file, char **args) {
 
     // Parent process
     else {
-        //close(pipe_stdout[1]);  // keep both stdin and stdout open to cgi process
+        close(pipe_stdout[1]);  // keep both stdin and stdout open to cgi process
 
         close(pipe_stdin[0]);   // Close unused read end
         close(pipe_stdin[1]);   // Close unused write end
