@@ -20,6 +20,7 @@ add_executable(simple_server main.c
     requests/getURI.c
     cgi/cgi.h
     cgi/cgiExe.c
+    setup_dir.sh
 
 )
 
