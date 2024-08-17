@@ -18,6 +18,9 @@ add_executable(simple_server main.c
     requests/checkMethod.c
     requests/checkHttp.c
     requests/getURI.c
+    cgi/cgi.h
+    cgi/cgiExe.c
+
 )
 
 include(GNUInstallDirs)

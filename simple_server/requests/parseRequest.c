@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "./requests.h"
+#include "../cgi/cgi.h"
 
 char *parseRequest(const char *req_str, FILE **file_ptr) {
   char *str;
@@ -46,7 +47,14 @@ char *parseRequest(const char *req_str, FILE **file_ptr) {
 
   // should now get index by default
   if (strcmp(URI, "/") == 0) {
-    *file_ptr = fopen("index.html", "r");
+    *file_ptr = fopen("index.html", "r");    
+  } else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
+      char *cgi_URI = strdup(URI + 9); //get the first part of /cgi-bin/someExeFile
+      cgi_URI = strtok(cgi_URI, "/"); //get the exec name;
+
+      free(cgi_URI);
+
+      return cgiExe(cgi_URI, NULL);
   } else {
     *file_ptr = fopen(URI + 1, "r");
   }
