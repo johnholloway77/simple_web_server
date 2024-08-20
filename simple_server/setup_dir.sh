@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Create the cgi-bin directory if it doesn't exist
-mkdir -p ./cgi-bin ./cgi-data
+mkdir -p ./cgi-bin ./cgi-data ./subWithIndex ./subNoIndex
 
 # Write the C code into a file called helloWorld.c inside the cgi-bin directory
 cat <<EOF > cgi-bin/helloWorld.c
@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
 }
 EOF
 
+#Lets write the CGI for the guest book found on index.html
 cat <<EOF> cgi-bin/guestBook.c
 #include <stdio.h>
 #include <stdlib.h>
@@ -96,9 +97,63 @@ if(*name != '\0') {
 EOF
 
 
+#Create the C file for the directory listing program:
+cat <<EOF> cgi-bin/directoryList.c
+#include <sys/types.h>
+
+#include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(int argc, char **argv)
+{
+        DIR *dp;
+        struct dirent *dirp;
+
+        if(argc != 2){
+                printf("HTTP/1.0 500 Internal Error\r\n"
+             "Content-Type: text/html\r\n"
+             "Connection: close\r\n\r\n"
+             "<html><body><h1>500 Internal Server Error</h1><p>Missing dir name</p></body></html>");
+                return 0;
+        }
+
+        if((dp = opendir(argv[1])) == NULL){
+                printf("HTTP/1.0 500 Internal Error\r\n"
+             "Content-Type: text/html\r\n"
+             "Connection: close\r\n\r\n"
+             "<html><body><h1>500 Internal Server Error</h1><p>direrror</p></body></html>");
+        }
+
+        printf("HTTP/1.0 200 OK\r\n"
+                        "Content-Type: text/html\r\n"
+                        "Connection: close\r\n\r\n"
+                        "<html><body><h1>Directory: /%s</h1><ul>", argv[1]);
+
+
+        while((dirp = readdir(dp)) != NULL){
+                if(dirp->d_name[0] == '.'){
+                        continue;
+                } else{
+                        printf("<li><a href=\"%s\">%s</li>", dirp->d_name, dirp->d_name);
+                }
+        }
+
+        printf("</ul></body></html>");
+
+
+        (void)closedir(dp);
+
+        return EXIT_SUCCESS;
+
+}
+EOF
+
 # Compile the C program into an executable called helloWorld inside the cgi-bin directory
 cc cgi-bin/helloWorld.c -o cgi-bin/helloWorld.cgi
 cc cgi-bin/guestBook.c -o cgi-bin/guestBook.cgi
+cc cgi-bin/directoryList.c -o cgi-bin/directoryList.cgi
 
 # Make an index.html page for the root directory
 cat <<EOF > index.html
@@ -127,3 +182,30 @@ that speaks a limited version of HTTP/1.0 as defined in RFC1945. For more inform
 </body>
 </html>
 EOF
+
+#make an index.html page for subWithIndex
+cat <<EOF> subWithIndex/Index.html
+<html>
+<body>
+
+<h1>Subdirectory index file!</h1>
+
+<p> Put this file in random subdirectories as the default file. Use it to test if the server will automatically direct to index.html</p>
+
+</body>
+</html>
+EOF
+
+#make files to test subNoIndex
+cat <<EOF> subNoIndex/test1.txt
+Hello My Baby!
+Hello My Honey!
+Hello My Ragtime gal!
+EOF
+
+i=1
+while [ $i -le 30 ]
+do
+    echo "All work and no play make Jack a dull boy" >> subNoIndex/test2.txt
+    i=$((i + 1))
+done

@@ -17,12 +17,14 @@ add_executable(simple_server main.c
     requests/parseRequest.c
     requests/checkMethod.c
     requests/checkHttp.c
-    requests/getURI.c
+
     cgi/cgi.h
     cgi/cgiExe.c
     setup_dir.sh
 
 )
+
+target_link_libraries (simple_server magic)
 
 include(GNUInstallDirs)
 install(TARGETS simple_server
