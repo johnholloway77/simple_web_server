@@ -1,79 +1,89 @@
-#include <stdio.h>
 #include <arpa/inet.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "./socket.h"
+#include <time.h>
+
 #include "../requests/requests.h"
+#include "./socket.h"
 
 #define BUFFER_SIZE 1024
 
-void handleConnection(int fd, union sockaddr_union *client, enum sockType sockType)
-{
-    const char *rip;
-    int rval;
-    char claddr[INET6_ADDRSTRLEN];
-    int bytes_sent = 0;
+void handleConnection(int fd, union sockaddr_union *client,
+                      enum sockType sockType) {
+  const char *rip;
+  char claddr[INET6_ADDRSTRLEN];
+  int bytes_sent = 0;
+  int rval;
+  int resp_status;
+  time_t current_time;
+  struct tm *utc_time;
 
-    memset(claddr, 0, INET6_ADDRSTRLEN);
+  current_time = time(NULL);
+  utc_time = gmtime(&current_time);
+  char timestamp[21];
+  strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", utc_time);
 
-    if(sockType == TYPE_SOCK_V4){
+  memset_s(claddr, INET6_ADDRSTRLEN, 0, INET6_ADDRSTRLEN);
 
-        if((rip = inet_ntop(PF_INET, &client->client_v4.sin_addr, claddr, INET_ADDRSTRLEN)) == NULL){
-            perror("inet_net");
-            rip = "Unknown";
-        }
+  if (sockType == TYPE_SOCK_V4) {
 
-    } else if(sockType == TYPE_SOCK_V6){
-        if((rip = inet_ntop(PF_INET6, &client->client_v6.sin6_addr, claddr, INET6_ADDRSTRLEN)) == NULL){
-            perror("inet_net");
-            rip = "Unknown";
-        }
-
+    if ((rip = inet_ntop(PF_INET, &client->client_v4.sin_addr, claddr,
+                         INET_ADDRSTRLEN)) == NULL) {
+      // perror("inet_net");
+      rip = "Unknown";
     }
 
-        char buf[BUFSIZ];
-        memset(&buf, 0, BUFSIZ);
+  } else if (sockType == TYPE_SOCK_V6) {
+    if ((rip = inet_ntop(PF_INET6, &client->client_v6.sin6_addr, claddr,
+                         INET6_ADDRSTRLEN)) == NULL) {
+      // perror("inet_net");
+      rip = "Unknown";
+    }
+  }
 
-        if((rval = read(fd, buf, BUFSIZ)) < 0){
-            perror("reading stream message");
-            //return -1;
-        } else if (rval == 0){
-            printf("Ending connection from %s\n", rip);
-        } else{
-            printf("Client %s sent:\n\n%s", rip, buf);
+  char buf[BUFSIZ];
+  memset_s(&buf, BUFSIZ, 0, BUFSIZ);
+
+  rval = read(fd, buf, BUFSIZ);
+  // perror("reading stream message");
+
+  if (rval > 0) {
+    // gets the first line of the request
+    char *req_token = strtok(buf, "\r\n");
+
+    FILE *file_ptr = NULL;
+    char *response = parseRequest(req_token, &file_ptr, &resp_status);
+
+    bytes_sent += send(fd, response, strlen(response), 0);
+
+    if (file_ptr) {
+      char buffer[BUFFER_SIZE];
+      size_t bytes_read;
+      while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file_ptr)) >
+             0) {
+        if (send(fd, buffer, bytes_read, 0) < 0) { /*
+               perror("error sending body");*/
+          break;
         }
 
-        char *req_token = strtok(buf, "\r\n");
+        bytes_sent += bytes_read;
+      }
 
-        if(req_token){
-            printf("request: %s\n", req_token);
-        }
+      fclose(file_ptr);
+    }
 
-        FILE *file_ptr = NULL;
-        char *response = parseRequest(req_token, &file_ptr);
-        bytes_sent += send(fd, response, strlen(response), 0);
+    fprintf(stdout, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token, resp_status, bytes_sent);
 
-        if(file_ptr){
-            char buffer[BUFFER_SIZE];
-            size_t bytes_read;
-            while((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file_ptr)) > 0){
-                if(send(fd, buffer, bytes_read, 0) < 0){
-                    perror("error sending body");
-                    break;
-                }
-
-                bytes_sent += bytes_read;
-            }
-
-            fclose(file_ptr);
-            (void)close(fd);
-            exit(EXIT_SUCCESS);
-        }
-
-
+    free(response);
     (void)close(fd);
-    exit(EXIT_SUCCESS);
+  } else {
+    fprintf(stdout, "%s %s ERROR: Unable to read http request %d\n", rip,
+            timestamp, bytes_sent);
+  }
+
+  exit(EXIT_SUCCESS);
 }

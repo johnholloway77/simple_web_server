@@ -21,6 +21,7 @@ add_executable(simple_server main.c
     cgi/cgi.h
     cgi/cgiExe.c
     setup_dir.sh
+    response/response.h
 
 )
 

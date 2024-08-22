@@ -6,16 +6,28 @@ mkdir -p ./cgi-bin ./cgi-data ./subWithIndex ./subNoIndex
 # Write the C code into a file called helloWorld.c inside the cgi-bin directory
 cat <<EOF > cgi-bin/helloWorld.c
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#define RES_PIPE_NAME "RESPONSE_PIPE"
 
-int main(int argc, char **argv) {
-    printf("HTTP/1.0 200 OK\r\n"
-           "Content-Type: text/html\r\n"
-           "Connection: close\r\n"
-           "\r\n"
-           "<html><body><h1>Hello World!</h1><p>This page was generated from the hello world C file</p></body></html>"
-           );
+int main(int argc, char **argv){
 
-    return 0;
+  int response_code;
+  int resp_pipe_fd;
+ char *resp_pipe_fd_str = getenv(RES_PIPE_NAME);
+ resp_pipe_fd = atoi(resp_pipe_fd_str);
+
+                response_code = 200;
+        write(resp_pipe_fd, &response_code, sizeof(int));
+                printf("HTTP/1.0 %d OK\r\n"
+                        "Content-Type: text/html\r\n"
+                        "Connection: close\r\n"
+                        "\r\n"
+                        "<html><body><h1>Hello World!</h1><p>This page was generated from the hello world C file</p></body></html>", response_code
+                        );
+
+        close(resp_pipe_fd);
+        return 0;
 }
 EOF
 
@@ -24,8 +36,11 @@ cat <<EOF> cgi-bin/guestBook.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
-int main(int argc, char **argv) {
+#define RES_PIPE_NAME "RESPONSE_PIPE"
+
+int main(void) {
 
   FILE *fp;
   const char *filename = "cgi-data/guestbook.txt";
@@ -33,55 +48,79 @@ int main(int argc, char **argv) {
 
   char *name = getenv("NAME");
 
-  if(name == NULL ){
-      printf("HTTP/1.0 400 Bad Request\r\n"
-             "Content-Type: text/html\r\n"
-             "Connection: close\r\n"
-             "\r\n"
-             "<html><body><h1>Bad Request</h1><p>Name not provided</p></body></html>");
-      return 0;
+  int response_code = 200;
+  int resp_pipe_fd;
+  char *resp_pipe_fd_str = getenv(RES_PIPE_NAME);
+  resp_pipe_fd = atoi(resp_pipe_fd_str);
+
+
+  if( name){
+      if (*name != '\0') {
+          fp = fopen(filename, "a");
+          if (fp == NULL) {
+              fp = fopen(filename, "w");
+              if (fp == NULL) {
+
+                  response_code = 500;
+                  write(resp_pipe_fd, &response_code, sizeof(int));
+                  printf("HTTP/1.0 %d Server Error\r\n"
+                         "Content-Type: text/html\r\n"
+                         "Connection: close\r\n"
+                         "\r\n"
+                         "<http><body><h1>Internal Server Error</h1><p>Could not get "
+                         "guestbook</p></body></html>",
+                         response_code);
+
+                  fclose(fp);
+                  close(resp_pipe_fd);
+                  return 0;
+              }
+          }
+
+          fprintf(fp, "%s\n", name);
+
+          fclose(fp);
+      }
   }
-
-if(*name != '\0') {
-  fp = fopen(filename, "a");
-  if (fp == NULL) {
-    fp = fopen(filename, "w");
-    if (fp == NULL) {
-      printf("HTTP/1.0 500 Server Error\r\n"
-             "Content-Type: text/html\r\n"
-             "Connection: close\r\n"
-             "\r\n"
-             "<http><body><h1>Internal Server Error</h1><p>Could not get "
-             "guestbook</p></body></html>");
-      return 0;
-    }
-
-
-  }
-
-  fprintf(fp, "%s\n", name);
-
-  fclose(fp);
-}
-
 
   fp = fopen(filename, "r");
   if (fp == NULL) {
-    printf("HTTP/1.0 500 Server Error\r\n"
+
+    response_code = 500;
+    write(resp_pipe_fd, &response_code, sizeof(int));
+    printf("HTTP/1.0 %d Server Error\r\n"
            "Content-Type: text/html\r\n"
            "Connection: close\r\n"
            "\r\n"
            "<http><body><h1>Internal Server Error</h1><p>Could not get "
-           "guestbook</p></body></html>");
+           "guestbook</p></body></html>",
+           response_code);
+
+    fclose(fp);
+    close(resp_pipe_fd);
     return 0;
   }
 
-  printf("HTTP/1.0 200 OK\r\n"
+
+
+  response_code = 200;
+
+  ssize_t bytes_written = write(resp_pipe_fd, &response_code, sizeof(int));
+  if (bytes_written == -1) {
+      perror("Error writing to pipe");
+  } else if (bytes_written != sizeof(int)) {
+      fprintf(stderr, "Incomplete write to pipe\n");
+  }
+
+
+  printf("HTTP/1.0 %d OK\r\n"
          "Content-Type: text/html\r\n"
          "Connection: close\r\n"
          "\r\n"
          "<html><body><h1>Guest Book</h1><p>The following people have signed "
-         "the guest book:</p>");
+         "the guest book:</p>",
+         response_code);
+
 
   while (fgets(name_buf, sizeof(name_buf), fp) != NULL) {
     printf("<p>Visitor: %s</p>", name_buf);
@@ -89,10 +128,16 @@ if(*name != '\0') {
 
   printf("</body></html>");
 
+
+
+
   fclose(fp);
+  close(resp_pipe_fd);
 
   return 0;
 }
+
+
 
 EOF
 
@@ -106,30 +151,54 @@ cat <<EOF> cgi-bin/directoryList.c
 #include <stdlib.h>
 #include <string.h>
 
+#include <unistd.h>
+
+
+#define RES_PIPE_NAME "RESPONSE_PIPE"
+
 int main(int argc, char **argv)
 {
         DIR *dp;
         struct dirent *dirp;
 
+         int response_code;
+        int resp_pipe_fd;
+        char *resp_pipe_fd_str = getenv(RES_PIPE_NAME);
+        resp_pipe_fd = atoi(resp_pipe_fd_str);
+
         if(argc != 2){
-                printf("HTTP/1.0 500 Internal Error\r\n"
+                response_code = 500;
+        write(resp_pipe_fd, &response_code, sizeof(int));
+                printf("HTTP/1.0 %d Internal Error\r\n"
              "Content-Type: text/html\r\n"
              "Connection: close\r\n\r\n"
-             "<html><body><h1>500 Internal Server Error</h1><p>Missing dir name</p></body></html>");
+             "<html><body><h1>500 Internal Server Error</h1><p>Missing dir name</p></body></html>", response_code);
+
+                close(resp_pipe_fd);
+
                 return 0;
         }
 
         if((dp = opendir(argv[1])) == NULL){
-                printf("HTTP/1.0 500 Internal Error\r\n"
+                response_code = 500;
+        write(resp_pipe_fd, &response_code, sizeof(int));
+                printf("HTTP/1.0 %d  Internal Error\r\n"
              "Content-Type: text/html\r\n"
              "Connection: close\r\n\r\n"
-             "<html><body><h1>500 Internal Server Error</h1><p>direrror</p></body></html>");
+             "<html><body><h1>500 Internal Server Error</h1><p>direrror</p></body></html>", response_code);
+
+         close(resp_pipe_fd);
+
+                return 0;
         }
 
-        printf("HTTP/1.0 200 OK\r\n"
+
+        response_code = 200;
+        write(resp_pipe_fd, &response_code, sizeof(int));
+        printf("HTTP/1.0 %d OK\r\n"
                         "Content-Type: text/html\r\n"
                         "Connection: close\r\n\r\n"
-                        "<html><body><h1>Directory: /%s</h1><ul>", argv[1]);
+                        "<html><body><h1>Directory: /%s</h1><ul>", response_code, argv[1]);
 
 
         while((dirp = readdir(dp)) != NULL){
@@ -143,11 +212,14 @@ int main(int argc, char **argv)
         printf("</ul></body></html>");
 
 
+
         (void)closedir(dp);
+        close(resp_pipe_fd);
 
         return EXIT_SUCCESS;
 
 }
+
 EOF
 
 # Compile the C program into an executable called helloWorld inside the cgi-bin directory
@@ -204,8 +276,8 @@ Hello My Ragtime gal!
 EOF
 
 i=1
-while [ $i -le 30 ]
+while [ $i -le 100 ]
 do
-    echo "All work and no play make Jack a dull boy" >> subNoIndex/test2.txt
+    echo "All work and no play makes Jack a dull boy" >> subNoIndex/test2.txt
     i=$((i + 1))
 done
