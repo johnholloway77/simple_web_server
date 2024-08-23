@@ -20,4 +20,6 @@
   0x20 // listen on the given port. If not provided, sws will listen on port
        // 8080
 
+int setFlags(const int argc, char *argv[]);
+
 #endif // FLAGS_H

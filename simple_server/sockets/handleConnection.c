@@ -7,10 +7,13 @@
 
 #include <time.h>
 
+#include "../flags/flags.h"
 #include "../requests/requests.h"
 #include "./socket.h"
 
 #define BUFFER_SIZE 1024
+
+extern uint32_t app_flags;
 
 void handleConnection(int fd, union sockaddr_union *client,
                       enum sockType sockType) {
@@ -75,14 +78,19 @@ void handleConnection(int fd, union sockaddr_union *client,
 
       fclose(file_ptr);
     }
+    if (app_flags & D_FLAG){
+        fprintf(stdout, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token,
+                resp_status, bytes_sent);
+    }
 
-    fprintf(stdout, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token, resp_status, bytes_sent);
 
     free(response);
     (void)close(fd);
   } else {
-    fprintf(stdout, "%s %s ERROR: Unable to read http request %d\n", rip,
-            timestamp, bytes_sent);
+    if (app_flags & D_FLAG) {
+      fprintf(stdout, "%s %s ERROR: Unable to read http request %d\n", rip,
+              timestamp, bytes_sent);
+    }
   }
 
   exit(EXIT_SUCCESS);
