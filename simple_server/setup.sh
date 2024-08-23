@@ -4,7 +4,7 @@
 mkdir -p ./cgi-bin ./cgi-data ./subWithIndex ./subNoIndex
 
 # Write the C code into a file called helloWorld.c inside the cgi-bin directory
-cat <<EOF > cgi-bin/helloWorld.c
+cat <<EOF > ./cgi-bin/helloWorld.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -32,7 +32,7 @@ int main(int argc, char **argv){
 EOF
 
 #Lets write the CGI for the guest book found on index.html
-cat <<EOF> cgi-bin/guestBook.c
+cat <<EOF> ./cgi-bin/guestBook.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -143,7 +143,7 @@ EOF
 
 
 #Create the C file for the directory listing program:
-cat <<EOF> cgi-bin/directoryList.c
+cat <<EOF> ./cgi-bin/directoryList.c
 #include <sys/types.h>
 
 #include <dirent.h>
@@ -223,12 +223,12 @@ int main(int argc, char **argv)
 EOF
 
 # Compile the C program into an executable called helloWorld inside the cgi-bin directory
-cc cgi-bin/helloWorld.c -o cgi-bin/helloWorld.cgi
-cc cgi-bin/guestBook.c -o cgi-bin/guestBook.cgi
-cc cgi-bin/directoryList.c -o cgi-bin/directoryList.cgi
+cc ./cgi-bin/helloWorld.c -o ./cgi-bin/helloWorld.cgi
+cc ./cgi-bin/guestBook.c -o ./cgi-bin/guestBook.cgi
+cc ./cgi-bin/directoryList.c -o ./cgi-bin/directoryList.cgi
 
 # Make an index.html page for the root directory
-cat <<EOF > index.html
+cat <<EOF > ./index.html
 <html>
 <body>
 <h1>Hello World!</h1>
@@ -256,7 +256,7 @@ that speaks a limited version of HTTP/1.0 as defined in RFC1945. For more inform
 EOF
 
 #make an index.html page for subWithIndex
-cat <<EOF> subWithIndex/Index.html
+cat <<EOF> subWithIndex/index.html
 <html>
 <body>
 

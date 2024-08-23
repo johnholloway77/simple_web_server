@@ -5,9 +5,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "../flags/flags.h"
 #include "../cgi/cgi.h"
 #include "../response/response.h"
 #include "./requests.h"
+
+extern uint32_t app_flags;
 
 char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
   char *str;
@@ -55,25 +58,32 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
   if (strcmp(URI, "/") == 0) {
     *file_ptr = fopen("index.html", "r");
   } else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
-    char *cgi_URI =
-        strdup(URI + 9); // get the first part of /cgi-bin/someExeFile
-    cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
+      if(app_flags & C_FLAG){
+          char *cgi_URI =
+              strdup(URI + 9); // get the first part of /cgi-bin/someExeFile
+          cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
 
-    if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0) {
-      free(cgi_URI); // Free allocated memory before returning error response
+          if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0) {
+              free(cgi_URI); // Free allocated memory before returning error response
 
-      free(str);
-      *resp_status = 400;
-      RETURN_RESP(RESPONSE_400)
-    }
+              free(str);
+              *resp_status = 400;
+              RETURN_RESP(RESPONSE_400)
+          }
 
-    char *cgi_argv[] = {URI + 1}; // pass directory path to
+          char *cgi_argv[] = {URI + 1}; // pass directory path to
 
-    char *response = cgiExe(cgi_URI, 1, cgi_argv, resp_status);
-    free(cgi_URI);
-    free(str);
+          char *response = cgiExe(cgi_URI, 1, cgi_argv, resp_status);
+          free(cgi_URI);
+          free(str);
 
-    return response;
+          return response;
+      }else{
+          free(str);
+
+          *resp_status = 404;
+          RETURN_RESP(RESPONSE_404)
+      }
 
   } else {
     // //check if file points to a directory

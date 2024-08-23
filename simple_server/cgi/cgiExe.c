@@ -11,11 +11,17 @@
 
 #include <fcntl.h>
 
+#include "../flags/flags.h"
 #include "../response/response.h"
 
 #define BUFFER 1024
-#define CGI_BIN_DIR "./cgi-bin/"
+#define CGI_BIN_DIR "./cgi-bin"
 #define RES_PIPE_NAME "RESPONSE_PIPE"
+
+
+
+extern uint32_t app_flags;
+extern char* cgi_addr;
 
 // Helper function to decode URL-encoded strings
 void url_decode(char *dst, const char *src) {
@@ -129,7 +135,26 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
     }
 
     char path[PATH_MAX];
-    snprintf(path, PATH_MAX, "%s%s", CGI_BIN_DIR, file_name2);
+
+    /*
+     * cgi_addr should be set in function setFlags() in setFlags.c
+     * This function should have been called at program start in main.c
+     */
+    if(cgi_addr == NULL){
+        free(file_name2);
+        *resp_status = 500;
+        return RESPONSE_500;
+    }
+
+    //branching logic here only exists so that CGI will load directory CGI when C_FLAGS isn't set.
+    //Will change to only the first branch once directory listing is no longer done through CGI.
+    if(app_flags & C_FLAG){
+        snprintf(path, PATH_MAX, "%s/%s", cgi_addr, file_name2);
+    } else{
+        snprintf(path, PATH_MAX, "%s%s", CGI_BIN_DIR, file_name2);
+
+    }
+            printf("path: %s\n", path);
 
     char *exec_args[cgi_argc + 2];
     exec_args[0] = path;

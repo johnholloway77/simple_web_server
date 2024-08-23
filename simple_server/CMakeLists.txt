@@ -20,9 +20,10 @@ add_executable(simple_server main.c
 
     cgi/cgi.h
     cgi/cgiExe.c
-    setup_dir.sh
+    setup.sh
     response/response.h
     flags/setFlags.c
+    response/dirResponse.h
 
 )
 

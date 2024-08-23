@@ -14,6 +14,7 @@
 #define BUFFER_SIZE 1024
 
 extern uint32_t app_flags;
+extern char *log_addr;
 
 void handleConnection(int fd, union sockaddr_union *client,
                       enum sockType sockType) {
@@ -81,6 +82,19 @@ void handleConnection(int fd, union sockaddr_union *client,
     if (app_flags & D_FLAG){
         fprintf(stdout, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token,
                 resp_status, bytes_sent);
+    }
+
+    if(app_flags & L_FLAG){
+        FILE *log_ptr = fopen(log_addr, "a");
+        if (log_ptr == NULL) {
+            perror("Unable to create logfile: ");
+            exit(EXIT_FAILURE);
+        }
+        fprintf(log_ptr, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token,
+                resp_status, bytes_sent);
+
+
+        fclose(log_ptr);
     }
 
 

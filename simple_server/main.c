@@ -13,9 +13,8 @@
 
 #define SLEEP 5
 
-// initialize global flags variable
-uint32_t app_flags = 0;
-uint32_t port_addr = 8080;
+// load global flags variables
+extern uint32_t app_flags;
 
 void sigchld_handler(int sig) {
   // Reap all terminated child processes
@@ -50,8 +49,6 @@ int main(int argc, char *argv[]) {
 
   setup_sigchld_handler();
 
-  printf("Simple Server %d\n", getpid());
-
   if(!(app_flags & D_FLAG)){
       /*
        * We are setting nochdir to -1 so that the daemon runs in the current working directory.
@@ -61,6 +58,7 @@ int main(int argc, char *argv[]) {
        */
         daemon(-1, 0);
   }
+
 
   sock_v4 = createSocket_v4();
   sock_v6 = createSocket_v6();
