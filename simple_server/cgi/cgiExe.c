@@ -213,7 +213,7 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
       total_read += nread;
     }
 
-    if (nread == -1) {
+    if (nread == 0) {
         free(file_name2);
       free(response);
         *resp_status = 500;

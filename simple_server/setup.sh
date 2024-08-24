@@ -1,5 +1,8 @@
 #!/bin/sh
 
+make
+make clean-obj
+
 # Create the cgi-bin directory if it doesn't exist
 mkdir -p ./cgi-bin ./cgi-data ./subWithIndex ./subNoIndex
 
