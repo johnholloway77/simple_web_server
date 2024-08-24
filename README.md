@@ -78,7 +78,7 @@ IPv6 addresses on this host.
 
 Once the server is running it can be accessed in a browser with http://localhost:[port number]
 
-#Closing the application
+## Closing the application
 
 Simple_server is designed to run as a daemon and will be inaccessable from the terminal unless the *-d* flag has been enabled.
 
