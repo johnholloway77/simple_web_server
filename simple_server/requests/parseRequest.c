@@ -89,8 +89,8 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
     } else {
       free(str);
 
-      *resp_status = 404;
-      RETURN_RESP(RESPONSE_404)
+      *resp_status = 403;
+      RETURN_RESP(RESPONSE_403)
     }
 
   } else {
@@ -114,7 +114,6 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
       char index_path[PATH_MAX];
       memset(index_path, 0, sizeof(index_path));
 
-      printf("uri %s\n", index_path);
       if(URI[strlen(URI) -1] == '/' ){
           snprintf(index_path, PATH_MAX, "%sindex.html", URI + 1);
       } else{
