@@ -5,8 +5,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "../flags/flags.h"
 #include "../cgi/cgi.h"
+#include "../flags/flags.h"
 #include "../response/dirResponse.h"
 #include "../response/response.h"
 #include "./requests.h"
@@ -36,6 +36,13 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
     RETURN_RESP(RESPONSE_400)
   }
 
+
+  if ((strstr(URI, "../") != 0) && (strstr(URI, "/..") != 0)) {
+      free(str);
+      *resp_status = 403;
+      RETURN_RESP(RESPONSE_403)
+  }
+
   /*
    * check if it's a valid method
    * We're only doing GET requests for this simple project
@@ -59,32 +66,32 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
   if (strcmp(URI, "/") == 0) {
     *file_ptr = fopen("index.html", "r");
   } else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
-      if(app_flags & C_FLAG){
-          char *cgi_URI =
-              strdup(URI + 9); // get the first part of /cgi-bin/someExeFile
-          cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
+    if (app_flags & C_FLAG) {
+      char *cgi_URI =
+          strdup(URI + 9); // get the first part of /cgi-bin/someExeFile
+      cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
 
-          if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0) {
-              free(cgi_URI); // Free allocated memory before returning error response
+      if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0) {
+        free(cgi_URI); // Free allocated memory before returning error response
 
-              free(str);
-              *resp_status = 400;
-              RETURN_RESP(RESPONSE_400)
-          }
-
-          char *cgi_argv[] = {URI + 1}; // pass directory path to
-
-          char *response = cgiExe(cgi_URI, 1, cgi_argv, resp_status);
-          free(cgi_URI);
-          free(str);
-
-          return response;
-      }else{
-          free(str);
-
-          *resp_status = 404;
-          RETURN_RESP(RESPONSE_404)
+        free(str);
+        *resp_status = 400;
+        RETURN_RESP(RESPONSE_400)
       }
+
+      char *cgi_argv[] = {URI + 1}; // pass directory path to
+
+      char *response = cgiExe(cgi_URI, 1, cgi_argv, resp_status);
+      free(cgi_URI);
+      free(str);
+
+      return response;
+    } else {
+      free(str);
+
+      *resp_status = 404;
+      RETURN_RESP(RESPONSE_404)
+    }
 
   } else {
     // //check if file points to a directory
@@ -105,16 +112,26 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
     if (S_ISDIR(stat1.st_mode)) {
 
       char index_path[PATH_MAX];
-      snprintf(index_path, PATH_MAX, "%sindex.html", URI + 1);
+      memset(index_path, 0, sizeof(index_path));
+
+      printf("uri %s\n", index_path);
+      if(URI[strlen(URI) -1] == '/' ){
+          snprintf(index_path, PATH_MAX, "%sindex.html", URI + 1);
+      } else{
+          snprintf(index_path, PATH_MAX, "%s/index.html", URI + 1);
+      }
+
+
+
+      //snprintf(index_path, PATH_MAX, "%sindex.html", URI + 1);
 
       *file_ptr = fopen(index_path, "r");
 
       if (*file_ptr == NULL) {
 
+        // printf("calling dirResponse(%s)\n", URI +1);
 
-       // printf("calling dirResponse(%s)\n", URI +1);
-
-        char *response = dirResponse(URI +1, resp_status);
+        char *response = dirResponse(URI + 1, resp_status);
         free(str);
         return response;
       }
