@@ -8,6 +8,7 @@ This program is made simply for me to learn more about interprocess communicatio
 The objective of this assignment is to write a simple web server that speaks a limited version of HTTP/1.0 as defined in RFC1945.
 Your program should behave as one would expect from a regular system daemon. That is, it should detach from the controlling terminal and run in the background, accept multiple simultaneous connections, not generate any messages on stdout unless in debugging mode etc.
 
+**Important:** This is not a production server. It has limited functionality, probable bugs and security issues. It is purely made for educational purposes. It is **not** recommended that you use it exposed to the internet.
 
 ## Building the Program
 To build the program, run cmake in the main directory of the program. Ensure you have cmake installed on your system.
@@ -31,7 +32,6 @@ The setup file will run the Makefile, as well as create several files and subdir
 ├── cgi-data
 ├── index.html
 ├── simple_server
-├── sockets
 ├── subNoIndex
 │   ├── test1.txt
 │   └── test2.txt
@@ -64,19 +64,19 @@ If the application is built on another *nix machine it is recommended that the c
 
 Replace [options] with any applicable flags and [path] with the directories or files you want to analyze. The program will list the contents of the specified directory, formatted according to the provided options.
 
-−c *dir* Allow execution of CGIs from the given directory. 
+**−c *dir*** Allow execution of CGIs from the given directory. 
 
-−d Enter debugging mode. That is, do not daemonize, only accept one connection at a time
+**−d** Enter debugging mode. That is, do not daemonize, only accept one connection at a time
 and enable logging to stdout.
 
-−i *address* Bind to the given IPv4 or IPv6 address. If not provided, sws will listen on all IPv4 and
+**−i *address*** Bind to the given IPv4 or IPv6 address. If not provided, sws will listen on all IPv4 and
 IPv6 addresses on this host.
 
-−l *file* Log all requests to the given file. See LOGGING for details.
+**−l *file*** Log all requests to the given file. See LOGGING for details.
 
-−p *port* Listen on the given port. If not provided, sws will listen on port 8080.
+**−p *port*** Listen on the given port. If not provided, sws will listen on port 8080.
 
-Once the server is running it can be accessed in a browser with http://localhost:[port number]
+Once the server is running it can be accessed in a browser with http://localhost:[portnumber]. If using the setup script, the server will load the index.html file in the directory.
 
 ## Closing the application
 
