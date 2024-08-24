@@ -175,6 +175,11 @@ that speaks a limited version of HTTP/1.0 as defined in RFC1945. For more inform
 <input type="submit" value="submit">
 </form>
 
+<a href="./subWithIndex">Sub directory with index.html</a><br>
+<a href="./subNoIndex">Sub Directory without index.html</a><br>
+<a href="./cgi-bin/helloWorld.cgi">View guestbook without signing</a>
+
+
 </body>
 </html>
 EOF
