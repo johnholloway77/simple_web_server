@@ -1,41 +1,50 @@
-#!/bin/sh
+#!/ bin / sh
 
-make
-make clean-obj
+make make clean -
+            obj
 
-# Create the cgi-bin directory if it doesn't exist
-mkdir -p ./cgi-bin ./cgi-data ./subWithIndex ./subNoIndex
+#Create the cgi - bin directory if it doesn't exist
+                mkdir -
+            p./ cgi - bin./ cgi -
+            data./ subWithIndex./
+                subNoIndex
 
-# Write the C code into a file called helloWorld.c inside the cgi-bin directory
-cat <<EOF > ./cgi-bin/helloWorld.c
+#Write the C code into a file called helloWorld.c inside the cgi - bin directory
+                    cat
+        << EOF >
+        ./ cgi - bin / helloWorld.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #define RES_PIPE_NAME "RESPONSE_PIPE"
 
-int main(int argc, char **argv){
+                       int
+                       main(int argc, char **argv) {
 
   int response_code;
   int resp_pipe_fd;
- char *resp_pipe_fd_str = getenv(RES_PIPE_NAME);
- resp_pipe_fd = atoi(resp_pipe_fd_str);
+  char *resp_pipe_fd_str = getenv(RES_PIPE_NAME);
+  resp_pipe_fd = atoi(resp_pipe_fd_str);
 
-                response_code = 200;
-        write(resp_pipe_fd, &response_code, sizeof(int));
-                printf("HTTP/1.0 %d OK\r\n"
-                        "Content-Type: text/html\r\n"
-                        "Connection: close\r\n"
-                        "\r\n"
-                        "<html><body><h1>Hello World!</h1><p>This page was generated from the hello world C file</p></body></html>", response_code
-                        );
+  response_code = 200;
+  write(resp_pipe_fd, &response_code, sizeof(int));
+  printf("HTTP/1.0 %d OK\r\n"
+         "Content-Type: text/html\r\n"
+         "Connection: close\r\n"
+         "\r\n"
+         "<html><body><h1>Hello World!</h1><p>This page was generated from the "
+         "hello world C file</p></body></html>",
+         response_code);
 
-        close(resp_pipe_fd);
-        return 0;
+  close(resp_pipe_fd);
+  return 0;
 }
 EOF
 
 #Lets write the CGI for the guest book found on index.html
-cat <<EOF> ./cgi-bin/guestBook.c
+            cat
+        << EOF >
+        ./ cgi - bin / guestBook.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +52,8 @@ cat <<EOF> ./cgi-bin/guestBook.c
 
 #define RES_PIPE_NAME "RESPONSE_PIPE"
 
-int main(void) {
+                       int
+                       main(void) {
 
   FILE *fp;
   const char *filename = "cgi-data/guestbook.txt";
@@ -56,65 +66,66 @@ int main(void) {
   char *resp_pipe_fd_str = getenv(RES_PIPE_NAME);
   resp_pipe_fd = atoi(resp_pipe_fd_str);
 
+  if (name) {
+    if (*name != '\0') {
+      fp = fopen(filename, "a");
+      if (fp == NULL) {
+        fp = fopen(filename, "w");
+        if (fp == NULL) {
 
-  if( name){
-      if (*name != '\0') {
-          fp = fopen(filename, "a");
-          if (fp == NULL) {
-              fp = fopen(filename, "w");
-              if (fp == NULL) {
-
-                  response_code = 500;
-                  write(resp_pipe_fd, &response_code, sizeof(int));
-                  printf("HTTP/1.0 %d Server Error\r\n"
-                         "Content-Type: text/html\r\n"
-                         "Connection: close\r\n"
-                         "\r\n"
-                         "<http><body><h1>Internal Server Error</h1><p>Could not get "
-                         "guestbook</p></body></html>",
-                         response_code);
-
-                  fclose(fp);
-                  close(resp_pipe_fd);
-                  return 0;
-              }
-          }
-
-          fprintf(fp, "%s\n", name);
+          response_code = 500;
+          write(resp_pipe_fd, &response_code, sizeof(int));
+          printf("HTTP/1.0 %d Server Error\r\n"
+                 "Content-Type: text/html\r\n"
+                 "Connection: close\r\n"
+                 "\r\n"
+                 "<http><body><h1>Internal Server Error</h1><p>Could not get "
+                 "guestbook</p></body></html>",
+                 response_code);
 
           fclose(fp);
+          close(resp_pipe_fd);
+          return 0;
+        }
       }
+
+      fprintf(fp, "%s\n", name);
+
+      fclose(fp);
+    }
   }
 
   fp = fopen(filename, "r");
   if (fp == NULL) {
+    fp = fopen(filename, "w");
+    if (fp == NULL) {
 
-    response_code = 500;
-    write(resp_pipe_fd, &response_code, sizeof(int));
-    printf("HTTP/1.0 %d Server Error\r\n"
-           "Content-Type: text/html\r\n"
-           "Connection: close\r\n"
-           "\r\n"
-           "<http><body><h1>Internal Server Error</h1><p>Could not get "
-           "guestbook</p></body></html>",
-           response_code);
+      response_code = 500;
+      write(resp_pipe_fd, &response_code, sizeof(int));
+      printf("HTTP/1.0 %d Server Error\r\n"
+             "Content-Type: text/html\r\n"
+             "Connection: close\r\n"
+             "\r\n"
+             "<http><body><h1>Internal Server Error</h1><p>Could not get "
+             "guestbook</p></body></html>",
+             response_code);
 
+      fclose(fp);
+      close(resp_pipe_fd);
+      return 1;
+    }
     fclose(fp);
-    close(resp_pipe_fd);
-    return 0;
+    fp = fopen(filename, "r");
   }
-
-
 
   response_code = 200;
 
   ssize_t bytes_written = write(resp_pipe_fd, &response_code, sizeof(int));
   if (bytes_written == -1) {
-      perror("Error writing to pipe");
+    perror("Error writing to pipe");
   } else if (bytes_written != sizeof(int)) {
-      fprintf(stderr, "Incomplete write to pipe\n");
+    fprintf(stderr, "Incomplete write to pipe\n");
   }
-
 
   printf("HTTP/1.0 %d OK\r\n"
          "Content-Type: text/html\r\n"
@@ -124,15 +135,11 @@ int main(void) {
          "the guest book:</p>",
          response_code);
 
-
   while (fgets(name_buf, sizeof(name_buf), fp) != NULL) {
     printf("<p>Visitor: %s</p>", name_buf);
   }
 
   printf("</body></html>");
-
-
-
 
   fclose(fp);
   close(resp_pipe_fd);
@@ -140,18 +147,14 @@ int main(void) {
   return 0;
 }
 
-
-
 EOF
 
-
-
-
-# Compile the C program into an executable called helloWorld inside the cgi-bin directory
+#Compile the C program into an executable called helloWorld inside the cgi -   \
+    bin directory
 cc ./cgi-bin/helloWorld.c -o ./cgi-bin/helloWorld.cgi
 cc ./cgi-bin/guestBook.c -o ./cgi-bin/guestBook.cgi
 
-# Make an index.html page for the root directory
+#Make an index.html page for the root directory
 cat <<EOF > ./index.html
 <html>
 <body>
@@ -177,7 +180,7 @@ that speaks a limited version of HTTP/1.0 as defined in RFC1945. For more inform
 
 <a href="./subWithIndex">Sub directory with index.html</a><br>
 <a href="./subNoIndex">Sub Directory without index.html</a><br>
-<a href="./cgi-bin/helloWorld.cgi">View guestbook without signing</a>
+<a href="./cgi-bin/guestBook.cgi">View guestbook without signing</a>
 
 
 </body>
