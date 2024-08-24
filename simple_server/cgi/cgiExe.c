@@ -57,7 +57,8 @@ void url_decode(char *dst, const char *src) {
 char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
 
   char *file_name = strtok(file, "?");
-  //printf("\tfile name: %s\n", file_name);
+ // printf("\tfile name: %s\n", file_name);
+
 
   if (file == NULL || (strcmp(file, "") == 0)) {
     *resp_status = 400;
@@ -66,6 +67,8 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
 
   char *file_name2 = strdup(file_name);
   // printf("\tfile name2: %s\n", file_name2);
+
+ // printf("\tcgi-addr: %s\n", cgi_addr);
 
   char *param_string = strtok(NULL, "?");
   // printf("\tparam_string = %s\n", param_string);
@@ -87,7 +90,6 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
   }
 
 
-
   pid = fork();
   if (pid == -1) {
       free(file_name2);
@@ -98,6 +100,7 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
 
   // Child process
   if (pid == 0) {
+     // printf("hello from child\n");
     dup2(pipe_stdout[1], STDOUT_FILENO); // Redirect stdout to pipe
 
     close(pipe_stdout[0]);
@@ -135,7 +138,7 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
     }
 
     char path[PATH_MAX];
-
+    memset(path, 0,PATH_MAX);
     /*
      * cgi_addr should be set in function setFlags() in setFlags.c
      * This function should have been called at program start in main.c
@@ -146,15 +149,19 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
         return RESPONSE_500;
     }
 
-    //branching logic here only exists so that CGI will load directory CGI when C_FLAGS isn't set.
-    //Will change to only the first branch once directory listing is no longer done through CGI.
-    if(app_flags & C_FLAG){
-        snprintf(path, PATH_MAX, "%s/%s", cgi_addr, file_name2);
-    } else{
-        snprintf(path, PATH_MAX, "%s%s", CGI_BIN_DIR, file_name2);
+    if(cgi_addr[strlen(cgi_addr) -1] == '/'){
 
+        snprintf(path, PATH_MAX, "%s%s", cgi_addr, file_name2);
+    }else{
+
+        snprintf(path, PATH_MAX, "%s/%s", cgi_addr, file_name2);
     }
-            printf("path: %s\n", path);
+    //check if file exists. If not return 404
+    if(access(path, F_OK) != 0){
+        free(file_name2);
+        *resp_status = 404;
+        return RESPONSE_404;
+    }
 
     char *exec_args[cgi_argc + 2];
     exec_args[0] = path;
@@ -175,9 +182,10 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
     exit(EXIT_SUCCESS); // Not reached if execvp is successful
   }
 
+
   // Parent process
   else {
-    close(pipe_stdout[1]); // Close unused write end
+      close(pipe_stdout[1]); // Close unused write end
     close(pipe_stdin[0]);  // Close unused read end
     close(pipe_stdin[1]);  // Close unused write end
     close(pipe_response[1]);
@@ -213,7 +221,7 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
       total_read += nread;
     }
 
-    if (nread == 0) {
+    if ((int)nread > 0) {
         free(file_name2);
       free(response);
         *resp_status = 500;
