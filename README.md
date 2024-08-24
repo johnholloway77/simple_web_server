@@ -76,6 +76,21 @@ IPv6 addresses on this host.
 
 −p *port* Listen on the given port. If not provided, sws will listen on port 8080.
 
+Once the server is running it can be accessed in a browser with http://localhost:[port number]
+
+#Closing the application
+
+Simple_server is designed to run as a daemon and will be inaccessable from the terminal unless the *-d* flag has been enabled.
+
+To close the application while running as a daemon you will need to kill the process using the process ID. The process ID can be found using the sockstat command and grepping the respective port number.
+```
+$ ./simple_server 
+$ sockstat | grep 8080
+jholloway simple_server 31863 3   tcp4   *:8080                *:*
+jholloway simple_server 31863 4   tcp6   *:8080                *:*
+$ kill 31863
+```
+
 ## Memory Management
 This program has been carefully developed to handle memory management correctly, ensuring no memory leaks. Valgrind was used extensively to check for and fix any memory issues.
 
