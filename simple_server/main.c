@@ -16,7 +16,7 @@
 // load global flags variables
 extern uint32_t app_flags;
 
-void sigchld_handler(int sig) {
+void sigchld_handler() {
   // Reap all terminated child processes
   while (waitpid(-1, NULL, WNOHANG) > 0)
     ;
