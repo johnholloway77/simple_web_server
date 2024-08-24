@@ -14,7 +14,7 @@
   0x8 // Bind to the given IPv4 or IPv6 address. If not provided, sws will
       // listen on all IPv4 and IPv6 addresses on this host
 
-#define L_flag 0x10 // Log all requests to the given file
+#define L_FLAG 0x10 // Log all requests to the given file
 
 #define P_FLAG                                                                 \
   0x20 // listen on the given port. If not provided, sws will listen on port

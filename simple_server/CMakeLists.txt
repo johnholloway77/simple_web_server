@@ -24,6 +24,7 @@ add_executable(simple_server main.c
     response/response.h
     flags/setFlags.c
     response/dirResponse.h
+    response/dirResponse.c
 
 )
 

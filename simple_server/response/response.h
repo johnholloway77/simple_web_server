@@ -1,6 +1,9 @@
 #ifndef RESPONSE_H
 #define RESPONSE_H
 
+#define RESPONSE_200                                                           \
+  "HTTP/1.0 200 Ok\r\nContent-Type: %s\r\nConnection: close\r\n\r\n"
+
 #define RESPONSE_400                                                           \
   "HTTP/1.0 400 Bad Request\r\n"                                               \
   "Content-Length: 0\r\n"                                                      \

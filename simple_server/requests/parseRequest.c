@@ -7,6 +7,7 @@
 
 #include "../flags/flags.h"
 #include "../cgi/cgi.h"
+#include "../response/dirResponse.h"
 #include "../response/response.h"
 #include "./requests.h"
 
@@ -109,10 +110,11 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
       *file_ptr = fopen(index_path, "r");
 
       if (*file_ptr == NULL) {
-        // index.html doesn't exist in directory
-        char *cgi_argv[] = {URI + 1};
 
-        char *response = cgiExe(DIR_LIST_CGI_PATH, 1, cgi_argv, resp_status);
+
+       // printf("calling dirResponse(%s)\n", URI +1);
+
+        char *response = dirResponse(URI +1, resp_status);
         free(str);
         return response;
       }
@@ -138,7 +140,6 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
     }
 
     const char *file_type = magic_descriptor(magic, file_des);
-    // printf("\tfile type is: %s\n", file_type);
 
     char *header_buf = (char *)malloc(HEADER_BUF_SIZE);
 

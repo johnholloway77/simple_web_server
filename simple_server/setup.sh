@@ -142,90 +142,11 @@ int main(void) {
 EOF
 
 
-#Create the C file for the directory listing program:
-cat <<EOF> ./cgi-bin/directoryList.c
-#include <sys/types.h>
 
-#include <dirent.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <unistd.h>
-
-
-#define RES_PIPE_NAME "RESPONSE_PIPE"
-
-int main(int argc, char **argv)
-{
-        DIR *dp;
-        struct dirent *dirp;
-
-         int response_code;
-        int resp_pipe_fd;
-        char *resp_pipe_fd_str = getenv(RES_PIPE_NAME);
-        resp_pipe_fd = atoi(resp_pipe_fd_str);
-
-        if(argc != 2){
-                response_code = 500;
-        write(resp_pipe_fd, &response_code, sizeof(int));
-                printf("HTTP/1.0 %d Internal Error\r\n"
-             "Content-Type: text/html\r\n"
-             "Connection: close\r\n\r\n"
-             "<html><body><h1>500 Internal Server Error</h1><p>Missing dir name</p></body></html>", response_code);
-
-                close(resp_pipe_fd);
-
-                return 0;
-        }
-
-        if((dp = opendir(argv[1])) == NULL){
-                response_code = 500;
-        write(resp_pipe_fd, &response_code, sizeof(int));
-                printf("HTTP/1.0 %d  Internal Error\r\n"
-             "Content-Type: text/html\r\n"
-             "Connection: close\r\n\r\n"
-             "<html><body><h1>500 Internal Server Error</h1><p>direrror</p></body></html>", response_code);
-
-         close(resp_pipe_fd);
-
-                return 0;
-        }
-
-
-        response_code = 200;
-        write(resp_pipe_fd, &response_code, sizeof(int));
-        printf("HTTP/1.0 %d OK\r\n"
-                        "Content-Type: text/html\r\n"
-                        "Connection: close\r\n\r\n"
-                        "<html><body><h1>Directory: /%s</h1><ul>", response_code, argv[1]);
-
-
-        while((dirp = readdir(dp)) != NULL){
-                if(dirp->d_name[0] == '.'){
-                        continue;
-                } else{
-                        printf("<li><a href=\"%s\">%s</li>", dirp->d_name, dirp->d_name);
-                }
-        }
-
-        printf("</ul></body></html>");
-
-
-
-        (void)closedir(dp);
-        close(resp_pipe_fd);
-
-        return EXIT_SUCCESS;
-
-}
-
-EOF
 
 # Compile the C program into an executable called helloWorld inside the cgi-bin directory
 cc ./cgi-bin/helloWorld.c -o ./cgi-bin/helloWorld.cgi
 cc ./cgi-bin/guestBook.c -o ./cgi-bin/guestBook.cgi
-cc ./cgi-bin/directoryList.c -o ./cgi-bin/directoryList.cgi
 
 # Make an index.html page for the root directory
 cat <<EOF > ./index.html
