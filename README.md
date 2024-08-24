@@ -62,19 +62,19 @@ If the application is built on another *nix machine it is recommended that the c
 ./simple_server [option] [path] ...
 ```
 
-Replace [options] with any applicable flags and [path] with the directories or files you want to analyze. The program will list the contents of the specified directory, formatted according to the provided options.
+Replace [options] with any applicable flags and [path] with the options below. One started the server will run and provide requested files through a web browser, cURL or even telnet.
 
 **−c *dir*** Allow execution of CGIs from the given directory. 
 
 **−d** Enter debugging mode. That is, do not daemonize, only accept one connection at a time
 and enable logging to stdout.
 
-**−i *address*** Bind to the given IPv4 or IPv6 address. If not provided, sws will listen on all IPv4 and
+**−i *address*** Bind to the given IPv4 or IPv6 address. If not provided, Simple_Server will listen on all IPv4 and
 IPv6 addresses on this host.
 
 **−l *file*** Log all requests to the given file. See LOGGING for details.
 
-**−p *port*** Listen on the given port. If not provided, sws will listen on port 8080.
+**−p *port*** Listen on the given port. If not provided, Simple_Server will listen on port 8080.
 
 Once the server is running it can be accessed in a browser with http://localhost:[portnumber]. If using the setup script, the server will load the index.html file in the directory.
 
