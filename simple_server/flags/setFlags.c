@@ -39,7 +39,7 @@ int setFlags(const int argc, char *argv[]) {
 
       if (i == argc - 1) {
         printf("Invalid CGI dir\nProvide the cgi-bin address after -c flag. "
-               "Eg: -d ./cgi-bin\n");
+               "Eg: ./simple_server -c ./cgi-bin\n");
         exit(EXIT_FAILURE);
       }
 

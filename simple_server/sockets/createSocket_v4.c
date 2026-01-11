@@ -6,7 +6,8 @@
 
 #include "../flags/flags.h"
 
-#define BACKLOG 5
+//#define BACKLOG 5
+#define BACKLOG SOMAXCONN
 
 extern uint32_t app_flags;
 extern uint32_t port_addr;

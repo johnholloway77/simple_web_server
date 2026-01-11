@@ -29,6 +29,16 @@
   "Content-Length: 0\r\n"                                                      \
   "Connection: close\r\n\r\n"
 
+  #define RESPONSE_501                                                           \
+    "HTTP/1.0 501 Not Implemented\r\n"                                            \
+    "Connection: close\r\n" \
+    "\r\n"                                                                       \
+    "<html><body><h1>501 CGI Not Enabled on Server </h1>"                                         \
+    "<h3>CGI application requires the server to be run with the CGI flag</h3>"                 \
+    "<p>Please restart the simple_server application with the -c flag and the location of the cgi-bin directory</p>"                   \
+    "<p><b>Eg:<br/></b> ./simple_server -c ./cgi-bin\n</p></body></html>\r\n"
+
+
 #define RETURN_RESP(x)                                                         \
   char *response;                                                              \
   response = (char *)malloc(strlen(x) + 1);                                    \

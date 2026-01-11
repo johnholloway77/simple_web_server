@@ -89,8 +89,8 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
     } else {
       free(str);
 
-      *resp_status = 403;
-      RETURN_RESP(RESPONSE_403)
+      *resp_status = 501;
+      RETURN_RESP(RESPONSE_501)
     }
 
   } else {
