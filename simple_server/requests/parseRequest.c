@@ -13,6 +13,67 @@
 
 extern uint32_t app_flags;
 
+const char* get_mime_type_by_ext(const char* filename, magic_t magic, int file_des){
+    const char* ext = strrchr(filename, '.');
+     if (!ext) {
+         return magic_descriptor(magic, file_des);
+     }
+
+     // Wowzers a lookup table!
+     const char* get_mime_type_by_ext(const char* filename, magic_t magic, int file_des){
+         char* ext = strrchr(filename, '.');
+          if (!ext) {
+              return magic_descriptor(magic, file_des);
+          }
+
+          // Wowzers a lookup table!
+          // Text / web
+          if (strcasecmp(ext, ".htm") == 0)   return "text/html";
+          if (strcasecmp(ext, ".txt") == 0)   return "text/plain; charset=utf-8";
+          if (strcasecmp(ext, ".csv") == 0)   return "text/csv; charset=utf-8";
+          if (strcasecmp(ext, ".md") == 0)    return "text/markdown; charset=utf-8";
+          if (strcasecmp(ext, ".xml") == 0)   return "application/xml";
+          if (strcasecmp(ext, ".json") == 0)  return "application/json";
+          if (strcasecmp(ext, ".map") == 0)   return "application/json"; // sourcemaps
+          if (strcasecmp(ext, ".wasm") == 0)  return "application/wasm";
+
+          // CSS/JS variants
+          if (strcasecmp(ext, ".mjs") == 0)   return "text/javascript";
+          if (strcasecmp(ext, ".cjs") == 0)   return "text/javascript";
+
+          // Images
+          if (strcasecmp(ext, ".jpeg") == 0)  return "image/jpeg";
+          if (strcasecmp(ext, ".svg") == 0)   return "image/svg+xml";
+          if (strcasecmp(ext, ".webp") == 0)  return "image/webp";
+          if (strcasecmp(ext, ".ico") == 0)   return "image/x-icon";
+
+          // Fonts
+          if (strcasecmp(ext, ".woff") == 0)  return "font/woff";
+          if (strcasecmp(ext, ".woff2") == 0) return "font/woff2";
+          if (strcasecmp(ext, ".ttf") == 0)   return "font/ttf";
+          if (strcasecmp(ext, ".otf") == 0)   return "font/otf";
+
+          // Audio / video (common)
+          if (strcasecmp(ext, ".mp3") == 0)   return "audio/mpeg";
+          if (strcasecmp(ext, ".wav") == 0)   return "audio/wav";
+          if (strcasecmp(ext, ".mp4") == 0)   return "video/mp4";
+          if (strcasecmp(ext, ".webm") == 0)  return "video/webm";
+
+          // Documents
+          if (strcasecmp(ext, ".pdf") == 0)   return "application/pdf";
+
+          // Archives / binaries
+          if (strcasecmp(ext, ".zip") == 0)   return "application/zip";
+          if (strcasecmp(ext, ".gz") == 0)    return "application/gzip";
+          if (strcasecmp(ext, ".tgz") == 0)   return "application/gzip"; // tar+gzip
+          if (strcasecmp(ext, ".tar") == 0)   return "application/x-tar";
+
+
+          return magic_descriptor(magic, file_des);
+     }
+
+     return magic_descriptor(magic, file_des);
+}
 
 
 char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status, magic_t magic) {
@@ -151,8 +212,15 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status, magic
 
     char* fileName = URI + 1;
 
-   const char *file_type = magic_descriptor(magic, file_des);
+   // const char *file_type = magic_descriptor(magic, file_des);
 
+   const char *file_type;
+
+      if((strcmp(URI, "/") == 0)){
+          file_type = "text/html";
+      } else {
+       file_type = get_mime_type_by_ext(fileName, magic, file_des);
+      }
 
     char *header_buf = (char *)malloc(HEADER_BUF_SIZE);
 
