@@ -19,13 +19,6 @@ const char* get_mime_type_by_ext(const char* filename, magic_t magic, int file_d
          return magic_descriptor(magic, file_des);
      }
 
-     // Wowzers a lookup table!
-     const char* get_mime_type_by_ext(const char* filename, magic_t magic, int file_des){
-         char* ext = strrchr(filename, '.');
-          if (!ext) {
-              return magic_descriptor(magic, file_des);
-          }
-
           // Wowzers a lookup table!
           // Text / web
           if (strcasecmp(ext, ".htm") == 0)   return "text/html";
@@ -67,10 +60,6 @@ const char* get_mime_type_by_ext(const char* filename, magic_t magic, int file_d
           if (strcasecmp(ext, ".gz") == 0)    return "application/gzip";
           if (strcasecmp(ext, ".tgz") == 0)   return "application/gzip"; // tar+gzip
           if (strcasecmp(ext, ".tar") == 0)   return "application/x-tar";
-
-
-          return magic_descriptor(magic, file_des);
-     }
 
      return magic_descriptor(magic, file_des);
 }
