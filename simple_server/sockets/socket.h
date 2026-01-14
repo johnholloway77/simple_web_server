@@ -3,6 +3,8 @@
 
 #include <netinet/in.h>
 
+#include <magic.h>
+
 enum sockType { TYPE_SOCK_V4, TYPE_SOCK_V6 };
 
 union sockaddr_union {
@@ -14,9 +16,9 @@ int createSocket_v4(void);
 
 int createSocket_v6(void);
 
-void handleSocket(int sock, enum sockType sockType);
+void handleSocket(int sock, enum sockType sockType, magic_t magic);
 
 void handleConnection(int fd, union sockaddr_union *client,
-                      enum sockType sockType);
+                      enum sockType sockType, magic_t magic);
 
 #endif // SOCKET_H

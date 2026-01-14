@@ -13,7 +13,9 @@
 
 extern uint32_t app_flags;
 
-char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
+
+
+char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status, magic_t magic) {
   char *str;
 
   str = strdup(req_str);
@@ -145,17 +147,12 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
 
   if (*file_ptr) {
 
-    magic_t magic = magic_open(MAGIC_MIME_TYPE);
     int file_des = fileno(*file_ptr);
 
-    if (magic_load(magic, NULL) != 0) {
-      magic_close(magic);
+    char* fileName = URI + 1;
 
-      *resp_status = 500;
-      RETURN_RESP(RESPONSE_500)
-    }
+   const char *file_type = magic_descriptor(magic, file_des);
 
-    const char *file_type = magic_descriptor(magic, file_des);
 
     char *header_buf = (char *)malloc(HEADER_BUF_SIZE);
 
@@ -164,7 +161,7 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status) {
              file_type);
     // printf("\t%s\n", header_buf);
 
-    magic_close(magic);
+    //magic_close(magic);
 
     *resp_status = 200;
     return header_buf;

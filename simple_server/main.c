@@ -5,6 +5,8 @@
 #include <sys/select.h>
 #include <sys/wait.h>
 
+#include <magic.h>
+
 #include <unistd.h>
 
 #include "./flags/flags.h"
@@ -68,6 +70,14 @@ int main(int argc, char *argv[]) {
   // need to create a block for select(2) to check the two sockets and see if
   // they're ready
 
+  // initialize magic
+  magic_t magic = magic_open(MAGIC_MIME_TYPE);
+  if (magic_load(magic, NULL) != 0) {
+    magic_close(magic);
+
+    return EXIT_FAILURE;
+  }
+
   for (;;) {
 
     fd_set ready;
@@ -87,9 +97,9 @@ int main(int argc, char *argv[]) {
       continue;
     }
     if (FD_ISSET(sock_v4, &ready)) {
-      handleSocket(sock_v4, TYPE_SOCK_V4);
+      handleSocket(sock_v4, TYPE_SOCK_V4, magic);
     } else if (FD_ISSET(sock_v6, &ready)) {
-      handleSocket(sock_v6, TYPE_SOCK_V6);
+      handleSocket(sock_v6, TYPE_SOCK_V6, magic);
     }
   }
 

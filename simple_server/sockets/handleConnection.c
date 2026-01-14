@@ -17,7 +17,7 @@ extern uint32_t app_flags;
 extern char *log_addr;
 
 void handleConnection(int fd, union sockaddr_union *client,
-                      enum sockType sockType) {
+                      enum sockType sockType, magic_t magic) {
   const char *rip;
   char claddr[INET6_ADDRSTRLEN];
   int bytes_sent = 0;
@@ -25,11 +25,12 @@ void handleConnection(int fd, union sockaddr_union *client,
   int resp_status;
   time_t current_time;
   struct tm *utc_time;
+  char timestamp[21];
 
   if ((app_flags & D_FLAG) || (app_flags & L_FLAG)){
       current_time = time(NULL);
       utc_time = gmtime(&current_time);
-      char timestamp[21];
+
       strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", utc_time);
   }
 
@@ -62,7 +63,7 @@ void handleConnection(int fd, union sockaddr_union *client,
     char *req_token = strtok(buf, "\r\n");
 
     FILE *file_ptr = NULL;
-    char *response = parseRequest(req_token, &file_ptr, &resp_status);
+    char *response = parseRequest(req_token, &file_ptr, &resp_status, magic);
 
     bytes_sent += send(fd, response, strlen(response), 0);
 

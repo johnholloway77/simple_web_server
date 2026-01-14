@@ -6,7 +6,7 @@
 #include "./socket.h"
 #include "../sig_handlers/reap.h"
 
-void handleSocket(int sock, enum sockType sockType){
+void handleSocket(int sock, enum sockType sockType, magic_t magic){
 
     int fd;
     pid_t pid;
@@ -26,7 +26,7 @@ void handleSocket(int sock, enum sockType sockType){
         perror("fork");
         exit(EXIT_FAILURE);
     } else if(!pid){
-        handleConnection(fd, &client, sockType);
+        handleConnection(fd, &client, sockType, magic);
 
     } else{
         //if parent close fd
