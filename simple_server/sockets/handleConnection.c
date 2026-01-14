@@ -26,10 +26,12 @@ void handleConnection(int fd, union sockaddr_union *client,
   time_t current_time;
   struct tm *utc_time;
 
-  current_time = time(NULL);
-  utc_time = gmtime(&current_time);
-  char timestamp[21];
-  strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", utc_time);
+  if ((app_flags & D_FLAG) || (app_flags & L_FLAG)){
+      current_time = time(NULL);
+      utc_time = gmtime(&current_time);
+      char timestamp[21];
+      strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", utc_time);
+  }
 
   memset_s(claddr, INET6_ADDRSTRLEN, 0, INET6_ADDRSTRLEN);
 
