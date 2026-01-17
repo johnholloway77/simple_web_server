@@ -90,6 +90,14 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
 
   pid = fork();
   if (pid == -1) {
+
+      close(pipe_stdin[0]);
+      close(pipe_stdin[1]);
+      close(pipe_stdout[0]);
+      close(pipe_stdout[1]);
+      close(pipe_response[0]);
+      close(pipe_response[1]);
+
       free(file_name2);
 
       *resp_status = 500;
