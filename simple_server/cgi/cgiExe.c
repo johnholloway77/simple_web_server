@@ -129,6 +129,15 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
         }
 
         setenv(decoded_name, decoded_val, 1);
+
+        // check for command injection
+        // This will only allow alphanumeric and underscores
+        for (char *p = decoded_name; *p; p++){
+            if (!isalnum(*p) && *p != '_'){
+                exit(EXIT_FAILURE);
+            }
+        }
+
       }
     }
 
