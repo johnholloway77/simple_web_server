@@ -7,7 +7,6 @@ CFLAGS = -Wall -Wextra
 # Source files
 SOURCES = main.c \
     flags/setFlags.c \
-    sig_handlers/reap.c \
     sockets/createSocket_v4.c \
     sockets/createSocket_v6.c \
     sockets/handleSocket.c \
@@ -35,7 +34,7 @@ $(BINARY): $(OBJECTS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 .PHONY:  clean
-clean: 
+clean:
 	rm -rf $(BINARY) $(OBJECTS)
 
 #clean only the object files

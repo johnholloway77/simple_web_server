@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 #include "./flags/flags.h"
-#include "./sig_handlers/reap.h"
 #include "./sockets/socket.h"
 
 #define SLEEP 5
@@ -45,12 +44,6 @@ int main(int argc, char *argv[])
 
     int sock_v4;
     int sock_v6;
-
-    if (signal(SIGCHLD, reap) == SIG_ERR)
-    {
-        perror("SIGCHLD reap");
-        exit(EXIT_FAILURE);
-    }
 
     setup_sigchld_handler();
 
