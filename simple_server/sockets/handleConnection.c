@@ -47,7 +47,6 @@ void handleConnection(int fd, union sockaddr_union *client,
   } else if (sockType == TYPE_SOCK_V6) {
     if ((rip = inet_ntop(PF_INET6, &client->client_v6.sin6_addr, claddr,
                          INET6_ADDRSTRLEN)) == NULL) {
-      // perror("inet_net");
       rip = "Unknown";
     }
   }
@@ -56,7 +55,11 @@ void handleConnection(int fd, union sockaddr_union *client,
   memset_s(&buf, BUFSIZ, 0, BUFSIZ);
 
   rval = read(fd, buf, BUFSIZ);
-  // perror("reading stream message");
+  if (rval < 0) {
+      perror("read");
+      close(fd);
+      exit(EXIT_FAILURE);
+  }
 
   if (rval > 0) {
     // gets the first line of the request
@@ -72,8 +75,7 @@ void handleConnection(int fd, union sockaddr_union *client,
       size_t bytes_read;
       while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file_ptr)) >
              0) {
-        if (send(fd, buffer, bytes_read, 0) < 0) { /*
-               perror("error sending body");*/
+        if (send(fd, buffer, bytes_read, 0) < 0) {
           break;
         }
 
