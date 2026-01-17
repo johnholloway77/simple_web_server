@@ -202,7 +202,7 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
     close(pipe_stdin[1]);  // Close unused write end
     close(pipe_response[1]);
 
-    size_t nread;
+    ssize_t nread;
     char buffer[BUFFER];
     char *response = malloc(BUFFER);
     size_t total_read = 0;
@@ -233,7 +233,7 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
       total_read += nread;
     }
 
-    if ((int)nread > 0) {
+    if (nread < 0) {
         free(file_name2);
       free(response);
         *resp_status = 500;
