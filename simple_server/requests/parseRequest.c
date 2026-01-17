@@ -20,7 +20,6 @@ const char* get_mime_type_by_ext(const char* filename, magic_t magic, int file_d
      }
 
           // Wowzers a lookup table!
-          // Text / web
           if (strcasecmp(ext, ".htm") == 0)   return "text/html";
           if (strcasecmp(ext, ".txt") == 0)   return "text/plain; charset=utf-8";
           if (strcasecmp(ext, ".csv") == 0)   return "text/csv; charset=utf-8";
@@ -89,7 +88,7 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status, magic
   }
 
 
-  if ((strstr(URI, "../") != 0) && (strstr(URI, "/..") != 0)) {
+  if ((strstr(URI, "../") != 0) || (strstr(URI, "/..") != 0)) {
       free(str);
       *resp_status = 403;
       RETURN_RESP(RESPONSE_403)
@@ -172,15 +171,9 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status, magic
           snprintf(index_path, PATH_MAX, "%s/index.html", URI + 1);
       }
 
-
-
-      //snprintf(index_path, PATH_MAX, "%sindex.html", URI + 1);
-
       *file_ptr = fopen(index_path, "r");
 
       if (*file_ptr == NULL) {
-
-        // printf("calling dirResponse(%s)\n", URI +1);
 
         char *response = dirResponse(URI + 1, resp_status);
         free(str);
@@ -201,8 +194,6 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status, magic
 
     char* fileName = URI + 1;
 
-   // const char *file_type = magic_descriptor(magic, file_des);
-
    const char *file_type;
 
       if((strcmp(URI, "/") == 0)){
@@ -216,9 +207,6 @@ char *parseRequest(const char *req_str, FILE **file_ptr, int *resp_status, magic
     snprintf(header_buf, HEADER_BUF_SIZE,
              "HTTP/1.0 200 Ok\r\nContent-Type: %s\r\nConnection: close\r\n\r\n",
              file_type);
-    // printf("\t%s\n", header_buf);
-
-    //magic_close(magic);
 
     *resp_status = 200;
     return header_buf;
