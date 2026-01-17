@@ -5,10 +5,8 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
-// void reap(){
-//     wait(NULL);
-// }
-
-void reap() {
-    while (waitpid(-1, NULL, WNOHANG) > 0);
+void reap()
+{
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+        ;
 }

@@ -1,9 +1,8 @@
 #ifndef REQUESTS_H
 #define REQUESTS_H
 
-#include <stdio.h>
-
 #include <magic.h>
+#include <stdio.h>
 
 #define HEADER_BUF_SIZE 256
 #define DIR_LIST_CGI_PATH "directoryList.cgi"
@@ -16,4 +15,4 @@ int checkHttp(const char *http_str);
 
 char *getURI(const char *URI);
 
-#endif // REQUESTS_H
+#endif  // REQUESTS_H

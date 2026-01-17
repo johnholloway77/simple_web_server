@@ -3,9 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <unistd.h>
-
 #include <time.h>
+#include <unistd.h>
 
 #include "../flags/flags.h"
 #include "../requests/requests.h"
@@ -16,101 +15,116 @@
 extern uint32_t app_flags;
 extern char *log_addr;
 
-void handleConnection(int fd, union sockaddr_union *client,
-                      enum sockType sockType, magic_t magic) {
-  const char *rip;
-  char claddr[INET6_ADDRSTRLEN];
-  int bytes_sent = 0;
-  int rval;
-  int resp_status;
-  time_t current_time;
-  struct tm *utc_time;
-  char timestamp[21];
+void handleConnection(int fd, union sockaddr_union *client, enum sockType sockType, magic_t magic)
+{
+    const char *rip;
+    char claddr[INET6_ADDRSTRLEN];
+    int bytes_sent = 0;
+    int rval;
+    int resp_status;
+    time_t current_time;
+    struct tm *utc_time;
+    char timestamp[21];
 
-  if ((app_flags & D_FLAG) || (app_flags & L_FLAG)){
-      current_time = time(NULL);
-      utc_time = gmtime(&current_time);
+    if ((app_flags & D_FLAG) || (app_flags & L_FLAG))
+    {
+        current_time = time(NULL);
+        utc_time = gmtime(&current_time);
 
-      strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", utc_time);
-  }
-
-  memset_s(claddr, INET6_ADDRSTRLEN, 0, INET6_ADDRSTRLEN);
-
-  if (sockType == TYPE_SOCK_V4) {
-
-    if ((rip = inet_ntop(PF_INET, &client->client_v4.sin_addr, claddr,
-                         INET_ADDRSTRLEN)) == NULL) {
-      // perror("inet_net");
-      rip = "Unknown";
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", utc_time);
     }
 
-  } else if (sockType == TYPE_SOCK_V6) {
-    if ((rip = inet_ntop(PF_INET6, &client->client_v6.sin6_addr, claddr,
-                         INET6_ADDRSTRLEN)) == NULL) {
-      rip = "Unknown";
+    memset_s(claddr, INET6_ADDRSTRLEN, 0, INET6_ADDRSTRLEN);
+
+    if (sockType == TYPE_SOCK_V4)
+    {
+        if ((rip = inet_ntop(PF_INET, &client->client_v4.sin_addr, claddr, INET_ADDRSTRLEN)) ==
+            NULL)
+        {
+            // perror("inet_net");
+            rip = "Unknown";
+        }
     }
-  }
+    else if (sockType == TYPE_SOCK_V6)
+    {
+        if ((rip = inet_ntop(PF_INET6, &client->client_v6.sin6_addr, claddr, INET6_ADDRSTRLEN)) ==
+            NULL)
+        {
+            rip = "Unknown";
+        }
+    }
 
-  char buf[BUFSIZ];
-  memset_s(&buf, BUFSIZ, 0, BUFSIZ);
+    char buf[BUFSIZ];
+    memset_s(&buf, BUFSIZ, 0, BUFSIZ);
 
-  rval = read(fd, buf, BUFSIZ);
-  if (rval < 0) {
-      perror("read");
-      close(fd);
-      exit(EXIT_FAILURE);
-  }
+    rval = read(fd, buf, sizeof(buf) - 1);
+    if (rval < 0)
+    {
+        perror("read");
+        close(fd);
+        exit(EXIT_FAILURE);
+    }
 
-  if (rval > 0) {
-    // gets the first line of the request
-    char *req_token = strtok(buf, "\r\n");
+    if (rval > 0)
+    {
+        // ensure string is null terminated
+        buf[rval] = '\0';
 
-    FILE *file_ptr = NULL;
-    char *response = parseRequest(req_token, &file_ptr, &resp_status, magic);
+        // gets the first line of the request
+        char *req_token = strtok(buf, "\r\n");
 
-    bytes_sent += send(fd, response, strlen(response), 0);
+        FILE *file_ptr = NULL;
+        char *response = parseRequest(req_token, &file_ptr, &resp_status, magic);
 
-    if (file_ptr) {
-      char buffer[BUFFER_SIZE];
-      size_t bytes_read;
-      while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file_ptr)) >
-             0) {
-        if (send(fd, buffer, bytes_read, 0) < 0) {
-          break;
+        bytes_sent += send(fd, response, strlen(response), 0);
+
+        if (file_ptr)
+        {
+            char buffer[BUFFER_SIZE];
+            size_t bytes_read;
+            while ((bytes_read = fread(buffer, sizeof(char), BUFFER_SIZE, file_ptr)) > 0)
+            {
+                if (send(fd, buffer, bytes_read, 0) < 0)
+                {
+                    break;
+                }
+
+                bytes_sent += bytes_read;
+            }
+
+            fclose(file_ptr);
+        }
+        if (app_flags & D_FLAG)
+        {
+            fprintf(stdout, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token, resp_status,
+                    bytes_sent);
         }
 
-        bytes_sent += bytes_read;
-      }
+        if (app_flags & L_FLAG)
+        {
+            FILE *log_ptr = fopen(log_addr, "a");
+            if (log_ptr == NULL)
+            {
+                perror("Unable to create logfile: ");
+                exit(EXIT_FAILURE);
+            }
+            fprintf(log_ptr, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token, resp_status,
+                    bytes_sent);
 
-      fclose(file_ptr);
-    }
-    if (app_flags & D_FLAG){
-        fprintf(stdout, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token,
-                resp_status, bytes_sent);
-    }
-
-    if(app_flags & L_FLAG){
-        FILE *log_ptr = fopen(log_addr, "a");
-        if (log_ptr == NULL) {
-            perror("Unable to create logfile: ");
-            exit(EXIT_FAILURE);
+            fclose(log_ptr);
         }
-        fprintf(log_ptr, "%s %s \"%s\" %d %d\n", rip, timestamp, req_token,
-                resp_status, bytes_sent);
 
-
-        fclose(log_ptr);
+        free(response);
+        (void)close(fd);
+    }
+    else
+    {
+        if (app_flags & D_FLAG)
+        {
+            fprintf(stdout, "%s %s ERROR: Unable to read http request %d\n", rip, timestamp,
+                    bytes_sent);
+        }
     }
 
-
-    free(response);
-    (void)close(fd);
-  } else {
-    if (app_flags & D_FLAG) {
-      fprintf(stdout, "%s %s ERROR: Unable to read http request %d\n", rip,
-              timestamp, bytes_sent);
-    }
-  }
-
-  exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 }
