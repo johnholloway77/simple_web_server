@@ -53,7 +53,6 @@ void url_decode(char *dst, const char *src) {
   *dst = '\0';
 }
 
-// char *cgiExe2(char *cgiURI, int cgi_argc, char *cgi_argv[]);
 char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
 
     if(!(app_flags & C_FLAG)){
@@ -62,8 +61,6 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
     }
 
   char *file_name = strtok(file, "?");
- // printf("\tfile name: %s\n", file_name);
-
 
   if (file == NULL || (strcmp(file, "") == 0)) {
     *resp_status = 400;
@@ -71,12 +68,8 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
   }
 
   char *file_name2 = strdup(file_name);
-  // printf("\tfile name2: %s\n", file_name2);
-
- // printf("\tcgi-addr: %s\n", cgi_addr);
 
   char *param_string = strtok(NULL, "?");
-  // printf("\tparam_string = %s\n", param_string);
 
   char *buffer;
   char *name;
@@ -105,7 +98,6 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
 
   // Child process
   if (pid == 0) {
-     // printf("hello from child\n");
     dup2(pipe_stdout[1], STDOUT_FILENO); // Redirect stdout to pipe
 
     close(pipe_stdout[0]);
@@ -113,7 +105,7 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
     close(pipe_response[0]);
 
     // Set environment variables for response pipe
-    char res_pipe_fd_str[4];
+    char res_pipe_fd_str[12];
     snprintf(res_pipe_fd_str, sizeof(res_pipe_fd_str), "%d", pipe_response[1]);
     setenv(RES_PIPE_NAME, res_pipe_fd_str, 1);
 
@@ -129,8 +121,6 @@ char *cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status) {
         char decoded_val[256];
         url_decode(decoded_name, name);
         url_decode(decoded_val, val);
-
-        // printf("\tname: %s value: %s\n", decoded_name, decoded_val);
 
         char *s = decoded_name;
         while (*s) {
