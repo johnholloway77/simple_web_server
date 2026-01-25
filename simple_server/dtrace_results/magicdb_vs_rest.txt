@@ -1,8 +1,0 @@
-Tracing simple_server I/O attribution (magic.mgc vs rest)... Ctrl-C to end.
-
-=== I/O time (ns) ===
-
-=== I/O bytes ===
-
-=== I/O calls ===
-

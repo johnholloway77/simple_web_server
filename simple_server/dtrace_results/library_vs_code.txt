@@ -1,8 +1,0 @@
-
-=== Magic Library Function Times ===
-
-=== Syscalls INSIDE Magic Library ===
-
-=== Syscalls OUTSIDE Magic Library (Your Code) ===
-fstat          : 7464 ns (1 calls)
-

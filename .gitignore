@@ -1,0 +1,19 @@
+# Build artifacts
+*.o
+simple_server
+
+# Documentation and analysis (keep local only)
+CLAUDE.md
+AI_analsys/
+benchmark_results/
+blog_posts/
+chats_to_review/
+dtrace_results/
+test_questions/
+
+# IDE and system files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.tmp
