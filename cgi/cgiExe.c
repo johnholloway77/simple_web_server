@@ -18,15 +18,16 @@
 #define RES_PIPE_NAME "RESPONSE_PIPE"
 
 extern uint32_t app_flags;
-extern char* cgi_addr;
+extern char *cgi_addr;
 
 // Helper function to decode URL-encoded strings
 void
-url_decode(char* dst, const char* src) {
+url_decode(char *dst, const char *src)
+{
 	char a, b;
 	while (*src) {
 		if ((*src == '%') && ((a = src[1]) && (b = src[2])) &&
-		    (isxdigit(a) && isxdigit(b))) {
+			(isxdigit(a) && isxdigit(b))) {
 			if (a >= 'a')
 				a -= 'a' - 'A';
 			if (a >= 'A')
@@ -51,27 +52,28 @@ url_decode(char* dst, const char* src) {
 	*dst = '\0';
 }
 
-char*
-cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
+char *
+cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
+{
 	if (!(app_flags & C_FLAG)) {
 		*resp_status = 501;
 		return RESPONSE_501;
 	}
 
-	char* file_name = strtok(file, "?");
+	char *file_name = strtok(file, "?");
 
 	if (file == NULL || (strcmp(file, "") == 0)) {
 		*resp_status = 400;
 		return RESPONSE_400;
 	}
 
-	char* file_name2 = strdup(file_name);
+	char *file_name2 = strdup(file_name);
 
-	char* param_string = strtok(NULL, "?");
+	char *param_string = strtok(NULL, "?");
 
-	char* buffer;
-	char* name;
-	char* val;
+	char *buffer;
+	char *name;
+	char *val;
 
 	int pipe_stdin[2];
 	int pipe_stdout[2];
@@ -79,7 +81,7 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 	pid_t pid;
 
 	if (pipe(pipe_stdin) == -1 || pipe(pipe_stdout) == -1 ||
-	    pipe(pipe_response) == -1) {
+		pipe(pipe_response) == -1) {
 		free(file_name2);
 
 		*resp_status = 500;
@@ -112,9 +114,9 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 		// Set environment variables for response pipe
 		char res_pipe_fd_str[12];
 		snprintf(res_pipe_fd_str,
-			 sizeof(res_pipe_fd_str),
-			 "%d",
-			 pipe_response[1]);
+			sizeof(res_pipe_fd_str),
+			"%d",
+			pipe_response[1]);
 		setenv(RES_PIPE_NAME, res_pipe_fd_str, 1);
 
 		// set environment variable for request parameters
@@ -131,7 +133,7 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 				url_decode(decoded_name, name);
 				url_decode(decoded_val, val);
 
-				char* s = decoded_name;
+				char *s = decoded_name;
 				while (*s) {
 					*s = toupper(*s);
 					s++;
@@ -142,7 +144,7 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 				// check for command injection
 				// This will only allow alphanumeric and
 				// underscores
-				for (char* p = decoded_name; *p; p++) {
+				for (char *p = decoded_name; *p; p++) {
 					if (!isalnum(*p) && *p != '_') {
 						exit(EXIT_FAILURE);
 					}
@@ -175,7 +177,7 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 			return RESPONSE_404;
 		}
 
-		char* exec_args[cgi_argc + 2];
+		char *exec_args[cgi_argc + 2];
 		exec_args[0] = path;
 
 		for (int i = 0; i < cgi_argc; i++) {
@@ -203,7 +205,7 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 
 		ssize_t nread;
 		char buffer[BUFFER];
-		char* response = malloc(BUFFER);
+		char *response = malloc(BUFFER);
 		size_t total_read = 0;
 
 		if (response == NULL) {
@@ -218,7 +220,7 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 		}
 
 		while ((nread = read(pipe_stdout[0], buffer, BUFFER)) > 0) {
-			char* temp = realloc(response, total_read + nread + 1);
+			char *temp = realloc(response, total_read + nread + 1);
 			if (temp == NULL) {
 				free(response); // Free the original memory
 				free(file_name2);

@@ -7,7 +7,8 @@
 #include "./socket.h"
 
 void
-handleSocket(int sock, enum sockType sockType, magic_t magic) {
+handleSocket(int sock, enum sockType sockType, magic_t magic)
+{
 	int fd;
 	pid_t pid;
 	socklen_t length;
@@ -19,10 +20,10 @@ handleSocket(int sock, enum sockType sockType, magic_t magic) {
 					    : sizeof(client.client_v6);
 
 	if ((fd = accept(sock,
-			 (struct sockaddr*)(sockType == TYPE_SOCK_V4
-						    ? (void*)&client.client_v4
-						    : (void*)&client.client_v6),
-			 &length)) < 0) {
+		     (struct sockaddr *)(sockType == TYPE_SOCK_V4
+						 ? (void *)&client.client_v4
+						 : (void *)&client.client_v6),
+		     &length)) < 0) {
 		perror("accept");
 		return; // -1;
 	}

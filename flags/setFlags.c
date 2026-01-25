@@ -11,11 +11,12 @@
 // load or create global variables
 uint32_t app_flags = 0;
 uint32_t port_addr = 8080;
-char* cgi_addr;
-char* log_addr;
+char *cgi_addr;
+char *log_addr;
 
 int
-checkPortNumber(char* port) {
+checkPortNumber(char *port)
+{
 	for (int i = 0; i < (int)strlen(port); i++) {
 		if (!isdigit(port[i])) {
 			return 0;
@@ -26,7 +27,8 @@ checkPortNumber(char* port) {
 }
 
 int
-setFlags(const int argc, char* argv[]) {
+setFlags(const int argc, char *argv[])
+{
 	if (argc < 2)
 		return 0;
 
@@ -47,9 +49,9 @@ setFlags(const int argc, char* argv[]) {
 
 			struct stat st;
 			if ((stat(cgi_addr, &st) != 0) ||
-			    !(S_ISDIR(st.st_mode))) {
+				!(S_ISDIR(st.st_mode))) {
 				printf("%s is not a valid directory\n",
-				       cgi_addr);
+					cgi_addr);
 				exit(EXIT_FAILURE);
 			}
 
@@ -74,7 +76,7 @@ setFlags(const int argc, char* argv[]) {
 			}
 
 			log_addr = argv[i + 1];
-			FILE* log_ptr = fopen(log_addr, "a");
+			FILE *log_ptr = fopen(log_addr, "a");
 			if (log_ptr == NULL) {
 				perror("Unable to create logfile: ");
 				exit(EXIT_FAILURE);
@@ -90,7 +92,7 @@ setFlags(const int argc, char* argv[]) {
 
 		if (strcmp(argv[i], "-p") == 0) {
 			if (i == argc - 1 ||
-			    checkPortNumber(argv[i + 1]) == 0) {
+				checkPortNumber(argv[i + 1]) == 0) {
 				printf("Invalid port number\nProvide port "
 				       "number after -p flag. "
 				       "Eg: -p "

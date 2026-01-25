@@ -8,31 +8,32 @@
 
 #include "./response.h"
 
-char*
-dirResponse(char* uri, int* resp_status) {
-	DIR* dp;
-	struct dirent* dirp;
-	char* response;
+char *
+dirResponse(char *uri, int *resp_status)
+{
+	DIR *dp;
+	struct dirent *dirp;
+	char *response;
 
 	if ((dp = opendir(uri)) == NULL) {
 		*resp_status = 500;
-		response = (char*)malloc(strlen(RESPONSE_500) + 1);
+		response = (char *)malloc(strlen(RESPONSE_500) + 1);
 		if (response != NULL) {
 			snprintf(response,
-				 strlen(RESPONSE_500) + 1,
-				 "%s",
-				 RESPONSE_500);
+				strlen(RESPONSE_500) + 1,
+				"%s",
+				RESPONSE_500);
 		}
 		return response;
 	}
 
 	*resp_status = 200;
 
-	const char* header =
+	const char *header =
 		"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nConnection: "
 		"close\r\n\r\n<html><body><h1>Directory: </h1><ul>";
 	int resp_len = strlen(header);
-	response = (char*)malloc(resp_len + 1);
+	response = (char *)malloc(resp_len + 1);
 	if (response == NULL) {
 		*resp_status = 500;
 		closedir(dp);
@@ -51,19 +52,18 @@ dirResponse(char* uri, int* resp_status) {
 
 		if (uri[strlen(uri) - 1] == '/') {
 			line_length = sprintf(buffer,
-					      "<li><a href=\"%s\">%s</a></li>",
-					      dirp->d_name,
-					      dirp->d_name);
+				"<li><a href=\"%s\">%s</a></li>",
+				dirp->d_name,
+				dirp->d_name);
 		} else {
-			line_length =
-				sprintf(buffer,
-					"<li><a href=\"%s/%s\">%s</a></li>",
-					uri,
-					dirp->d_name,
-					dirp->d_name);
+			line_length = sprintf(buffer,
+				"<li><a href=\"%s/%s\">%s</a></li>",
+				uri,
+				dirp->d_name,
+				dirp->d_name);
 		}
 
-		char* new_response =
+		char *new_response =
 			realloc(response, resp_len + line_length + 1);
 		if (new_response == NULL) {
 			*resp_status = 500;
@@ -77,7 +77,7 @@ dirResponse(char* uri, int* resp_status) {
 		resp_len += line_length;
 	}
 
-	const char* footer = "</ul></body></html>";
+	const char *footer = "</ul></body></html>";
 
 	int footer_len = strlen(footer);
 	response = realloc(response, resp_len + footer_len + 1);

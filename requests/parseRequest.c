@@ -14,13 +14,14 @@
 #include "../response/response.h"
 #include "./requests.h"
 
-#define BASEURL "./\0"
+#define BASEURL "./"
 
 extern uint32_t app_flags;
 
-const char*
-get_mime_type_by_ext(const char* filename, magic_t magic, int file_des) {
-	const char* ext = strrchr(filename, '.');
+const char *
+get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
+{
+	const char *ext = strrchr(filename, '.');
 	if (!ext) {
 		return magic_descriptor(magic, file_des);
 	}
@@ -96,12 +97,11 @@ get_mime_type_by_ext(const char* filename, magic_t magic, int file_des) {
 	return magic_descriptor(magic, file_des);
 }
 
-char*
-parseRequest(const char* req_str,
-	     FILE** file_ptr,
-	     int* resp_status,
-	     magic_t magic) {
-	char* str;
+char *
+parseRequest(
+	const char *req_str, FILE **file_ptr, int *resp_status, magic_t magic)
+{
+	char *str;
 
 	str = strdup(req_str);
 
@@ -110,12 +110,12 @@ parseRequest(const char* req_str,
 		RETURN_RESP(RESPONSE_500)
 	}
 
-	char* method = strtok(str, " ");
-	char* URI = strtok(NULL, " ");
-	char* http = strtok(NULL, " ");
+	char *method = strtok(str, " ");
+	char *URI = strtok(NULL, " ");
+	char *http = strtok(NULL, " ");
 
 	char URI_relative[PATH_MAX];
-	char* baseUrl = BASEURL;
+	char *baseUrl = BASEURL;
 	size_t baseLength = strlen(baseUrl);
 
 	strlcpy(URI_relative, baseUrl, PATH_MAX);
@@ -159,7 +159,7 @@ parseRequest(const char* req_str,
 		*file_ptr = fopen("index.html", "r");
 	} else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
 		if (app_flags & C_FLAG) {
-			char* cgi_URI =
+			char *cgi_URI =
 				strdup(URI + 9);	// get the first part of
 							// /cgi-bin/someExeFile
 			cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
@@ -173,9 +173,9 @@ parseRequest(const char* req_str,
 				RETURN_RESP(RESPONSE_400)
 			}
 
-			char* cgi_argv[] = {URI + 1}; // pass directory path to
+			char *cgi_argv[] = {URI + 1}; // pass directory path to
 
-			char* response =
+			char *response =
 				cgiExe(cgi_URI, 1, cgi_argv, resp_status);
 			free(cgi_URI);
 			free(str);
@@ -209,20 +209,20 @@ parseRequest(const char* req_str,
 
 			if (URI_relative[strlen(URI_relative) - 1] == '/') {
 				snprintf(index_path,
-					 PATH_MAX,
-					 "%sindex.html",
-					 URI_relative);
+					PATH_MAX,
+					"%sindex.html",
+					URI_relative);
 			} else {
 				snprintf(index_path,
-					 PATH_MAX,
-					 "%s/index.html",
-					 URI_relative);
+					PATH_MAX,
+					"%s/index.html",
+					URI_relative);
 			}
 
 			*file_ptr = fopen(index_path, "r");
 
 			if (*file_ptr == NULL) {
-				char* response =
+				char *response =
 					dirResponse(URI_relative, resp_status);
 				free(str);
 				return response;
@@ -249,7 +249,7 @@ parseRequest(const char* req_str,
 		// Now safe to free str
 		free(str);
 
-		const char* file_type;
+		const char *file_type;
 		if (strcmp(URI, "/") == 0) {
 			file_type = "text/html";
 		} else {
@@ -257,17 +257,17 @@ parseRequest(const char* req_str,
 				get_mime_type_by_ext(fileName, magic, file_des);
 		}
 
-		char* header_buf = (char*)malloc(HEADER_BUF_SIZE);
+		char *header_buf = (char *)malloc(HEADER_BUF_SIZE);
 		if (header_buf == NULL) {
 			*resp_status = 500;
 			return RESPONSE_500;
 		}
 
 		snprintf(header_buf,
-			 HEADER_BUF_SIZE,
-			 "HTTP/1.0 200 Ok\r\nContent-Type: %s\r\nConnection: "
-			 "close\r\n\r\n",
-			 file_type);
+			HEADER_BUF_SIZE,
+			"HTTP/1.0 200 Ok\r\nContent-Type: %s\r\nConnection: "
+			"close\r\n\r\n",
+			file_type);
 
 		*resp_status = 200;
 		return header_buf;

@@ -16,14 +16,16 @@
 extern uint32_t app_flags;
 
 void
-sigchld_handler() {
+sigchld_handler()
+{
 	// Reap all terminated child processes
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
 }
 
 void
-setup_sigchld_handler() {
+setup_sigchld_handler()
+{
 	struct sigaction sa;
 	sa.sa_handler = sigchld_handler;
 	sigemptyset(&sa.sa_mask);
@@ -36,7 +38,8 @@ setup_sigchld_handler() {
 }
 
 int
-main(int argc, char* argv[]) {
+main(int argc, char *argv[])
+{
 	if (setFlags(argc, argv) < 0) {
 		printf("incorrect flags\nWrite some nice message here\n");
 	}

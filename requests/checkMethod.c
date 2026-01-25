@@ -1,7 +1,8 @@
 #include <string.h>
 
 int
-checkMethod(const char* meth_str) {
+checkMethod(const char *meth_str)
+{
 	if (strcmp(meth_str, "GET") == 0)
 		return 1;
 

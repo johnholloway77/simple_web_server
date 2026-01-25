@@ -13,20 +13,21 @@
 #define BUFFER_SIZE 1024
 
 extern uint32_t app_flags;
-extern char* log_addr;
+extern char *log_addr;
 
 void
 handleConnection(int fd,
-		 union sockaddr_union* client,
-		 enum sockType sockType,
-		 magic_t magic) {
-	const char* rip;
+	union sockaddr_union *client,
+	enum sockType sockType,
+	magic_t magic)
+{
+	const char *rip;
 	char claddr[INET6_ADDRSTRLEN];
 	int bytes_sent = 0;
 	int rval;
 	int resp_status;
 	time_t current_time;
-	struct tm* utc_time;
+	struct tm *utc_time;
 	char timestamp[21];
 
 	if ((app_flags & D_FLAG) || (app_flags & L_FLAG)) {
@@ -34,26 +35,26 @@ handleConnection(int fd,
 		utc_time = gmtime(&current_time);
 
 		strftime(timestamp,
-			 sizeof(timestamp),
-			 "%Y-%m-%dT%H:%M:%SZ",
-			 utc_time);
+			sizeof(timestamp),
+			"%Y-%m-%dT%H:%M:%SZ",
+			utc_time);
 	}
 
 	memset_s(claddr, INET6_ADDRSTRLEN, 0, INET6_ADDRSTRLEN);
 
 	if (sockType == TYPE_SOCK_V4) {
 		if ((rip = inet_ntop(PF_INET,
-				     &client->client_v4.sin_addr,
-				     claddr,
-				     INET_ADDRSTRLEN)) == NULL) {
+			     &client->client_v4.sin_addr,
+			     claddr,
+			     INET_ADDRSTRLEN)) == NULL) {
 			// perror("inet_net");
 			rip = "Unknown";
 		}
 	} else if (sockType == TYPE_SOCK_V6) {
 		if ((rip = inet_ntop(PF_INET6,
-				     &client->client_v6.sin6_addr,
-				     claddr,
-				     INET6_ADDRSTRLEN)) == NULL) {
+			     &client->client_v6.sin6_addr,
+			     claddr,
+			     INET6_ADDRSTRLEN)) == NULL) {
 			rip = "Unknown";
 		}
 	}
@@ -73,10 +74,10 @@ handleConnection(int fd,
 		buf[rval] = '\0';
 
 		// gets the first line of the request
-		char* req_token = strtok(buf, "\r\n");
+		char *req_token = strtok(buf, "\r\n");
 
-		FILE* file_ptr = NULL;
-		char* response =
+		FILE *file_ptr = NULL;
+		char *response =
 			parseRequest(req_token, &file_ptr, &resp_status, magic);
 
 		bytes_sent += send(fd, response, strlen(response), 0);
@@ -85,9 +86,9 @@ handleConnection(int fd,
 			char buffer[BUFFER_SIZE];
 			size_t bytes_read;
 			while ((bytes_read = fread(buffer,
-						   sizeof(char),
-						   BUFFER_SIZE,
-						   file_ptr)) > 0) {
+					sizeof(char),
+					BUFFER_SIZE,
+					file_ptr)) > 0) {
 				if (send(fd, buffer, bytes_read, 0) < 0) {
 					break;
 				}
@@ -108,7 +109,7 @@ handleConnection(int fd,
 		}
 
 		if (app_flags & L_FLAG) {
-			FILE* log_ptr = fopen(log_addr, "a");
+			FILE *log_ptr = fopen(log_addr, "a");
 			if (log_ptr == NULL) {
 				perror("Unable to create logfile: ");
 				exit(EXIT_FAILURE);

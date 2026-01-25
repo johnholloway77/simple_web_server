@@ -9,16 +9,30 @@ TabWidth: 8
 ContinuationIndentWidth: 8
 ColumnLimit: 80
 
-# Braces + control statements (KNF/K&R)
-BreakBeforeBraces: Attach
+# Braces: function brace on next line, control braces attached
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeElse: false
+  BeforeCatch: false
+  IndentBraces: false
+
 SpaceBeforeParens: ControlStatements
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 
-# Pointers and spacing
-PointerAlignment: Left
+# Pointers and qualifiers (force BSD-ish spacing)
+PointerAlignment: Right
 DerivePointerAlignment: false
+QualifierAlignment: Left
+SpaceAroundPointerQualifiers: Both
+
 SpaceAfterCStyleCast: false
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
@@ -28,7 +42,8 @@ SpaceInEmptyParentheses: false
 # switch/case
 IndentCaseLabels: true
 
-# Wrapping: prefer readability over packing
+# Wrapping / alignment (avoid ugly tab+space alignment)
+AlignAfterOpenBracket: DontAlign
 BinPackArguments: false
 BinPackParameters: false
 BreakBeforeBinaryOperators: None
