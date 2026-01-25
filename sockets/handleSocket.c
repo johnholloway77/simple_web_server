@@ -6,38 +6,41 @@
 
 #include "./socket.h"
 
-void handleSocket(int sock, enum sockType sockType, magic_t magic)
+void
+handleSocket(int sock, enum sockType sockType, magic_t magic)
 {
-    int fd;
-    pid_t pid;
-    socklen_t length;
+  int fd;
+  pid_t pid;
+  socklen_t length;
 
-    // I'm using a union as an excuse to practice with them and learn more.
-    union sockaddr_union client;
+  // I'm using a union as an excuse to practice with them and learn more.
+  union sockaddr_union client;
 
-    length = (sockType == TYPE_SOCK_V4) ? sizeof(client.client_v4) : sizeof(client.client_v6);
+  length = (sockType == TYPE_SOCK_V4) ? sizeof(client.client_v4)
+                                      : sizeof(client.client_v6);
 
-    if ((fd = accept(sock,
-                     (struct sockaddr *)(sockType == TYPE_SOCK_V4 ? (void *)&client.client_v4
-                                                                  : (void *)&client.client_v6),
-                     &length)) < 0)
+  if((fd = accept(sock,
+                  (struct sockaddr *) (sockType == TYPE_SOCK_V4
+                                           ? (void *) &client.client_v4
+                                           : (void *) &client.client_v6),
+                  &length)) < 0)
     {
-        perror("accept");
-        return;  // -1;
+      perror("accept");
+      return; // -1;
     }
 
-    if ((pid = fork()) < 0)
+  if((pid = fork()) < 0)
     {
-        perror("fork");
-        exit(EXIT_FAILURE);
+      perror("fork");
+      exit(EXIT_FAILURE);
     }
-    else if (!pid)
+  else if(!pid)
     {
-        handleConnection(fd, &client, sockType, magic);
+      handleConnection(fd, &client, sockType, magic);
     }
-    else
+  else
     {
-        // if parent close fd
-        (void)close(fd);
+      // if parent close fd
+      (void) close(fd);
     }
 };
