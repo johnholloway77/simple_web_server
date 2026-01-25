@@ -28,7 +28,7 @@ setup_sigchld_handler() {
 	sa.sa_handler = sigchld_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags =
-	    SA_RESTART; // Automatically restart interrupted system calls
+		SA_RESTART; // Automatically restart interrupted system calls
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
 		exit(EXIT_FAILURE);

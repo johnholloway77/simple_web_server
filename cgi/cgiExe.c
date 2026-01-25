@@ -111,14 +111,16 @@ cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
 
 		// Set environment variables for response pipe
 		char res_pipe_fd_str[12];
-		snprintf(res_pipe_fd_str, sizeof(res_pipe_fd_str), "%d",
+		snprintf(res_pipe_fd_str,
+			 sizeof(res_pipe_fd_str),
+			 "%d",
 			 pipe_response[1]);
 		setenv(RES_PIPE_NAME, res_pipe_fd_str, 1);
 
 		// set environment variable for request parameters
 		while ((buffer = strtok(param_string, "&")) != NULL) {
 			param_string =
-			    NULL; // Continue tokenizing the original string
+				NULL; // Continue tokenizing the original string
 
 			name = strtok(buffer, "=");
 			val = strtok(NULL, "=");

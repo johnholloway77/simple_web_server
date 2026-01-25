@@ -1,57 +1,45 @@
-# ---
-# Language: Cpp
-# BasedOnStyle: LLVM
-# IndentWidth: 8
-# TabWidth: 8
-# UseTab: Always
-# ColumnLimit: 80
-# BreakBeforeBraces: Allman
-# SpaceAfterCStyleCast: false
-# SpaceBeforeParens: ControlStatements
-# AlignConsecutiveDeclarations: false
-# AlignConsecutiveAssignments: false
-# AlignTrailingComments: true
-# AllowShortFunctionsOnASingleLine: None
-# AllowShortIfStatementsOnASingleLine: false
-# AllowShortLoopsOnASingleLine: false
-# BinPackArguments: true
-# BinPackParameters: true
-# BreakBeforeBinaryOperators: None
-# BreakStringLiterals: true
-# ContinuationIndentWidth: 8
-# IndentCaseLabels: false
-# PointerAlignment: Right
-# SpaceInEmptyParentheses: false
-# SpacesInCStyleCastParentheses: false
-# SpacesInParentheses: false
-# SpacesInSquareBrackets: false
-# Standard: c++03
-# AlwaysBreakAfterReturnType: TopLevelDefinitions
-# BreakAfterJavaFieldAnnotations: false
-# BreakBeforeTernaryOperators: true
-# IndentWrappedFunctionNames: false
-# KeepEmptyLinesAtTheStartOfBlocks: false
-# MaxEmptyLinesToKeep: 1
-# SpaceBeforeAssignmentOperators: true
-# SpacesBeforeTrailingComments: 1
-#
-
 ---
 Language: Cpp
 BasedOnStyle: LLVM
 
+# Core BSD-ish layout
+UseTab: Always
 IndentWidth: 8
 TabWidth: 8
-UseTab: Always
+ContinuationIndentWidth: 8
 ColumnLimit: 80
 
+# Braces + control statements (KNF/K&R)
 BreakBeforeBraces: Attach
 SpaceBeforeParens: ControlStatements
-PointerAlignment: Left
-IndentCaseLabels: true
-
-AlwaysBreakAfterReturnType: TopLevelDefinitions
-AllowShortIfStatementsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
-...
+
+# Pointers and spacing
+PointerAlignment: Left
+DerivePointerAlignment: false
+SpaceAfterCStyleCast: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
+
+# switch/case
+IndentCaseLabels: true
+
+# Wrapping: prefer readability over packing
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+IndentWrappedFunctionNames: false
+
+# Comments / blank lines
+AlignTrailingComments: true
+SpacesBeforeTrailingComments: 1
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Function definitions
+AlwaysBreakAfterReturnType: TopLevelDefinitions

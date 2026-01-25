@@ -20,8 +20,8 @@ handleSocket(int sock, enum sockType sockType, magic_t magic) {
 
 	if ((fd = accept(sock,
 			 (struct sockaddr*)(sockType == TYPE_SOCK_V4
-						? (void*)&client.client_v4
-						: (void*)&client.client_v6),
+						    ? (void*)&client.client_v4
+						    : (void*)&client.client_v6),
 			 &length)) < 0) {
 		perror("accept");
 		return; // -1;
