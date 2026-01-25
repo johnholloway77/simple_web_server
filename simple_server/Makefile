@@ -3,6 +3,7 @@ CC = clang
 
 #Compiler flags
 CFLAGS = -Wall -Wextra
+DEBUG_CFLAGS = -Wall -Wextra -g -DDEBUG -fsanitize=address
 
 # Source files
 SOURCES = main.c \
@@ -33,8 +34,13 @@ $(BINARY): $(OBJECTS)
 %.o:  %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+#debug build with debug symbols and AddressSanitizer
+.PHONY: debug
+debug: CFLAGS = $(DEBUG_CFLAGS)
+debug: $(BINARY)
+
 .PHONY:  clean
-clean:
+clean: 
 	rm -rf $(BINARY) $(OBJECTS)
 
 #clean only the object files
