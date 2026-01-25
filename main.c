@@ -16,33 +16,28 @@
 extern uint32_t app_flags;
 
 void
-sigchld_handler()
-{
+sigchld_handler() {
 	// Reap all terminated child processes
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
 }
 
 void
-setup_sigchld_handler()
-{
+setup_sigchld_handler() {
 	struct sigaction sa;
 	sa.sa_handler = sigchld_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags =
-		SA_RESTART; // Automatically restart interrupted system calls
-	if (sigaction(SIGCHLD, &sa, NULL) == -1)
-	{
+	    SA_RESTART; // Automatically restart interrupted system calls
+	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
 		exit(EXIT_FAILURE);
 	}
 }
 
 int
-main(int argc, char *argv[])
-{
-	if (setFlags(argc, argv) < 0)
-	{
+main(int argc, char* argv[]) {
+	if (setFlags(argc, argv) < 0) {
 		printf("incorrect flags\nWrite some nice message here\n");
 	}
 
@@ -51,8 +46,7 @@ main(int argc, char *argv[])
 
 	setup_sigchld_handler();
 
-	if (!(app_flags & D_FLAG))
-	{
+	if (!(app_flags & D_FLAG)) {
 		/*
 		 * We are setting nochdir to -1 so that the daemon runs in the
 		 * current working directory. Otherwise entering the correct url
@@ -74,15 +68,13 @@ main(int argc, char *argv[])
 
 	// initialize magic
 	magic_t magic = magic_open(MAGIC_MIME_TYPE);
-	if (magic_load(magic, NULL) != 0)
-	{
+	if (magic_load(magic, NULL) != 0) {
 		magic_close(magic);
 
 		return EXIT_FAILURE;
 	}
 
-	for (;;)
-	{
+	for (;;) {
 		fd_set ready;
 		struct timeval to;
 
@@ -93,20 +85,15 @@ main(int argc, char *argv[])
 		to.tv_sec = SLEEP;
 		to.tv_usec = 0;
 
-		if (select(sock_v6 + 1, &ready, 0, 0, &to) < 0)
-		{
-			if (errno != EINTR)
-			{
+		if (select(sock_v6 + 1, &ready, 0, 0, &to) < 0) {
+			if (errno != EINTR) {
 				perror("select");
 			}
 			continue;
 		}
-		if (FD_ISSET(sock_v4, &ready))
-		{
+		if (FD_ISSET(sock_v4, &ready)) {
 			handleSocket(sock_v4, TYPE_SOCK_V4, magic);
-		}
-		else if (FD_ISSET(sock_v6, &ready))
-		{
+		} else if (FD_ISSET(sock_v6, &ready)) {
 			handleSocket(sock_v6, TYPE_SOCK_V6, magic);
 		}
 	}

@@ -1,36 +1,57 @@
+# ---
+# Language: Cpp
+# BasedOnStyle: LLVM
+# IndentWidth: 8
+# TabWidth: 8
+# UseTab: Always
+# ColumnLimit: 80
+# BreakBeforeBraces: Allman
+# SpaceAfterCStyleCast: false
+# SpaceBeforeParens: ControlStatements
+# AlignConsecutiveDeclarations: false
+# AlignConsecutiveAssignments: false
+# AlignTrailingComments: true
+# AllowShortFunctionsOnASingleLine: None
+# AllowShortIfStatementsOnASingleLine: false
+# AllowShortLoopsOnASingleLine: false
+# BinPackArguments: true
+# BinPackParameters: true
+# BreakBeforeBinaryOperators: None
+# BreakStringLiterals: true
+# ContinuationIndentWidth: 8
+# IndentCaseLabels: false
+# PointerAlignment: Right
+# SpaceInEmptyParentheses: false
+# SpacesInCStyleCastParentheses: false
+# SpacesInParentheses: false
+# SpacesInSquareBrackets: false
+# Standard: c++03
+# AlwaysBreakAfterReturnType: TopLevelDefinitions
+# BreakAfterJavaFieldAnnotations: false
+# BreakBeforeTernaryOperators: true
+# IndentWrappedFunctionNames: false
+# KeepEmptyLinesAtTheStartOfBlocks: false
+# MaxEmptyLinesToKeep: 1
+# SpaceBeforeAssignmentOperators: true
+# SpacesBeforeTrailingComments: 1
+#
+
 ---
 Language: Cpp
 BasedOnStyle: LLVM
+
 IndentWidth: 8
 TabWidth: 8
 UseTab: Always
 ColumnLimit: 80
-BreakBeforeBraces: Allman
-SpaceAfterCStyleCast: false
+
+BreakBeforeBraces: Attach
 SpaceBeforeParens: ControlStatements
-AlignConsecutiveDeclarations: false
-AlignConsecutiveAssignments: false
-AlignTrailingComments: true
-AllowShortFunctionsOnASingleLine: None
+PointerAlignment: Left
+IndentCaseLabels: true
+
+AlwaysBreakAfterReturnType: TopLevelDefinitions
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-BinPackArguments: true
-BinPackParameters: true
-BreakBeforeBinaryOperators: None
-BreakStringLiterals: true
-ContinuationIndentWidth: 8
-IndentCaseLabels: false
-PointerAlignment: Right
-SpaceInEmptyParentheses: false
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-Standard: c++03
-AlwaysBreakAfterReturnType: TopLevelDefinitions
-BreakAfterJavaFieldAnnotations: false
-BreakBeforeTernaryOperators: true
-IndentWrappedFunctionNames: false
-KeepEmptyLinesAtTheStartOfBlocks: false
-MaxEmptyLinesToKeep: 1
-SpaceBeforeAssignmentOperators: true
-SpacesBeforeTrailingComments: 1
+AllowShortFunctionsOnASingleLine: None
+...

@@ -18,18 +18,15 @@
 #define RES_PIPE_NAME "RESPONSE_PIPE"
 
 extern uint32_t app_flags;
-extern char *cgi_addr;
+extern char* cgi_addr;
 
 // Helper function to decode URL-encoded strings
 void
-url_decode(char *dst, const char *src)
-{
+url_decode(char* dst, const char* src) {
 	char a, b;
-	while (*src)
-	{
+	while (*src) {
 		if ((*src == '%') && ((a = src[1]) && (b = src[2])) &&
-		    (isxdigit(a) && isxdigit(b)))
-		{
+		    (isxdigit(a) && isxdigit(b))) {
 			if (a >= 'a')
 				a -= 'a' - 'A';
 			if (a >= 'A')
@@ -44,44 +41,37 @@ url_decode(char *dst, const char *src)
 				b -= '0';
 			*dst++ = 16 * a + b;
 			src += 3;
-		}
-		else if (*src == '+')
-		{
+		} else if (*src == '+') {
 			*dst++ = ' ';
 			src++;
-		}
-		else
-		{
+		} else {
 			*dst++ = *src++;
 		}
 	}
 	*dst = '\0';
 }
 
-char *
-cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
-{
-	if (!(app_flags & C_FLAG))
-	{
+char*
+cgiExe(char* file, int cgi_argc, char* cgi_argv[], int* resp_status) {
+	if (!(app_flags & C_FLAG)) {
 		*resp_status = 501;
 		return RESPONSE_501;
 	}
 
-	char *file_name = strtok(file, "?");
+	char* file_name = strtok(file, "?");
 
-	if (file == NULL || (strcmp(file, "") == 0))
-	{
+	if (file == NULL || (strcmp(file, "") == 0)) {
 		*resp_status = 400;
 		return RESPONSE_400;
 	}
 
-	char *file_name2 = strdup(file_name);
+	char* file_name2 = strdup(file_name);
 
-	char *param_string = strtok(NULL, "?");
+	char* param_string = strtok(NULL, "?");
 
-	char *buffer;
-	char *name;
-	char *val;
+	char* buffer;
+	char* name;
+	char* val;
 
 	int pipe_stdin[2];
 	int pipe_stdout[2];
@@ -89,8 +79,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 	pid_t pid;
 
 	if (pipe(pipe_stdin) == -1 || pipe(pipe_stdout) == -1 ||
-	    pipe(pipe_response) == -1)
-	{
+	    pipe(pipe_response) == -1) {
 		free(file_name2);
 
 		*resp_status = 500;
@@ -98,8 +87,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 	}
 
 	pid = fork();
-	if (pid == -1)
-	{
+	if (pid == -1) {
 		close(pipe_stdin[0]);
 		close(pipe_stdin[1]);
 		close(pipe_stdout[0]);
@@ -114,8 +102,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 	}
 
 	// Child process
-	if (pid == 0)
-	{
+	if (pid == 0) {
 		dup2(pipe_stdout[1], STDOUT_FILENO); // Redirect stdout to pipe
 
 		close(pipe_stdout[0]);
@@ -129,24 +116,21 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		setenv(RES_PIPE_NAME, res_pipe_fd_str, 1);
 
 		// set environment variable for request parameters
-		while ((buffer = strtok(param_string, "&")) != NULL)
-		{
+		while ((buffer = strtok(param_string, "&")) != NULL) {
 			param_string =
-				NULL; // Continue tokenizing the original string
+			    NULL; // Continue tokenizing the original string
 
 			name = strtok(buffer, "=");
 			val = strtok(NULL, "=");
 
-			if (name && val)
-			{
+			if (name && val) {
 				char decoded_name[256];
 				char decoded_val[256];
 				url_decode(decoded_name, name);
 				url_decode(decoded_val, val);
 
-				char *s = decoded_name;
-				while (*s)
-				{
+				char* s = decoded_name;
+				while (*s) {
 					*s = toupper(*s);
 					s++;
 				}
@@ -156,10 +140,8 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 				// check for command injection
 				// This will only allow alphanumeric and
 				// underscores
-				for (char *p = decoded_name; *p; p++)
-				{
-					if (!isalnum(*p) && *p != '_')
-					{
+				for (char* p = decoded_name; *p; p++) {
+					if (!isalnum(*p) && *p != '_') {
 						exit(EXIT_FAILURE);
 					}
 				}
@@ -173,40 +155,33 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		 * This function should have been called at program start in
 		 * main.c
 		 */
-		if (cgi_addr == NULL)
-		{
+		if (cgi_addr == NULL) {
 			free(file_name2);
 			*resp_status = 500;
 			return RESPONSE_500;
 		}
 
-		if (cgi_addr[strlen(cgi_addr) - 1] == '/')
-		{
+		if (cgi_addr[strlen(cgi_addr) - 1] == '/') {
 			snprintf(path, PATH_MAX, "%s%s", cgi_addr, file_name2);
-		}
-		else
-		{
+		} else {
 			snprintf(path, PATH_MAX, "%s/%s", cgi_addr, file_name2);
 		}
 		// check if file exists. If not return 404
-		if (access(path, F_OK) != 0)
-		{
+		if (access(path, F_OK) != 0) {
 			free(file_name2);
 			*resp_status = 404;
 			return RESPONSE_404;
 		}
 
-		char *exec_args[cgi_argc + 2];
+		char* exec_args[cgi_argc + 2];
 		exec_args[0] = path;
 
-		for (int i = 0; i < cgi_argc; i++)
-		{
+		for (int i = 0; i < cgi_argc; i++) {
 			exec_args[i + 1] = strdup(cgi_argv[i]);
 		}
 		exec_args[cgi_argc + 1] = NULL;
 
-		if (execvp(path, exec_args) == -1)
-		{
+		if (execvp(path, exec_args) == -1) {
 			perror("execvp failed");
 			free(file_name2);
 
@@ -218,8 +193,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 	}
 
 	// Parent process
-	else
-	{
+	else {
 		close(pipe_stdout[1]); // Close unused write end
 		close(pipe_stdin[0]);  // Close unused read end
 		close(pipe_stdin[1]);  // Close unused write end
@@ -227,27 +201,23 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 
 		ssize_t nread;
 		char buffer[BUFFER];
-		char *response = malloc(BUFFER);
+		char* response = malloc(BUFFER);
 		size_t total_read = 0;
 
-		if (response == NULL)
-		{
+		if (response == NULL) {
 			free(file_name2);
 			*resp_status = 500;
 			return RESPONSE_500;
 		}
 
-		if (read(pipe_response[0], resp_status, sizeof(int)) < 0)
-		{
+		if (read(pipe_response[0], resp_status, sizeof(int)) < 0) {
 			free(file_name2);
 			return RESPONSE_500;
 		}
 
-		while ((nread = read(pipe_stdout[0], buffer, BUFFER)) > 0)
-		{
-			char *temp = realloc(response, total_read + nread + 1);
-			if (temp == NULL)
-			{
+		while ((nread = read(pipe_stdout[0], buffer, BUFFER)) > 0) {
+			char* temp = realloc(response, total_read + nread + 1);
+			if (temp == NULL) {
 				free(response); // Free the original memory
 				free(file_name2);
 				*resp_status = 500;
@@ -259,8 +229,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 			total_read += nread;
 		}
 
-		if (nread < 0)
-		{
+		if (nread < 0) {
 			free(file_name2);
 			free(response);
 			*resp_status = 500;

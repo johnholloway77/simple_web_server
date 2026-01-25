@@ -18,12 +18,10 @@
 
 extern uint32_t app_flags;
 
-const char *
-get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
-{
-	const char *ext = strrchr(filename, '.');
-	if (!ext)
-	{
+const char*
+get_mime_type_by_ext(const char* filename, magic_t magic, int file_des) {
+	const char* ext = strrchr(filename, '.');
+	if (!ext) {
 		return magic_descriptor(magic, file_des);
 	}
 
@@ -98,44 +96,38 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	return magic_descriptor(magic, file_des);
 }
 
-char *
-parseRequest(const char *req_str, FILE **file_ptr, int *resp_status,
-	     magic_t magic)
-{
-	char *str;
+char*
+parseRequest(const char* req_str, FILE** file_ptr, int* resp_status,
+	     magic_t magic) {
+	char* str;
 
 	str = strdup(req_str);
 
-	if (!str)
-	{
+	if (!str) {
 		*resp_status = 500;
 		RETURN_RESP(RESPONSE_500)
 	}
 
-	char *method = strtok(str, " ");
-	char *URI = strtok(NULL, " ");
-	char *http = strtok(NULL, " ");
+	char* method = strtok(str, " ");
+	char* URI = strtok(NULL, " ");
+	char* http = strtok(NULL, " ");
 
 	char URI_relative[PATH_MAX];
-	char *baseUrl = BASEURL;
+	char* baseUrl = BASEURL;
 	size_t baseLength = strlen(baseUrl);
 
 	strlcpy(URI_relative, baseUrl, PATH_MAX);
 	strlcpy(URI_relative + baseLength, URI, PATH_MAX);
 
 	// check that the request header was properly parsed
-	if (method && URI && http)
-	{
-	}
-	else
-	{
+	if (method && URI && http) {
+	} else {
 		free(str);
 		*resp_status = 500;
 		RETURN_RESP(RESPONSE_500)
 	}
 
-	if ((strstr(URI, "../")) || (strstr(URI, "/..")))
-	{
+	if ((strstr(URI, "../")) || (strstr(URI, "/.."))) {
 		free(str);
 		*resp_status = 403;
 		RETURN_RESP(RESPONSE_403)
@@ -145,8 +137,7 @@ parseRequest(const char *req_str, FILE **file_ptr, int *resp_status,
 	 * check if it's a valid method
 	 * We're only doing GET requests for this simple project
 	 */
-	if (checkMethod(method) == 0)
-	{
+	if (checkMethod(method) == 0) {
 		free(str);
 		*resp_status = 400;
 		RETURN_RESP(RESPONSE_400)
@@ -155,29 +146,23 @@ parseRequest(const char *req_str, FILE **file_ptr, int *resp_status,
 	/*
 	 * Check that it's either HTML1.0 or 1.1
 	 */
-	if (checkHttp(http) == 0)
-	{
+	if (checkHttp(http) == 0) {
 		free(str);
 		*resp_status = 400;
 		RETURN_RESP(RESPONSE_400)
 	}
 
 	// should now get index by default
-	if (strcmp(URI, "/") == 0)
-	{
+	if (strcmp(URI, "/") == 0) {
 		*file_ptr = fopen("index.html", "r");
-	}
-	else if (strncmp(URI, "/cgi-bin/", 9) == 0)
-	{
-		if (app_flags & C_FLAG)
-		{
-			char *cgi_URI =
-				strdup(URI + 9);	// get the first part of
+	} else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
+		if (app_flags & C_FLAG) {
+			char* cgi_URI =
+			    strdup(URI + 9);		// get the first part of
 							// /cgi-bin/someExeFile
 			cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
 
-			if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0)
-			{
+			if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0) {
 				free(cgi_URI); // Free allocated memory before
 					       // returning error response
 
@@ -186,31 +171,26 @@ parseRequest(const char *req_str, FILE **file_ptr, int *resp_status,
 				RETURN_RESP(RESPONSE_400)
 			}
 
-			char *cgi_argv[] = {URI + 1}; // pass directory path to
+			char* cgi_argv[] = {URI + 1}; // pass directory path to
 
-			char *response =
-				cgiExe(cgi_URI, 1, cgi_argv, resp_status);
+			char* response =
+			    cgiExe(cgi_URI, 1, cgi_argv, resp_status);
 			free(cgi_URI);
 			free(str);
 
 			return response;
-		}
-		else
-		{
+		} else {
 			free(str);
 
 			*resp_status = 501;
 			RETURN_RESP(RESPONSE_501)
 		}
-	}
-	else
-	{
+	} else {
 		// //check if file points to a directory
 		// //if directory, call cgi script
 		struct stat stat1;
 
-		if (lstat(URI + 1, &stat1) != 0)
-		{
+		if (lstat(URI + 1, &stat1) != 0) {
 			/*
 			 * will actuall work to check if file exists
 			 * returns 404 if not
@@ -221,73 +201,58 @@ parseRequest(const char *req_str, FILE **file_ptr, int *resp_status,
 			RETURN_RESP(RESPONSE_404)
 		}
 
-		if (S_ISDIR(stat1.st_mode))
-		{
+		if (S_ISDIR(stat1.st_mode)) {
 			char index_path[PATH_MAX];
 			memset(index_path, 0, sizeof(index_path));
 
-			if (URI_relative[strlen(URI_relative) - 1] == '/')
-			{
+			if (URI_relative[strlen(URI_relative) - 1] == '/') {
 				snprintf(index_path, PATH_MAX, "%sindex.html",
 					 URI_relative);
-			}
-			else
-			{
+			} else {
 				snprintf(index_path, PATH_MAX, "%s/index.html",
 					 URI_relative);
 			}
 
 			*file_ptr = fopen(index_path, "r");
 
-			if (*file_ptr == NULL)
-			{
-				char *response =
-					dirResponse(URI_relative, resp_status);
+			if (*file_ptr == NULL) {
+				char* response =
+				    dirResponse(URI_relative, resp_status);
 				free(str);
 				return response;
 			}
-		}
-		else
-		{
+		} else {
 			// file is regular file
 			*file_ptr = fopen(URI_relative, "r");
 		}
 	}
 
-	if (*file_ptr)
-	{
+	if (*file_ptr) {
 		int file_des = fileno(*file_ptr);
 
 		// Save filename to stack before freeing str to avoid
 		// use-after-free
 		char fileName[PATH_MAX];
 
-		if (strcmp(URI, "/") == 0)
-		{
+		if (strcmp(URI, "/") == 0) {
 			fileName[0] = '\0'; // Empty string for root
-		}
-		else
-		{
+		} else {
 			strlcpy(fileName, URI + 1, sizeof(fileName));
 		}
 
 		// Now safe to free str
 		free(str);
 
-		const char *file_type;
-		if (strcmp(URI, "/") == 0)
-		{
+		const char* file_type;
+		if (strcmp(URI, "/") == 0) {
 			file_type = "text/html";
-		}
-		else
-		{
+		} else {
 			file_type =
-				get_mime_type_by_ext(fileName, magic, file_des);
+			    get_mime_type_by_ext(fileName, magic, file_des);
 		}
 
-		char *header_buf = (char *)malloc(HEADER_BUF_SIZE);
-		if (header_buf == NULL)
-		{
+		char* header_buf = (char*)malloc(HEADER_BUF_SIZE);
+		if (header_buf == NULL) {
 			*resp_status = 500;
 			return RESPONSE_500;
 		}
@@ -299,9 +264,7 @@ parseRequest(const char *req_str, FILE **file_ptr, int *resp_status,
 
 		*resp_status = 200;
 		return header_buf;
-	}
-	else
-	{
+	} else {
 		// this code is not reached. could delete it if need be...
 		// if nothing found
 
