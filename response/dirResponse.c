@@ -1,9 +1,10 @@
+#include <sys/types.h>
+
 #include <dirent.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "./response.h"
@@ -20,9 +21,9 @@ dirResponse(char *uri, int *resp_status)
 		response = (char *)malloc(strlen(RESPONSE_500) + 1);
 		if (response != NULL) {
 			snprintf(response,
-				strlen(RESPONSE_500) + 1,
-				"%s",
-				RESPONSE_500);
+			    strlen(RESPONSE_500) + 1,
+			    "%s",
+			    RESPONSE_500);
 		}
 		return response;
 	}
@@ -30,8 +31,8 @@ dirResponse(char *uri, int *resp_status)
 	*resp_status = 200;
 
 	const char *header =
-		"HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nConnection: "
-		"close\r\n\r\n<html><body><h1>Directory: </h1><ul>";
+	    "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nConnection: "
+	    "close\r\n\r\n<html><body><h1>Directory: </h1><ul>";
 	int resp_len = strlen(header);
 	response = (char *)malloc(resp_len + 1);
 	if (response == NULL) {
@@ -52,19 +53,20 @@ dirResponse(char *uri, int *resp_status)
 
 		if (uri[strlen(uri) - 1] == '/') {
 			line_length = sprintf(buffer,
-				"<li><a href=\"%s\">%s</a></li>",
-				dirp->d_name,
-				dirp->d_name);
-		} else {
+			    "<li><a href=\"%s\">%s</a></li>",
+			    dirp->d_name,
+			    dirp->d_name);
+		}
+		else {
 			line_length = sprintf(buffer,
-				"<li><a href=\"%s/%s\">%s</a></li>",
-				uri,
-				dirp->d_name,
-				dirp->d_name);
+			    "<li><a href=\"%s/%s\">%s</a></li>",
+			    uri,
+			    dirp->d_name,
+			    dirp->d_name);
 		}
 
-		char *new_response =
-			realloc(response, resp_len + line_length + 1);
+		char *new_response = realloc(response,
+		    resp_len + line_length + 1);
 		if (new_response == NULL) {
 			*resp_status = 500;
 			free(response);

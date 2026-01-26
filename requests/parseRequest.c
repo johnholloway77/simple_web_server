@@ -1,3 +1,6 @@
+#include <sys/stat.h>
+#include <sys/syslimits.h>
+
 #include <limits.h>
 #include <magic.h>
 #include <stddef.h>
@@ -5,8 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/syslimits.h>
 
 #include "../cgi/cgi.h"
 #include "../flags/flags.h"
@@ -98,8 +99,10 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 }
 
 char *
-parseRequest(
-	const char *req_str, FILE **file_ptr, int *resp_status, magic_t magic)
+parseRequest(const char *req_str,
+    FILE **file_ptr,
+    int *resp_status,
+    magic_t magic)
 {
 	char *str;
 
@@ -123,7 +126,8 @@ parseRequest(
 
 	// check that the request header was properly parsed
 	if (method && URI && http) {
-	} else {
+	}
+	else {
 		free(str);
 		*resp_status = 500;
 		RETURN_RESP(RESPONSE_500)
@@ -157,11 +161,12 @@ parseRequest(
 	// should now get index by default
 	if (strcmp(URI, "/") == 0) {
 		*file_ptr = fopen("index.html", "r");
-	} else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
+	}
+	else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
 		if (app_flags & C_FLAG) {
-			char *cgi_URI =
-				strdup(URI + 9);	// get the first part of
-							// /cgi-bin/someExeFile
+			char *cgi_URI = strdup(
+			    URI + 9); // get the first part of
+				      // /cgi-bin/someExeFile
 			cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
 
 			if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0) {
@@ -176,18 +181,20 @@ parseRequest(
 			char *cgi_argv[] = {URI + 1}; // pass directory path to
 
 			char *response =
-				cgiExe(cgi_URI, 1, cgi_argv, resp_status);
+			    cgiExe(cgi_URI, 1, cgi_argv, resp_status);
 			free(cgi_URI);
 			free(str);
 
 			return response;
-		} else {
+		}
+		else {
 			free(str);
 
 			*resp_status = 501;
 			RETURN_RESP(RESPONSE_501)
 		}
-	} else {
+	}
+	else {
 		// //check if file points to a directory
 		// //if directory, call cgi script
 		struct stat stat1;
@@ -209,25 +216,27 @@ parseRequest(
 
 			if (URI_relative[strlen(URI_relative) - 1] == '/') {
 				snprintf(index_path,
-					PATH_MAX,
-					"%sindex.html",
-					URI_relative);
-			} else {
+				    PATH_MAX,
+				    "%sindex.html",
+				    URI_relative);
+			}
+			else {
 				snprintf(index_path,
-					PATH_MAX,
-					"%s/index.html",
-					URI_relative);
+				    PATH_MAX,
+				    "%s/index.html",
+				    URI_relative);
 			}
 
 			*file_ptr = fopen(index_path, "r");
 
 			if (*file_ptr == NULL) {
-				char *response =
-					dirResponse(URI_relative, resp_status);
+				char *response = dirResponse(URI_relative,
+				    resp_status);
 				free(str);
 				return response;
 			}
-		} else {
+		}
+		else {
 			// file is regular file
 			*file_ptr = fopen(URI_relative, "r");
 		}
@@ -242,7 +251,8 @@ parseRequest(
 
 		if (strcmp(URI, "/") == 0) {
 			fileName[0] = '\0'; // Empty string for root
-		} else {
+		}
+		else {
 			strlcpy(fileName, URI + 1, sizeof(fileName));
 		}
 
@@ -252,9 +262,10 @@ parseRequest(
 		const char *file_type;
 		if (strcmp(URI, "/") == 0) {
 			file_type = "text/html";
-		} else {
+		}
+		else {
 			file_type =
-				get_mime_type_by_ext(fileName, magic, file_des);
+			    get_mime_type_by_ext(fileName, magic, file_des);
 		}
 
 		char *header_buf = (char *)malloc(HEADER_BUF_SIZE);
@@ -264,14 +275,15 @@ parseRequest(
 		}
 
 		snprintf(header_buf,
-			HEADER_BUF_SIZE,
-			"HTTP/1.0 200 Ok\r\nContent-Type: %s\r\nConnection: "
-			"close\r\n\r\n",
-			file_type);
+		    HEADER_BUF_SIZE,
+		    "HTTP/1.0 200 Ok\r\nContent-Type: %s\r\nConnection: "
+		    "close\r\n\r\n",
+		    file_type);
 
 		*resp_status = 200;
 		return header_buf;
-	} else {
+	}
+	else {
 		// this code is not reached. could delete it if need be...
 		// if nothing found
 

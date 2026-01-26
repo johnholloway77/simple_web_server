@@ -1,60 +1,86 @@
 ---
 Language: Cpp
+# FreeBSD KNF (Kernel Normal Form) style
 BasedOnStyle: LLVM
 
-# Core BSD-ish layout
+# Indentation: 8-character tabs, continuation 4 spaces
 UseTab: Always
 IndentWidth: 8
 TabWidth: 8
-ContinuationIndentWidth: 8
+ContinuationIndentWidth: 4
 ColumnLimit: 80
+BreakStringLiterals: false
 
-# Braces: function brace on next line, control braces attached
+# Function/struct braces on separate line, control statements inline
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterFunction: true
+  AfterStruct: true
+  AfterEnum: true
+  AfterUnion: true
   AfterControlStatement: false
-  AfterEnum: false
-  AfterStruct: false
-  AfterUnion: false
-  AfterExternBlock: false
-  BeforeElse: false
-  BeforeCatch: false
+  BeforeElse: true
+  BeforeWhile: false
   IndentBraces: false
 
+# Spaces after keywords (if, while, for) but not function names
 SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# FreeBSD style: no short statements on single lines
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
 
-# Pointers and qualifiers (force BSD-ish spacing)
+# Pointer alignment: attach asterisk to variable name (char *p)
 PointerAlignment: Right
 DerivePointerAlignment: false
-QualifierAlignment: Left
-SpaceAroundPointerQualifiers: Both
 
-SpaceAfterCStyleCast: false
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-SpaceInEmptyParentheses: false
+# Switch and goto label indentation per FreeBSD style
+IndentCaseLabels: false
+IndentGotoLabels: true
 
-# switch/case
-IndentCaseLabels: true
-
-# Wrapping / alignment (avoid ugly tab+space alignment)
-AlignAfterOpenBracket: DontAlign
-BinPackArguments: false
+# Function parameter alignment
+AlignAfterOpenBracket: false
 BinPackParameters: false
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+
+# Binary operators at end of line when wrapping
 BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
-IndentWrappedFunctionNames: false
 
-# Comments / blank lines
-AlignTrailingComments: true
+# Comment alignment
+AlignTrailingComments: false
 SpacesBeforeTrailingComments: 1
+
+# Empty lines
 MaxEmptyLinesToKeep: 1
 KeepEmptyLinesAtTheStartOfBlocks: false
 
-# Function definitions
+# Return type on separate line for function definitions
 AlwaysBreakAfterReturnType: TopLevelDefinitions
+
+# Additional FreeBSD-specific settings
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInContainerLiterals: false
+
+# Penalty settings to prefer FreeBSD-style line breaks
+PenaltyBreakAssignment: 50
+PenaltyBreakBeforeFirstCallParameter: 100
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyReturnTypeOnItsOwnLine: 60
+
+# Preserve manual include grouping (FreeBSD style)
+SortIncludes: false
+IncludeBlocks: Preserve

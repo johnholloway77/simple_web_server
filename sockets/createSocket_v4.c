@@ -1,8 +1,10 @@
+#include <sys/socket.h>
+
 #include <netinet/in.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 
 #include "../flags/flags.h"
 
@@ -35,7 +37,7 @@ createSocket_v4(void)
 	server_v4.sin_port = htons(port_addr);
 
 	if (bind(sock_v4, (struct sockaddr *)&server_v4, sizeof(server_v4)) !=
-		0) {
+	    0) {
 		perror("getting socket_v4 name");
 		exit(EXIT_FAILURE);
 	}
@@ -46,8 +48,8 @@ createSocket_v4(void)
 		exit(EXIT_FAILURE);
 	}
 	if (app_flags & D_FLAG) {
-		(void)printf(
-			"Sock_v4 has port #%d\n", ntohs(server_v4.sin_port));
+		(void)printf("Sock_v4 has port #%d\n",
+		    ntohs(server_v4.sin_port));
 	}
 
 	if (listen(sock_v4, BACKLOG) < 0) {

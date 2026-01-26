@@ -1,9 +1,10 @@
+#include <sys/stat.h>
+
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #include "flags.h"
@@ -49,9 +50,9 @@ setFlags(const int argc, char *argv[])
 
 			struct stat st;
 			if ((stat(cgi_addr, &st) != 0) ||
-				!(S_ISDIR(st.st_mode))) {
+			    !(S_ISDIR(st.st_mode))) {
 				printf("%s is not a valid directory\n",
-					cgi_addr);
+				    cgi_addr);
 				exit(EXIT_FAILURE);
 			}
 
@@ -92,7 +93,7 @@ setFlags(const int argc, char *argv[])
 
 		if (strcmp(argv[i], "-p") == 0) {
 			if (i == argc - 1 ||
-				checkPortNumber(argv[i + 1]) == 0) {
+			    checkPortNumber(argv[i + 1]) == 0) {
 				printf("Invalid port number\nProvide port "
 				       "number after -p flag. "
 				       "Eg: -p "

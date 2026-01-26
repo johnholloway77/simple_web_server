@@ -1,10 +1,11 @@
+#include <sys/select.h>
+#include <sys/wait.h>
+
 #include <errno.h>
 #include <magic.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/select.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 #include "./flags/flags.h"
@@ -30,7 +31,7 @@ setup_sigchld_handler()
 	sa.sa_handler = sigchld_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags =
-		SA_RESTART; // Automatically restart interrupted system calls
+	    SA_RESTART; // Automatically restart interrupted system calls
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
 		exit(EXIT_FAILURE);
@@ -96,7 +97,8 @@ main(int argc, char *argv[])
 		}
 		if (FD_ISSET(sock_v4, &ready)) {
 			handleSocket(sock_v4, TYPE_SOCK_V4, magic);
-		} else if (FD_ISSET(sock_v6, &ready)) {
+		}
+		else if (FD_ISSET(sock_v6, &ready)) {
 			handleSocket(sock_v6, TYPE_SOCK_V6, magic);
 		}
 	}

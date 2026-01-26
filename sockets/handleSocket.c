@@ -1,7 +1,9 @@
+#include <sys/socket.h>
+
 #include <netinet/in.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #include "./socket.h"
@@ -20,10 +22,10 @@ handleSocket(int sock, enum sockType sockType, magic_t magic)
 					    : sizeof(client.client_v6);
 
 	if ((fd = accept(sock,
-		     (struct sockaddr *)(sockType == TYPE_SOCK_V4
-						 ? (void *)&client.client_v4
-						 : (void *)&client.client_v6),
-		     &length)) < 0) {
+		 (struct sockaddr *)(sockType == TYPE_SOCK_V4
+					 ? (void *)&client.client_v4
+					 : (void *)&client.client_v6),
+		 &length)) < 0) {
 		perror("accept");
 		return; // -1;
 	}
@@ -31,9 +33,11 @@ handleSocket(int sock, enum sockType sockType, magic_t magic)
 	if ((pid = fork()) < 0) {
 		perror("fork");
 		exit(EXIT_FAILURE);
-	} else if (!pid) {
+	}
+	else if (!pid) {
 		handleConnection(fd, &client, sockType, magic);
-	} else {
+	}
+	else {
 		// if parent close fd
 		(void)close(fd);
 	}

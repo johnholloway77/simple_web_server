@@ -1,13 +1,14 @@
 
 
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include <ctype.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
 
 #include "../flags/flags.h"
@@ -27,7 +28,7 @@ url_decode(char *dst, const char *src)
 	char a, b;
 	while (*src) {
 		if ((*src == '%') && ((a = src[1]) && (b = src[2])) &&
-			(isxdigit(a) && isxdigit(b))) {
+		    (isxdigit(a) && isxdigit(b))) {
 			if (a >= 'a')
 				a -= 'a' - 'A';
 			if (a >= 'A')
@@ -42,10 +43,12 @@ url_decode(char *dst, const char *src)
 				b -= '0';
 			*dst++ = 16 * a + b;
 			src += 3;
-		} else if (*src == '+') {
+		}
+		else if (*src == '+') {
 			*dst++ = ' ';
 			src++;
-		} else {
+		}
+		else {
 			*dst++ = *src++;
 		}
 	}
@@ -81,7 +84,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 	pid_t pid;
 
 	if (pipe(pipe_stdin) == -1 || pipe(pipe_stdout) == -1 ||
-		pipe(pipe_response) == -1) {
+	    pipe(pipe_response) == -1) {
 		free(file_name2);
 
 		*resp_status = 500;
@@ -114,15 +117,15 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		// Set environment variables for response pipe
 		char res_pipe_fd_str[12];
 		snprintf(res_pipe_fd_str,
-			sizeof(res_pipe_fd_str),
-			"%d",
-			pipe_response[1]);
+		    sizeof(res_pipe_fd_str),
+		    "%d",
+		    pipe_response[1]);
 		setenv(RES_PIPE_NAME, res_pipe_fd_str, 1);
 
 		// set environment variable for request parameters
 		while ((buffer = strtok(param_string, "&")) != NULL) {
 			param_string =
-				NULL; // Continue tokenizing the original string
+			    NULL; // Continue tokenizing the original string
 
 			name = strtok(buffer, "=");
 			val = strtok(NULL, "=");
@@ -167,7 +170,8 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 
 		if (cgi_addr[strlen(cgi_addr) - 1] == '/') {
 			snprintf(path, PATH_MAX, "%s%s", cgi_addr, file_name2);
-		} else {
+		}
+		else {
 			snprintf(path, PATH_MAX, "%s/%s", cgi_addr, file_name2);
 		}
 		// check if file exists. If not return 404
@@ -199,8 +203,8 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 	// Parent process
 	else {
 		close(pipe_stdout[1]); // Close unused write end
-		close(pipe_stdin[0]);  // Close unused read end
-		close(pipe_stdin[1]);  // Close unused write end
+		close(pipe_stdin[0]); // Close unused read end
+		close(pipe_stdin[1]); // Close unused write end
 		close(pipe_response[1]);
 
 		ssize_t nread;
@@ -241,7 +245,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		}
 
 		response[total_read] = '\0'; // Null-terminate the response
-		close(pipe_stdout[0]);	     // Close the read end of the pipe
+		close(pipe_stdout[0]); // Close the read end of the pipe
 		close(pipe_response[0]);
 
 		free(file_name2);
