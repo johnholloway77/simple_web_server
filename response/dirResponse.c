@@ -25,7 +25,7 @@ dirResponse(char *uri, int *resp_status)
 			    "%s",
 			    RESPONSE_500);
 		}
-		return response;
+		return (response);
 	}
 
 	*resp_status = 200;
@@ -38,7 +38,7 @@ dirResponse(char *uri, int *resp_status)
 	if (response == NULL) {
 		*resp_status = 500;
 		closedir(dp);
-		return NULL;
+		return (NULL);
 	}
 	snprintf(response, resp_len + 1, "%s", header);
 
@@ -71,7 +71,7 @@ dirResponse(char *uri, int *resp_status)
 			*resp_status = 500;
 			free(response);
 			closedir(dp);
-			return NULL;
+			return (NULL);
 		}
 		response = new_response;
 		memcpy(response + resp_len, buffer, line_length);
@@ -86,12 +86,12 @@ dirResponse(char *uri, int *resp_status)
 	if (response == NULL) {
 		*resp_status = 500;
 		closedir(dp);
-		return RESPONSE_500;
+		return (RESPONSE_500);
 	}
 
 	memcpy(response + resp_len, footer, strlen(footer));
 	response[resp_len + footer_len] = '\0';
 
 	closedir(dp);
-	return response;
+	return (response);
 }

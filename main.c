@@ -41,12 +41,12 @@ setup_sigchld_handler()
 int
 main(int argc, char *argv[])
 {
+	int sock_v4;
+	int sock_v6;
+
 	if (setFlags(argc, argv) < 0) {
 		printf("incorrect flags\nWrite some nice message here\n");
 	}
-
-	int sock_v4;
-	int sock_v6;
 
 	setup_sigchld_handler();
 
@@ -75,7 +75,7 @@ main(int argc, char *argv[])
 	if (magic_load(magic, NULL) != 0) {
 		magic_close(magic);
 
-		return EXIT_FAILURE;
+		return (EXIT_FAILURE);
 	}
 
 	for (;;) {
@@ -103,5 +103,5 @@ main(int argc, char *argv[])
 		}
 	}
 
-	return 0;
+	return (0);
 }

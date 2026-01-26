@@ -59,6 +59,6 @@ createSocket_v4(void)
 		exit(EXIT_FAILURE);
 	}
 
-	return sock_v4; // Should revise this so that it only sends one socket
-			// back...
+	return (sock_v4); // Should revise this so that it only sends one socket
+			  // back...
 }

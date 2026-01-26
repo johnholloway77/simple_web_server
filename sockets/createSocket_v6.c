@@ -53,5 +53,5 @@ createSocket_v6(void)
 		exit(EXIT_FAILURE);
 	}
 
-	return sock_v6;
+	return (sock_v6);
 }

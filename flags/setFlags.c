@@ -20,18 +20,18 @@ checkPortNumber(char *port)
 {
 	for (int i = 0; i < (int)strlen(port); i++) {
 		if (!isdigit(port[i])) {
-			return 0;
+			return (0);
 		}
 	}
 
-	return 1;
+	return (1);
 }
 
 int
 setFlags(const int argc, char *argv[])
 {
 	if (argc < 2)
-		return 0;
+		return (0);
 
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] != '-') {
@@ -119,5 +119,5 @@ setFlags(const int argc, char *argv[])
 		}
 	}
 
-	return 0;
+	return (0);
 }
