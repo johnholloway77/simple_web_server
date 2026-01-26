@@ -13,17 +13,42 @@
 
 #define SLEEP 5
 
-// load global flags variables
+/* load global flags variables */
 extern uint32_t app_flags;
 
+/**
+ * @brief Signal handler for SIGCHLD to prevent zombie processes
+ *
+ * Reaps all terminated child processes using waitpid() with WNOHANG option.
+ * This handler is called asynchronously when child processes terminate and
+ * ensures no zombie processes remain in the system.
+ *
+ * @note This is a signal handler - must be async-signal-safe
+ * @note Uses while loop to handle multiple simultaneous child deaths
+ * @note Does not examine exit status of child processes
+ *
+ * @see setup_sigchld_handler()
+ */
 void
 sigchld_handler()
 {
-	// Reap all terminated child processes
+	/* Reap all terminated child processes */
 	while (waitpid(-1, NULL, WNOHANG) > 0)
 		;
 }
 
+/**
+ * @brief Configure SIGCHLD signal handler with proper flags
+ *
+ * Installs the sigchld_handler() function to handle SIGCHLD signals with
+ * SA_RESTART flag to automatically restart interrupted system calls.
+ * This prevents select() from returning EINTR when children terminate.
+ *
+ * @note Exits program on failure to install handler
+ * @note SA_RESTART flag prevents EINTR errors in select()
+ *
+ * @see sigchld_handler()
+ */
 void
 setup_sigchld_handler()
 {
@@ -31,13 +56,36 @@ setup_sigchld_handler()
 	sa.sa_handler = sigchld_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags =
-	    SA_RESTART; // Automatically restart interrupted system calls
+	    SA_RESTART; /* Automatically restart interrupted system calls */
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
 		exit(EXIT_FAILURE);
 	}
 }
 
+/**
+ * @brief Main entry point for the FreeBSD web server
+ *
+ * Initializes the HTTP server with dual-stack IPv4/IPv6 support using a
+ * select()-based event loop. The server operates in fork-per-connection mode,
+ * creating a new child process for each incoming connection.
+ *
+ * The server supports optional daemon mode and comprehensive logging. It uses
+ * libmagic for MIME type detection and handles SIGCHLD signals to prevent
+ * zombie processes.
+ *
+ * @param[in] argc Number of command line arguments
+ * @param[in] argv Array of command line argument strings
+ *
+ * @retval 0 Normal termination (never reached in practice)
+ * @retval EXIT_FAILURE Fatal error during initialization
+ *
+ * @note The main loop runs indefinitely until the process is terminated
+ * @note Requires root privileges for ports below 1024
+ * @note Creates both IPv4 and IPv6 sockets regardless of availability
+ *
+ * @see setFlags(), createSocket_v4(), createSocket_v6(), handleSocket()
+ */
 int
 main(int argc, char *argv[])
 {

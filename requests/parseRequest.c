@@ -19,6 +19,25 @@
 
 extern uint32_t app_flags;
 
+/**
+ * @brief Determine MIME type by file extension with fallback
+ *
+ * Attempts to determine MIME type using file extension lookup table.
+ * Falls back to libmagic for unknown extensions. Supports common web
+ * file types including HTML, CSS, JavaScript, images, fonts, and archives.
+ *
+ * @param[in] filename Name of file to analyze
+ * @param[in] magic libmagic handle for fallback detection
+ * @param[in] file_des File descriptor for libmagic analysis
+ *
+ * @return String containing MIME type (e.g., "text/html")
+ *
+ * @note Returns libmagic result for unknown extensions
+ * @note Uses case-insensitive extension comparison
+ * @note Supports modern web formats (WebP, WASM, etc.)
+ *
+ * @see parseRequest()
+ */
 const char *
 get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 {
@@ -98,6 +117,33 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	return (magic_descriptor(magic, file_des));
 }
 
+/**
+ * @brief Parse HTTP request and generate response headers
+ *
+ * Parses an HTTP request line, validates the method and protocol version,
+ * resolves the requested resource, and generates appropriate HTTP response
+ * headers. Handles file serving, directory listing, and CGI execution.
+ *
+ * Security features:
+ * - Path traversal protection (blocks ../ sequences)
+ * - Method validation (GET, HEAD, POST, DELETE)
+ * - HTTP version validation (1.0, 1.1)
+ * - CGI parameter validation
+ *
+ * @param[in] req_str First line of HTTP request
+ * @param[out] file_ptr Pointer to opened file (NULL if not applicable)
+ * @param[out] resp_status HTTP response status code
+ * @param[in] magic libmagic handle for MIME type detection
+ *
+ * @return Dynamically allocated HTTP response headers string
+ *
+ * @note Caller must free returned string
+ * @note Sets *file_ptr to NULL for error responses
+ * @note Supports automatic index.html serving for directories
+ * @note Generates directory listing HTML for directories without index
+ *
+ * @see get_mime_type_by_ext(), checkMethod(), checkHttp(), cgiExe(), dirResponse()
+ */
 char *
 parseRequest(const char *req_str,
     FILE **file_ptr,

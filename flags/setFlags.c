@@ -15,6 +15,23 @@ uint32_t port_addr = 8080;
 char *cgi_addr;
 char *log_addr;
 
+/**
+ * @brief Validate port number string contains only digits
+ *
+ * Examines each character in the provided string to ensure it contains
+ * only numeric digits (0-9). Used for validating port numbers before
+ * conversion to integer.
+ *
+ * @param[in] port Null-terminated string to validate
+ *
+ * @retval 1 String contains only digits
+ * @retval 0 String contains non-digit characters
+ *
+ * @note Does not validate port number range (1-65535)
+ * @note Returns 0 for empty strings
+ *
+ * @see setFlags()
+ */
 int
 checkPortNumber(char *port)
 {
@@ -27,6 +44,32 @@ checkPortNumber(char *port)
 	return (1);
 }
 
+/**
+ * @brief Parse and validate command line arguments
+ *
+ * Processes command line flags to configure server behavior including
+ * port number, CGI directory, log file, and debug mode. Validates all
+ * arguments and sets global configuration flags and variables.
+ *
+ * Supported flags:
+ * - `-c <dir>`: Enable CGI execution from specified directory
+ * - `-d`: Enable debug mode (no daemon, single connection)
+ * - `-l <file>`: Enable logging to specified file
+ * - `-p <port>`: Set listen port (default 8080)
+ *
+ * @param[in] argc Number of command line arguments
+ * @param[in] argv Array of command line argument strings
+ *
+ * @retval 0 Success
+ * @retval -1 Invalid arguments (never returned - exits on error)
+ *
+ * @note Exits program on invalid arguments
+ * @note Requires root privileges for ports below 1024
+ * @note Validates CGI directory exists and is readable
+ * @note Creates log file if it doesn't exist
+ *
+ * @see checkPortNumber()
+ */
 int
 setFlags(const int argc, char *argv[])
 {
