@@ -15,6 +15,8 @@
 #include "../response/response.h"
 
 #define BUFFER 1024
+#define RESP_PIPE_BUFFER 12
+#define NAME_BUFFER 256
 #define CGI_BIN_DIR "./cgi-bin"
 #define RES_PIPE_NAME "RESPONSE_PIPE"
 
@@ -115,7 +117,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		close(pipe_response[0]);
 
 		// Set environment variables for response pipe
-		char res_pipe_fd_str[12];
+		char res_pipe_fd_str[RESP_PIPE_BUFFER];
 		snprintf(res_pipe_fd_str,
 		    sizeof(res_pipe_fd_str),
 		    "%d",
@@ -131,8 +133,8 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 			val = strtok(NULL, "=");
 
 			if (name && val) {
-				char decoded_name[256];
-				char decoded_val[256];
+				char decoded_name[NAME_BUFFER];
+				char decoded_val[NAME_BUFFER];
 				url_decode(decoded_name, name);
 				url_decode(decoded_val, val);
 
