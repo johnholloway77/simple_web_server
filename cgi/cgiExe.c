@@ -69,7 +69,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 
 	if (file == NULL || (strcmp(file, "") == 0)) {
 		*resp_status = 400;
-		return RESPONSE_400;
+		return (RESPONSE_400);
 	}
 
 	char *file_name2 = strdup(file_name);
@@ -90,7 +90,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		free(file_name2);
 
 		*resp_status = 500;
-		return RESPONSE_500;
+		return (RESPONSE_500);
 	}
 
 	pid = fork();
@@ -105,7 +105,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		free(file_name2);
 
 		*resp_status = 500;
-		return RESPONSE_500;
+		return (RESPONSE_500);
 	}
 
 	// Child process
@@ -167,7 +167,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		if (cgi_addr == NULL) {
 			free(file_name2);
 			*resp_status = 500;
-			return RESPONSE_500;
+			return (RESPONSE_500);
 		}
 
 		if (cgi_addr[strlen(cgi_addr) - 1] == '/') {
@@ -180,7 +180,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		if (access(path, F_OK) != 0) {
 			free(file_name2);
 			*resp_status = 404;
-			return RESPONSE_404;
+			return (RESPONSE_404);
 		}
 
 		char *exec_args[cgi_argc + 2];
@@ -196,7 +196,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 			free(file_name2);
 
 			*resp_status = 500;
-			return RESPONSE_500;
+			return (RESPONSE_500);
 		}
 
 		exit(EXIT_SUCCESS); // Not reached if execvp is successful
@@ -217,12 +217,12 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		if (response == NULL) {
 			free(file_name2);
 			*resp_status = 500;
-			return RESPONSE_500;
+			return (RESPONSE_500);
 		}
 
 		if (read(pipe_response[0], resp_status, sizeof(int)) < 0) {
 			free(file_name2);
-			return RESPONSE_500;
+			return (RESPONSE_500);
 		}
 
 		while ((nread = read(pipe_stdout[0], buffer, BUFFER)) > 0) {
@@ -231,7 +231,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 				free(response); // Free the original memory
 				free(file_name2);
 				*resp_status = 500;
-				return RESPONSE_500;
+				return (RESPONSE_500);
 			}
 			response = temp;
 
@@ -243,7 +243,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 			free(file_name2);
 			free(response);
 			*resp_status = 500;
-			return RESPONSE_500;
+			return (RESPONSE_500);
 		}
 
 		response[total_read] = '\0'; // Null-terminate the response
@@ -251,6 +251,6 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		close(pipe_response[0]);
 
 		free(file_name2);
-		return response;
+		return (response);
 	}
 }
