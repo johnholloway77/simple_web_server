@@ -23,7 +23,28 @@
 extern uint32_t app_flags;
 extern char *cgi_addr;
 
-// Helper function to decode URL-encoded strings
+/**
+ * @brief Decode URL-encoded string in place
+ *
+ * Converts URL-encoded (percent-encoded) characters back to their original
+ * form and handles '+' to space conversion as per application/x-www-form-urlencoded
+ * encoding. Processes escape sequences like %20 (space) and %2F (forward slash).
+ *
+ * Examples:
+ * - "hello%20world" → "hello world"
+ * - "test+string" → "test string"
+ * - "path%2Fto%2Ffile" → "path/to/file"
+ *
+ * @param[out] dst Destination buffer for decoded string
+ * @param[in] src Source URL-encoded string
+ *
+ * @note Destination buffer must be at least as large as source
+ * @note Handles uppercase and lowercase hex digits (A-F, a-f)
+ * @note Null-terminates the output string
+ * @note Invalid escape sequences are passed through unchanged
+ *
+ * @see cgiExe()
+ */
 void
 url_decode(char *dst, const char *src)
 {
@@ -57,6 +78,42 @@ url_decode(char *dst, const char *src)
 	*dst = '\0';
 }
 
+/**
+ * @brief Execute CGI script and capture output
+ *
+ * Executes a CGI script in a separate process with proper environment setup,
+ * parameter passing, and output capture. Handles URL parameter parsing,
+ * security validation, and bidirectional communication through pipes.
+ *
+ * Security features:
+ * - Command injection prevention (alphanumeric + underscore only)
+ * - File existence validation
+ * - CGI directory restriction
+ * - Environment variable sanitization
+ *
+ * Process management:
+ * - Fork-exec model with pipe communication
+ * - Custom environment variables for parameters
+ * - Response status communication via dedicated pipe
+ * - Proper resource cleanup on all paths
+ *
+ * @param[in] file CGI script filename with optional parameters
+ * @param[in] cgi_argc Number of CGI arguments
+ * @param[in] cgi_argv Array of CGI argument strings
+ * @param[out] resp_status Pointer to store HTTP response status
+ *
+ * @return Dynamically allocated response string (caller must free)
+ * @retval Script output on success
+ * @retval HTTP error response on failure
+ *
+ * @note Caller must free returned string
+ * @note Requires C_FLAG to be set in app_flags
+ * @note Script must exist in configured CGI directory
+ * @note Parameters are passed as environment variables
+ * @note Child process communicates status via RESPONSE_PIPE environment variable
+ *
+ * @see url_decode(), parseRequest()
+ */
 char *
 cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 {

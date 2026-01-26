@@ -13,6 +13,28 @@
 extern uint32_t app_flags;
 extern uint32_t port_addr;
 
+/**
+ * @brief Create and bind an IPv6 TCP socket
+ *
+ * Creates a TCP socket using IPv6, binds it to the configured port address,
+ * and starts listening for incoming connections. The socket is configured
+ * to accept connections from any IPv6 address (in6addr_any).
+ *
+ * Uses SOMAXCONN for the listen backlog to allow the maximum number of
+ * pending connections supported by the system. Prints port information
+ * when debug mode is enabled.
+ *
+ * @retval Socket file descriptor on success
+ * @retval Exits program on failure (via exit(EXIT_FAILURE))
+ *
+ * @note Uses global variables app_flags and port_addr
+ * @note Requires root privileges for ports below 1024
+ * @note Prints debug information if D_FLAG is set
+ * @note Program exits on any socket operation failure
+ * @note IPv6 socket can also accept IPv4 connections (dual-stack)
+ *
+ * @see createSocket_v4(), handleSocket()
+ */
 int
 createSocket_v6(void)
 {

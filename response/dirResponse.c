@@ -9,6 +9,36 @@
 
 #include "./response.h"
 
+/**
+ * @brief Generate HTML directory listing response
+ *
+ * Creates a complete HTTP response containing an HTML directory listing
+ * for the specified URI path. The response includes proper HTTP headers
+ * and dynamically generated HTML content with clickable links to each
+ * directory entry.
+ *
+ * Features:
+ * - Skips hidden files (starting with '.')
+ * - Handles both trailing-slash and non-trailing-slash URIs
+ * - Dynamic memory allocation with proper error handling
+ * - HTML-formatted output with proper structure
+ * - Memory-efficient incremental string building
+ *
+ * @param[in] uri Directory path to list
+ * @param[out] resp_status Pointer to store HTTP response status code
+ *
+ * @return Dynamically allocated HTTP response string (caller must free)
+ * @retval Valid response pointer with status 200 on success
+ * @retval Error response pointer with status 500 on failure
+ * @retval NULL on severe memory allocation failure
+ *
+ * @note Caller must free the returned response string
+ * @note Sets *resp_status to 200 on success, 500 on error
+ * @note Response includes complete HTTP headers and HTML structure
+ * @note Hidden files (starting with '.') are filtered out
+ *
+ * @see parseRequest()
+ */
 char *
 dirResponse(char *uri, int *resp_status)
 {

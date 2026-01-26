@@ -17,6 +17,33 @@
 extern uint32_t app_flags;
 extern char *log_addr;
 
+/**
+ * @brief Process HTTP request and send response
+ *
+ * Handles a complete HTTP request-response cycle for a single client
+ * connection. Reads the HTTP request, parses it, generates an appropriate
+ * response, and sends both headers and content back to the client.
+ *
+ * Features:
+ * - Client IP address logging (IPv4 and IPv6 support)
+ * - UTC timestamp generation for log entries
+ * - HTTP request parsing and validation
+ * - File content streaming in chunks
+ * - Request/response logging to stdout (debug mode) or file
+ * - Proper connection cleanup and process termination
+ *
+ * @param[in] fd Client connection socket file descriptor
+ * @param[in] client Client address information (IPv4 or IPv6)
+ * @param[in] sockType Socket type (TYPE_SOCK_V4 or TYPE_SOCK_V6)
+ * @param[in] magic libmagic handle for MIME type detection
+ *
+ * @note This function runs in a child process and calls exit()
+ * @note Logs format: "IP timestamp "request" status bytes_sent"
+ * @note Closes connection and exits on read errors
+ * @note Uses memset_s() for secure memory clearing
+ *
+ * @see handleSocket(), parseRequest()
+ */
 void
 handleConnection(int fd,
     union sockaddr_union *client,

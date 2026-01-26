@@ -8,6 +8,28 @@
 
 #include "./socket.h"
 
+/**
+ * @brief Accept new connection and fork child process to handle it
+ *
+ * Accepts an incoming connection on the specified listening socket and
+ * creates a child process to handle the connection. Uses a union to
+ * support both IPv4 and IPv6 client address structures.
+ *
+ * The parent process closes the connection file descriptor and continues
+ * listening, while the child process handles the HTTP request processing
+ * through handleConnection().
+ *
+ * @param[in] sock Listening socket file descriptor
+ * @param[in] sockType Type of socket (TYPE_SOCK_V4 or TYPE_SOCK_V6)
+ * @param[in] magic libmagic handle for MIME type detection
+ *
+ * @note Function returns on accept() failure without terminating program
+ * @note Child process calls handleConnection() and then exits
+ * @note Parent process continues execution after closing client socket
+ * @note Program exits on fork() failure
+ *
+ * @see handleConnection(), createSocket_v4(), createSocket_v6()
+ */
 void
 handleSocket(int sock, enum sockType sockType, magic_t magic)
 {
