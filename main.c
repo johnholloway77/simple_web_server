@@ -115,10 +115,10 @@ main(int argc, char *argv[])
 
 	printf("Simple Server %d\n", getpid());
 
-	// need to create a block for select(2) to check the two sockets and see
-	// if they're ready
+	/* need to create a block for select(2) to check the two sockets and see
+	 if they're ready */
 
-	// initialize magic
+	/* initialize magic */
 	magic_t magic = magic_open(MAGIC_MIME_TYPE);
 	if (magic_load(magic, NULL) != 0) {
 		magic_close(magic);

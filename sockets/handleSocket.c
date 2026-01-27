@@ -37,7 +37,8 @@ handleSocket(int sock, enum sockType sockType, magic_t magic)
 	pid_t pid;
 	socklen_t length;
 
-	// I'm using a union as an excuse to practice with them and learn more.
+	/* I'm using a union as an excuse to practice with them and learn more.
+	 */
 	union sockaddr_union client;
 
 	length = (sockType == TYPE_SOCK_V4) ? sizeof(client.client_v4)
@@ -49,7 +50,7 @@ handleSocket(int sock, enum sockType sockType, magic_t magic)
 					 : (void *)&client.client_v6),
 		 &length)) < 0) {
 		perror("accept");
-		return; // -1;
+		return;
 	}
 
 	if ((pid = fork()) < 0) {
@@ -60,7 +61,7 @@ handleSocket(int sock, enum sockType sockType, magic_t magic)
 		handleConnection(fd, &client, sockType, magic);
 	}
 	else {
-		// if parent close fd
+		/* if parent close fd */
 		(void)close(fd);
 	}
 };

@@ -76,7 +76,6 @@ handleConnection(int fd,
 			 &client->client_v4.sin_addr,
 			 claddr,
 			 INET_ADDRSTRLEN)) == NULL) {
-			// perror("inet_net");
 			rip = "Unknown";
 		}
 	}
@@ -100,10 +99,10 @@ handleConnection(int fd,
 	}
 
 	if (rval > 0) {
-		// ensure string is null terminated
+		/* ensure string is null terminated */
 		buf[rval] = '\0';
 
-		// gets the first line of the request
+		/* gets the first line of the request */
 		char *req_token = strtok(buf, "\r\n");
 
 		FILE *file_ptr = NULL;

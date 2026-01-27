@@ -46,7 +46,7 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 		return (magic_descriptor(magic, file_des));
 	}
 
-	// Wowzers a lookup table!
+	/* Wowzers a lookup table! */
 	if (strcasecmp(ext, ".htm") == 0)
 		return ("text/html");
 	if (strcasecmp(ext, ".txt") == 0)
@@ -60,17 +60,17 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	if (strcasecmp(ext, ".json") == 0)
 		return ("application/json");
 	if (strcasecmp(ext, ".map") == 0)
-		return ("application/json"); // sourcemaps
+		return ("application/json");
 	if (strcasecmp(ext, ".wasm") == 0)
 		return ("application/wasm");
 
-	// CSS/JS variants
+	/* CSS/JS variants */
 	if (strcasecmp(ext, ".mjs") == 0)
 		return ("text/javascript");
 	if (strcasecmp(ext, ".cjs") == 0)
 		return ("text/javascript");
 
-	// Images
+	/* Images */
 	if (strcasecmp(ext, ".jpeg") == 0)
 		return ("image/jpeg");
 	if (strcasecmp(ext, ".svg") == 0)
@@ -80,7 +80,7 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	if (strcasecmp(ext, ".ico") == 0)
 		return ("image/x-icon");
 
-	// Fonts
+	/* Fonts */
 	if (strcasecmp(ext, ".woff") == 0)
 		return ("font/woff");
 	if (strcasecmp(ext, ".woff2") == 0)
@@ -90,7 +90,7 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	if (strcasecmp(ext, ".otf") == 0)
 		return ("font/otf");
 
-	// Audio / video (common)
+	/* Audio / video (common) */
 	if (strcasecmp(ext, ".mp3") == 0)
 		return ("audio/mpeg");
 	if (strcasecmp(ext, ".wav") == 0)
@@ -100,17 +100,17 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	if (strcasecmp(ext, ".webm") == 0)
 		return ("video/webm");
 
-	// Documents
+	/* Documents */
 	if (strcasecmp(ext, ".pdf") == 0)
 		return ("application/pdf");
 
-	// Archives / binaries
+	/* Archives / binaries */
 	if (strcasecmp(ext, ".zip") == 0)
 		return ("application/zip");
 	if (strcasecmp(ext, ".gz") == 0)
 		return ("application/gzip");
 	if (strcasecmp(ext, ".tgz") == 0)
-		return ("application/gzip"); // tar+gzip
+		return ("application/gzip");
 	if (strcasecmp(ext, ".tar") == 0)
 		return ("application/x-tar");
 
@@ -142,7 +142,8 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
  * @note Supports automatic index.html serving for directories
  * @note Generates directory listing HTML for directories without index
  *
- * @see get_mime_type_by_ext(), checkMethod(), checkHttp(), cgiExe(), dirResponse()
+ * @see get_mime_type_by_ext(), checkMethod(), checkHttp(), cgiExe(),
+ * dirResponse()
  */
 char *
 parseRequest(const char *req_str,
@@ -170,7 +171,7 @@ parseRequest(const char *req_str,
 	strlcpy(URI_relative, baseUrl, PATH_MAX);
 	strlcpy(URI_relative + baseLength, URI, PATH_MAX);
 
-	// check that the request header was properly parsed
+	/* check that the request header was properly parsed */
 	if (method && URI && http) {
 	}
 	else {
@@ -204,27 +205,29 @@ parseRequest(const char *req_str,
 		RETURN_RESP(RESPONSE_400);
 	}
 
-	// should now get index by default
+	/* should now get index by default */
 	if (strcmp(URI, "/") == 0) {
 		*file_ptr = fopen("index.html", "r");
 	}
 	else if (strncmp(URI, "/cgi-bin/", 9) == 0) {
 		if (app_flags & C_FLAG) {
-			char *cgi_URI = strdup(
-			    URI + 9); // get the first part of
-				      // /cgi-bin/someExeFile
-			cgi_URI = strtok(cgi_URI, "/"); // get the exec name;
+			/* get the first part of /cgi-bin/someExeFile */
+			char *cgi_URI = strdup(URI + 9);
+
+			/*get the exec name; */
+			cgi_URI = strtok(cgi_URI, "/");
 
 			if (cgi_URI == NULL || strcmp(cgi_URI, "") == 0) {
-				free(cgi_URI); // Free allocated memory before
-					       // returning error response
+				/* Free allocated memory before returning error
+				 * response */
+				free(cgi_URI);
 
 				free(str);
 				*resp_status = 400;
 				RETURN_RESP(RESPONSE_400)
 			}
 
-			char *cgi_argv[] = {URI + 1}; // pass directory path to
+			char *cgi_argv[] = {URI + 1};
 
 			char *response =
 			    cgiExe(cgi_URI, 1, cgi_argv, resp_status);
@@ -241,8 +244,8 @@ parseRequest(const char *req_str,
 		}
 	}
 	else {
-		// //check if file points to a directory
-		// //if directory, call cgi script
+		/* check if file points to a directory if directory, call cgi
+		 * script */
 		struct stat stat1;
 
 		if (lstat(URI + 1, &stat1) != 0) {
@@ -283,7 +286,7 @@ parseRequest(const char *req_str,
 			}
 		}
 		else {
-			// file is regular file
+			/* file is regular file */
 			*file_ptr = fopen(URI_relative, "r");
 		}
 	}
@@ -291,18 +294,18 @@ parseRequest(const char *req_str,
 	if (*file_ptr) {
 		int file_des = fileno(*file_ptr);
 
-		// Save filename to stack before freeing str to avoid
-		// use-after-free
+		/* Save filename to stack before freeing str to avoid
+		 * use-after-free */
 		char fileName[PATH_MAX];
 
 		if (strcmp(URI, "/") == 0) {
-			fileName[0] = '\0'; // Empty string for root
+			/* Empty string for root */
+			fileName[0] = '\0';
 		}
 		else {
 			strlcpy(fileName, URI + 1, sizeof(fileName));
 		}
 
-		// Now safe to free str
 		free(str);
 
 		const char *file_type;
@@ -330,8 +333,7 @@ parseRequest(const char *req_str,
 		return (header_buf);
 	}
 	else {
-		// this code is not reached. could delete it if need be...
-		// if nothing found
+		/* this code is not reached. could delete it if need be... */
 
 		free(str);
 		*resp_status = 404;

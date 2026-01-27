@@ -8,7 +8,6 @@
 
 #include "../flags/flags.h"
 
-// #define BACKLOG 5
 #define BACKLOG SOMAXCONN
 
 extern uint32_t app_flags;
@@ -43,14 +42,14 @@ createSocket_v4(void)
 
 	struct sockaddr_in server_v4;
 
-	// create both IPv4 and IPv6 sockets...
+	/* create both IPv4 and IPv6 sockets... */
 
 	if ((sock_v4 = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("opening IPv4 sock stream");
 		exit(EXIT_FAILURE);
 	}
 
-	// creating socket address information for IPv4
+	/* creating socket address information for IPv4 */
 	memset(&server_v4, 0, sizeof(server_v4));
 
 	server_v4.sin_family = PF_INET;
@@ -80,6 +79,6 @@ createSocket_v4(void)
 		exit(EXIT_FAILURE);
 	}
 
-	return (sock_v4); // Should revise this so that it only sends one socket
-			  // back...
+	/* Should revise this so that it only sends one socket back... */
+	return (sock_v4);
 }

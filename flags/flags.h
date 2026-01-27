@@ -1,24 +1,26 @@
 #ifndef FLAGS_H
 #define FLAGS_H
 
-#define C_FLAG 0x1  // Allow execution of CGIs from the given directory. See CGIs for details.
+/*  Allow execution of CGIs from the given directory. See CGIs for details  */
+#define C_FLAG 0x1
 
-#define D_FLAG \
-    0x2  // Enter debugging mode. That is, do not daemonize, only accept one
-         // connection at a time and enagble logging to stdout.
+/*  Enter debugging mode. That is, do not daemonize, only accept one
+ *  connection at a time and enagble logging to stdout. */
+#define D_FLAG 0x2
 
-#define H_FLAG 0x4  // Print a short usage summary and exit
+/*  Print a short usage summary and exit  */
+#define H_FLAG 0x4
 
-#define I_FLAG \
-    0x8  // Bind to the given IPv4 or IPv6 address. If not provided, sws will
-         // listen on all IPv4 and IPv6 addresses on this host
+/*  Bind to the given IPv4 or IPv6 address. If not provided, sws will
+ *  listen on all IPv4 and IPv6 addresses on this host  */
+#define I_FLAG 0x8
 
-#define L_FLAG 0x10  // Log all requests to the given file
+/*  Log all requests to the given file  */
+#define L_FLAG 0x10
 
-#define P_FLAG \
-    0x20  // listen on the given port. If not provided, sws will listen on port
-          // 8080
+/*  listen on the given port. If not provided, sws will listen on port 8080 */
+#define P_FLAG 0x20
 
 int setFlags(const int argc, char *argv[]);
 
-#endif  // FLAGS_H
+#endif // FLAGS_H

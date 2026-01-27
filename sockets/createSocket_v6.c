@@ -47,10 +47,11 @@ createSocket_v6(void)
 		exit(EXIT_FAILURE);
 	}
 
-	// creating socket address information for IPv6
+	/* creating socket address information for IPv6 */
 	memset(&server_v6, 0, sizeof(server_v6));
 	server_v6.sin6_family = PF_INET6;
-	server_v6.sin6_addr = in6addr_any; // wtf isn't this an all caps macro?
+	server_v6.sin6_addr =
+	    in6addr_any; /*  wtf isn't this an all caps macro? */
 	server_v6.sin6_port = htons(port_addr);
 
 	if (bind(sock_v6, (struct sockaddr *)&server_v6, sizeof(server_v6)) !=

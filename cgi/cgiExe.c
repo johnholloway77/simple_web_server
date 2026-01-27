@@ -27,8 +27,9 @@ extern char *cgi_addr;
  * @brief Decode URL-encoded string in place
  *
  * Converts URL-encoded (percent-encoded) characters back to their original
- * form and handles '+' to space conversion as per application/x-www-form-urlencoded
- * encoding. Processes escape sequences like %20 (space) and %2F (forward slash).
+ * form and handles '+' to space conversion as per
+ * application/x-www-form-urlencoded encoding. Processes escape sequences like
+ * %20 (space) and %2F (forward slash).
  *
  * Examples:
  * - "hello%20world" → "hello world"
@@ -110,7 +111,8 @@ url_decode(char *dst, const char *src)
  * @note Requires C_FLAG to be set in app_flags
  * @note Script must exist in configured CGI directory
  * @note Parameters are passed as environment variables
- * @note Child process communicates status via RESPONSE_PIPE environment variable
+ * @note Child process communicates status via RESPONSE_PIPE environment
+ * variable
  *
  * @see url_decode(), parseRequest()
  */
@@ -165,15 +167,16 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		return (RESPONSE_500);
 	}
 
-	// Child process
+	/* Child process */
 	if (pid == 0) {
-		dup2(pipe_stdout[1], STDOUT_FILENO); // Redirect stdout to pipe
+		/* Redirect stdout to pipe */
+		dup2(pipe_stdout[1], STDOUT_FILENO);
 
 		close(pipe_stdout[0]);
 		close(pipe_stdin[1]);
 		close(pipe_response[0]);
 
-		// Set environment variables for response pipe
+		/* Set environment variables for response pipe */
 		char res_pipe_fd_str[RESP_PIPE_BUFFER];
 		snprintf(res_pipe_fd_str,
 		    sizeof(res_pipe_fd_str),
@@ -181,10 +184,10 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		    pipe_response[1]);
 		setenv(RES_PIPE_NAME, res_pipe_fd_str, 1);
 
-		// set environment variable for request parameters
+		/* set environment variable for request parameters */
 		while ((buffer = strtok(param_string, "&")) != NULL) {
-			param_string =
-			    NULL; // Continue tokenizing the original string
+			/* Continue tokenizing the original string */
+			param_string = NULL;
 
 			name = strtok(buffer, "=");
 			val = strtok(NULL, "=");
@@ -203,9 +206,8 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 
 				setenv(decoded_name, decoded_val, 1);
 
-				// check for command injection
-				// This will only allow alphanumeric and
-				// underscores
+				/* check for command injection. This will only
+				 * allow alphanumeric and underscores */
 				for (char *p = decoded_name; *p; p++) {
 					if (!isalnum(*p) && *p != '_') {
 						exit(EXIT_FAILURE);
@@ -233,7 +235,8 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		else {
 			snprintf(path, PATH_MAX, "%s/%s", cgi_addr, file_name2);
 		}
-		// check if file exists. If not return 404
+
+		/* check if file exists. If not return 404 */
 		if (access(path, F_OK) != 0) {
 			free(file_name2);
 			*resp_status = 404;
@@ -256,14 +259,15 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 			return (RESPONSE_500);
 		}
 
-		exit(EXIT_SUCCESS); // Not reached if execvp is successful
+		/* Not reached if execvp is successful */
+		exit(EXIT_SUCCESS);
 	}
 
 	// Parent process
 	else {
-		close(pipe_stdout[1]); // Close unused write end
-		close(pipe_stdin[0]); // Close unused read end
-		close(pipe_stdin[1]); // Close unused write end
+		close(pipe_stdout[1]); /* Close unused write end */
+		close(pipe_stdin[0]); /* Close unused read end */
+		close(pipe_stdin[1]); /* Close unused write end */
 		close(pipe_response[1]);
 
 		ssize_t nread;
@@ -285,7 +289,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 		while ((nread = read(pipe_stdout[0], buffer, BUFFER)) > 0) {
 			char *temp = realloc(response, total_read + nread + 1);
 			if (temp == NULL) {
-				free(response); // Free the original memory
+				free(response); /* Free the original memory */
 				free(file_name2);
 				*resp_status = 500;
 				return (RESPONSE_500);
@@ -303,7 +307,9 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 			return (RESPONSE_500);
 		}
 
-		response[total_read] = '\0'; // Null-terminate the response
+		/* Null-terminate the response */
+		response[total_read] = '\0';
+
 		close(pipe_stdout[0]); // Close the read end of the pipe
 		close(pipe_response[0]);
 
