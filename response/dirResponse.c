@@ -9,6 +9,8 @@
 
 #include "./response.h"
 
+#define EXTRA_LENGTH_PATH PATH_MAX + 256
+
 /**
  * @brief Generate HTML directory listing response
  *
@@ -73,7 +75,7 @@ dirResponse(char *uri, int *resp_status)
 	snprintf(response, resp_len + 1, "%s", header);
 
 	int line_length;
-	char buffer[PATH_MAX + 256];
+	char buffer[EXTRA_LENGTH_PATH];
 	while ((dirp = readdir(dp)) != NULL) {
 		if (dirp->d_name[0] == '.') {
 			continue;
