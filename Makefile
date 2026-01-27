@@ -99,9 +99,12 @@ check: format-check lint
 fix: format
 	@echo "✅ Code formatting applied. Run 'make check' to verify."
 
-# Documentation generation target
+# Documentation generation targets
 .PHONY: docs
-docs:
+docs: docs-graphs
+
+.PHONY: docs-graphs
+docs-graphs:
 	@echo "🔍 Checking for Doxygen..."
 	@if command -v doxygen >/dev/null 2>&1; then \
 		echo "✅ Found doxygen: $$(which doxygen)"; \
@@ -122,6 +125,27 @@ docs:
 		exit 1; \
 	fi; \
 	echo ""; \
+	echo "🔍 Checking for Graphviz (for diagram generation)..."; \
+	if command -v dot >/dev/null 2>&1; then \
+		echo "✅ Found Graphviz: $$(which dot)"; \
+		echo "📊 Diagrams will be generated (call graphs, dependency graphs, etc.)"; \
+		have_dot=YES; \
+	elif [ -x /usr/local/bin/dot ]; then \
+		echo "✅ Found Graphviz: /usr/local/bin/dot"; \
+		echo "📊 Diagrams will be generated (call graphs, dependency graphs, etc.)"; \
+		have_dot=YES; \
+	else \
+		echo "⚠️  Graphviz not found - diagrams will be disabled"; \
+		echo "📦 To enable diagrams, install Graphviz:"; \
+		echo "   FreeBSD: pkg install graphviz"; \
+		echo "   Linux:   apt install graphviz (Debian/Ubuntu)"; \
+		echo "           dnf install graphviz (Fedora/RHEL)"; \
+		echo "   macOS:   brew install graphviz"; \
+		echo ""; \
+		echo "💡 Use 'make docs-no-graphs' to generate docs without diagrams"; \
+		have_dot=NO; \
+	fi; \
+	echo ""; \
 	echo "🔍 Checking for Doxygen configuration..."; \
 	if [ ! -d docs ]; then \
 		echo "📁 Creating docs directory..."; \
@@ -130,43 +154,75 @@ docs:
 	if [ -f docs/Doxyfile ]; then \
 		echo "✅ Found Doxygen config: docs/Doxyfile"; \
 		echo ""; \
-		echo "📚 Generating documentation..."; \
-		cd docs && $$doxygen_cmd Doxyfile; \
+		echo "🔧 Configuring diagram generation..."; \
+		if [ -f docs/Doxyfile.tmp ]; then rm docs/Doxyfile.tmp; fi; \
+		sed "s/HAVE_DOT[[:space:]]*=.*/HAVE_DOT = $$have_dot/" docs/Doxyfile > docs/Doxyfile.tmp; \
+		echo "📚 Generating documentation with diagrams..."; \
+		cd docs && $$doxygen_cmd Doxyfile.tmp; \
 		if [ $$? -eq 0 ]; then \
-			echo "🎉 Documentation generated successfully!"; \
+			echo "🎉 Documentation with diagrams generated successfully!"; \
 			echo "📖 Open docs/html/index.html to view documentation"; \
+			if [ "$$have_dot" = "YES" ]; then \
+				echo "📊 Interactive diagrams included: call graphs, include graphs, directory graphs"; \
+			fi; \
 		else \
 			echo "❌ Documentation generation failed!"; \
 			exit 1; \
 		fi; \
-	elif [ -f docs/doxyfile ]; then \
-		echo "✅ Found Doxygen config: docs/doxyfile"; \
-		echo ""; \
-		echo "📚 Generating documentation..."; \
-		cd docs && $$doxygen_cmd doxyfile; \
-		if [ $$? -eq 0 ]; then \
-			echo "🎉 Documentation generated successfully!"; \
-			echo "📖 Open docs/html/index.html to view documentation"; \
-		else \
-			echo "❌ Documentation generation failed!"; \
-			exit 1; \
-		fi; \
+		rm -f docs/Doxyfile.tmp; \
 	else \
 		echo "❌ Doxygen configuration file not found!"; \
-		echo "🔧 Please create a Doxygen configuration:"; \
-		echo "   1. cd docs"; \
-		echo "   2. doxygen -g Doxyfile"; \
-		echo "   3. Edit Doxyfile to configure your project"; \
-		echo "   4. Run 'make docs' again"; \
+		echo "🔧 Please create docs/Doxyfile first"; \
+		echo "💡 Run 'make docs-init' to create initial configuration"; \
+		exit 1; \
+	fi
+
+.PHONY: docs-no-graphs
+docs-no-graphs:
+	@echo "🔍 Checking for Doxygen..."
+	@if command -v doxygen >/dev/null 2>&1; then \
+		echo "✅ Found doxygen: $$(which doxygen)"; \
+		doxygen_cmd=doxygen; \
+	elif [ -x /usr/local/bin/doxygen ]; then \
+		echo "✅ Found doxygen: /usr/local/bin/doxygen"; \
+		doxygen_cmd=/usr/local/bin/doxygen; \
+	elif [ -x /usr/bin/doxygen ]; then \
+		echo "✅ Found doxygen: /usr/bin/doxygen"; \
+		doxygen_cmd=/usr/bin/doxygen; \
+	else \
+		echo "❌ Doxygen not found!"; \
+		echo "📦 Please install Doxygen first"; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	echo "📊 Generating documentation without diagrams..."; \
+	echo "💡 This is faster and doesn't require Graphviz"; \
+	echo ""; \
+	if [ ! -d docs ]; then \
+		echo "📁 Creating docs directory..."; \
+		mkdir -p docs; \
+	fi; \
+	if [ -f docs/Doxyfile ]; then \
+		echo "✅ Found Doxygen config: docs/Doxyfile"; \
 		echo ""; \
-		echo "💡 Suggested Doxyfile settings for this project:"; \
-		echo "   PROJECT_NAME = \"FreeBSD Web Server\""; \
-		echo "   INPUT = ../"; \
-		echo "   RECURSIVE = YES"; \
-		echo "   FILE_PATTERNS = *.c *.h"; \
-		echo "   EXCLUDE_PATTERNS = */build/* */.*"; \
-		echo "   GENERATE_HTML = YES"; \
-		echo "   GENERATE_LATEX = NO"; \
+		echo "🔧 Disabling diagram generation..."; \
+		if [ -f docs/Doxyfile.tmp ]; then rm docs/Doxyfile.tmp; fi; \
+		sed "s/HAVE_DOT[[:space:]]*=.*/HAVE_DOT = NO/" docs/Doxyfile > docs/Doxyfile.tmp; \
+		echo "📚 Generating documentation..."; \
+		cd docs && $$doxygen_cmd Doxyfile.tmp; \
+		if [ $$? -eq 0 ]; then \
+			echo "🎉 Documentation generated successfully!"; \
+			echo "📖 Open docs/html/index.html to view documentation"; \
+			echo "📊 ASCII diagrams included in main page"; \
+		else \
+			echo "❌ Documentation generation failed!"; \
+			exit 1; \
+		fi; \
+		rm -f docs/Doxyfile.tmp; \
+	else \
+		echo "❌ Doxygen configuration file not found!"; \
+		echo "🔧 Please create docs/Doxyfile first"; \
+		echo "💡 Run 'make docs-init' to create initial configuration"; \
 		exit 1; \
 	fi
 
@@ -213,5 +269,44 @@ docs-init:
 .PHONY: docs-clean
 docs-clean:
 	@echo "🧹 Cleaning generated documentation..."
-	@rm -rf docs/html docs/latex docs/man docs/xml
+	@rm -rf docs/html docs/latex docs/man docs/xml docs/Doxyfile.tmp
 	@echo "✅ Documentation cleaned"
+
+# Help target
+.PHONY: help
+help:
+	@echo "🔨 FreeBSD Web Server - Available Make Targets"
+	@echo ""
+	@echo "📦 Building:"
+	@echo "  make                  Build the web server binary"
+	@echo "  make debug           Build with debug symbols and AddressSanitizer"
+	@echo "  make clean           Remove binary and object files"
+	@echo "  make clean-obj       Remove only object files"
+	@echo ""
+	@echo "🔍 Code Quality:"
+	@echo "  make check           Run all code quality checks (format + lint)"
+	@echo "  make format-check    Check if code formatting is correct"
+	@echo "  make format          Auto-format code with clang-format"
+	@echo "  make lint            Run static analysis (cppcheck + cpplint)"
+	@echo "  make fix             Apply automatic formatting"
+	@echo ""
+	@echo "📚 Documentation:"
+	@echo "  make docs            Generate docs with diagrams (requires Graphviz)"
+	@echo "  make docs-graphs     Same as 'make docs' - generates with diagrams"
+	@echo "  make docs-no-graphs  Generate docs without diagrams (faster)"
+	@echo "  make docs-init       Initialize Doxygen configuration"
+	@echo "  make docs-clean      Clean generated documentation"
+	@echo ""
+	@echo "📋 Dependencies:"
+	@echo "  Documentation (required): doxygen"
+	@echo "  Documentation (optional): graphviz (for call graphs, dependency diagrams)"
+	@echo "  Code quality (optional): clang-format, cppcheck, cpplint"
+	@echo ""
+	@echo "📦 Installing Dependencies (FreeBSD):"
+	@echo "  pkg install doxygen graphviz llvm cppcheck py39-cpplint"
+	@echo ""
+	@echo "🚀 Quick Start:"
+	@echo "  make                  # Build the server"
+	@echo "  make check            # Verify code quality"
+	@echo "  make docs             # Generate documentation"
+	@echo "  ./simple_server -d    # Run in debug mode"

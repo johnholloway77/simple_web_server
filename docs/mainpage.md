@@ -38,6 +38,114 @@ The server uses a modular design with clear separation of concerns:
 2. **Child Processes** - Fork per connection for request handling
 3. **CGI Processes** - Separate processes for dynamic content execution
 
+## Architecture Diagrams
+
+### Request Processing Flow
+
+```
+┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
+│   Client    │    │ Main Process │    │ Child Process   │
+│  (Browser)  │    │   (select)   │    │ (handleConn)    │
+└──────┬──────┘    └──────┬───────┘    └─────────┬───────┘
+       │                  │                      │
+       │ HTTP Request     │                      │
+       ├─────────────────►│                      │
+       │                  │ accept()             │
+       │                  ├─────────────────────►│
+       │                  │ fork()               │
+       │                  │◄─────────────────────┤
+       │                  │                      │
+       │                  │                      │ parseRequest()
+       │                  │                      ├──────────┐
+       │                  │                      │          │
+       │                  │                      │◄─────────┘
+       │                  │                      │
+       │ HTTP Response    │                      │ send()
+       │◄─────────────────────────────────────────┤
+       │                  │                      │
+       │                  │                      │ exit()
+       │                  │                      ├──────────┐
+       │                  │ SIGCHLD              │          │
+       │                  │◄─────────────────────┘          │
+       │                  │ waitpid()            │          │
+       │                  ├─────────────┐        │          │
+       │                  │             │        │          │
+       │                  │◄────────────┘        │          X
+       │                  │                      │
+```
+
+### Module Dependency Structure
+
+```
+                    ┌─────────────┐
+                    │    main.c   │
+                    │ (entry point│
+                    │   select)   │
+                    └──────┬──────┘
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+    ┌──────────┐    ┌─────────────┐   ┌──────────┐
+    │ flags/   │    │  sockets/   │   │sig_handlers/│
+    │ setFlags │    │handleSocket │   │   reap.c   │
+    └──────────┘    └──────┬──────┘   └──────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │    sockets/     │
+                  │ handleConnection│
+                  └────────┬────────┘
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+              ▼            ▼            ▼
+         ┌──────────┐ ┌──────────┐ ┌──────────┐
+         │requests/ │ │response/ │ │   cgi/   │
+         │parseReq  │ │dirResponse│ │ cgiExe   │
+         └────┬─────┘ └──────────┘ └──────────┘
+              │
+         ┌────┼────┐
+         │    │    │
+         ▼    ▼    ▼
+    ┌────────┬────────┬────────┐
+    │checkHttp checkMethod   │
+    └─────────────────────────┘
+```
+
+### File Organization
+
+```
+server_revision/
+├── main.c ...................... Server initialization & main loop
+├── Makefile .................... Build configuration
+├── setup.sh .................... Environment setup script
+├── flags/
+│   ├── flags.h ................. Command-line flag definitions
+│   └── setFlags.c .............. Argument parsing & validation
+├── sockets/
+│   ├── socket.h ................ Socket interface definitions
+│   ├── createSocket_v4.c ....... IPv4 socket creation
+│   ├── createSocket_v6.c ....... IPv6 socket creation
+│   ├── handleSocket.c .......... Connection acceptance
+│   └── handleConnection.c ...... HTTP request processing
+├── requests/
+│   ├── requests.h .............. Request parsing interface
+│   ├── parseRequest.c .......... HTTP request parser
+│   ├── checkHttp.c ............. HTTP version validation
+│   └── checkMethod.c ........... HTTP method validation
+├── response/
+│   ├── response.h .............. Response interface
+│   ├── dirResponse.c ........... Directory listing generator
+│   └── dirResponse.h ........... Directory response definitions
+├── cgi/
+│   ├── cgi.h ................... CGI interface
+│   └── cgiExe.c ................ CGI script execution
+└── sig_handlers/
+    ├── reap.h .................. Signal handler interface
+    └── reap.c .................. SIGCHLD handler (legacy)
+```
+
 ## Security Features
 
 - **Path Traversal Protection** - Blocks attempts to access files outside document root

@@ -73,15 +73,33 @@ EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
 
 # Diagram generation
-HAVE_DOT               = NO
+HAVE_DOT               = YES
 CLASS_DIAGRAMS         = NO
 MSCGEN_PATH            =
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = YES
 CALL_GRAPH             = YES
 CALLER_GRAPH           = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+UML_LOOK               = NO
+UML_LIMIT_NUM_FIELDS   = 10
+TEMPLATE_RELATIONS     = NO
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
 GRAPHICAL_HIERARCHY    = NO
 DIRECTORY_GRAPH        = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+DOT_PATH               = /usr/local/bin/dot
+DOTFILE_DIRS           =
+MSCFILE_DIRS           =
+DIAFILE_DIRS           =
+DOT_GRAPH_MAX_NODES    = 50
+MAX_DOT_GRAPH_DEPTH    = 3
+DOT_TRANSPARENT        = YES
+DOT_MULTI_TARGETS      = YES
+GENERATE_LEGEND        = YES
 
 # Search engine
 SEARCHENGINE           = YES
