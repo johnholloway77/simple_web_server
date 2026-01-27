@@ -43,7 +43,7 @@ createSocket_v6(void)
 	struct sockaddr_in6 server_v6;
 
 	if ((sock_v6 = socket(PF_INET6, SOCK_STREAM, 0)) < 0) {
-		perror("opneing IPv6 sock stream");
+		perror("opening IPv6 sock stream");
 		exit(EXIT_FAILURE);
 	}
 

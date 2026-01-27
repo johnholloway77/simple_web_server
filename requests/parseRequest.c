@@ -249,10 +249,7 @@ parseRequest(const char *req_str,
 		struct stat stat1;
 
 		if (lstat(URI + 1, &stat1) != 0) {
-			/*
-			 * will actuall work to check if file exists
-			 * returns 404 if not
-			 */
+			/* check if file exists returns 404 if not */
 			free(str);
 
 			*resp_status = 404;
