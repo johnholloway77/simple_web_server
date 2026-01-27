@@ -1,0 +1,90 @@
+# Project identification
+PROJECT_NAME           = "FreeBSD Web Server"
+PROJECT_BRIEF          = "High-performance HTTP/1.0 web server for FreeBSD"
+PROJECT_VERSION        = "0.1-baseline"
+PROJECT_LOGO           =
+
+# Input configuration
+INPUT                  = ../ ./mainpage.md
+RECURSIVE              = YES
+FILE_PATTERNS          = *.c *.h
+EXCLUDE_PATTERNS       = */simple_server/* */.* */build/* *gpt_bottleneck* *blog* *performance* *CLAUDE.md* *BSD* *README.md*
+EXCLUDE                = ../simple_server ../gpt_bottleneck ../blog ../README.md ../CLAUDE.md
+
+# Main page configuration
+USE_MDFILE_AS_MAINPAGE = ./mainpage.md
+
+# C-specific settings
+OPTIMIZE_OUTPUT_FOR_C  = YES
+TYPEDEF_HIDES_STRUCT   = NO
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = NO
+EXTRACT_LOCAL_METHODS  = NO
+
+# Documentation extraction
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = NO
+MULTILINE_CPP_IS_BRIEF = NO
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+# HTML output
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_HEADER            =
+HTML_FOOTER            =
+HTML_STYLESHEET        =
+HTML_EXTRA_STYLESHEET  =
+HTML_EXTRA_FILES       =
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_TIMESTAMP         = YES
+HTML_DYNAMIC_SECTIONS  = YES
+HTML_INDEX_NUM_ENTRIES = 100
+
+# Navigation
+DISABLE_INDEX          = NO
+GENERATE_TREEVIEW      = YES
+ENUM_VALUES_PER_LINE   = 4
+TREEVIEW_WIDTH         = 250
+EXT_LINKS_IN_WINDOW    = NO
+
+# LaTeX output (disabled for web server docs)
+GENERATE_LATEX         = NO
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           =
+INCLUDE_FILE_PATTERNS  =
+PREDEFINED             =
+EXPAND_AS_DEFINED      =
+SKIP_FUNCTION_MACROS   = YES
+
+# Diagram generation
+HAVE_DOT               = NO
+CLASS_DIAGRAMS         = NO
+MSCGEN_PATH            =
+DIA_PATH               =
+HIDE_UNDOC_RELATIONS   = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+GRAPHICAL_HIERARCHY    = NO
+DIRECTORY_GRAPH        = YES
+
+# Search engine
+SEARCHENGINE           = YES
+
+# Performance
+DOT_MULTI_TARGETS      = NO
