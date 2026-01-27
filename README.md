@@ -99,10 +99,13 @@ This program has been carefully developed to handle memory management correctly,
 This project makes use of Claude, an AI assistant, in a specific and limited capacity for educational purposes. It's important to understand the role Claude plays in this development process:
 
 ### What Claude IS used for:
+- **Makefile Revisions**: Original Makefile has been improved upon for expediency as documentation, formatting, etc. options have increased. 
 - **Code review and analysis**: Identifying potential bugs, security vulnerabilities, and performance issues
 - **Documentation assistance**: Helping to structure and improve documentation
 - **Educational guidance**: Providing explanations of systems programming concepts and best practices
 - **Performance analysis**: Helping interpret profiling data and benchmark results
+- **Linter scripting**: assistance in ensuring cppcheck follows BSD coding standards over Google standards
+- **Formatting**: Assisted in writing a .clang-format file to ensure code style follows BSD coding styles
 
 ### What Claude is NOT used for:
 - **Code generation**: All code in this repository is human-written
