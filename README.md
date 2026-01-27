@@ -94,4 +94,30 @@ $ kill 31863
 ## Memory Management
 This program has been carefully developed to handle memory management correctly, ensuring no memory leaks. Valgrind was used extensively to check for and fix any memory issues.
 
+## Use of AI Tools (Claude)
+
+This project makes use of Claude, an AI assistant, in a specific and limited capacity for educational purposes. It's important to understand the role Claude plays in this development process:
+
+### What Claude IS used for:
+- **Code review and analysis**: Identifying potential bugs, security vulnerabilities, and performance issues
+- **Documentation assistance**: Helping to structure and improve documentation
+- **Educational guidance**: Providing explanations of systems programming concepts and best practices
+- **Performance analysis**: Helping interpret profiling data and benchmark results
+
+### What Claude is NOT used for:
+- **Code generation**: All code in this repository is human-written
+- **Implementation**: Problem-solving and coding decisions are made independently
+- **Shortcuts**: Claude does not write solutions or complete assignments
+
+### Educational Philosophy
+
+The goal is to use AI as a knowledgeable tutor and code reviewer, similar to how one might work with a senior engineer or teaching assistant. All code remains my own work, for better and worse. The AI serves as an additional layer of review and learning support, not as a replacement for understanding the underlying systems programming concepts.
+
+This approach ensures:
+- Deep learning of systems programming fundamentals
+- Ownership of all implementation decisions
+- Authentic problem-solving experience
+- Professional-quality code review practices
+
+For more details about my educational philosophy and approach to using AI tools in learning systems programming, please see my blog post: [Benchmarking and Rebuilding an Old Web Server - Part 1](https://jholloway.dev/posts/benchmarking-and-rebuilding-an-old-web-server---part-1/)
 
