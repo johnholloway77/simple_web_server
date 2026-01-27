@@ -121,7 +121,7 @@ cgiExe(char *file, int cgi_argc, char *cgi_argv[], int *resp_status)
 {
 	if (!(app_flags & C_FLAG)) {
 		*resp_status = 501;
-		return RESPONSE_501;
+		return (RESPONSE_501);
 	}
 
 	char *file_name = strtok(file, "?");

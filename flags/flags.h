@@ -5,7 +5,7 @@
 #define C_FLAG 0x1
 
 /*  Enter debugging mode. That is, do not daemonize, only accept one
- *  connection at a time and enagble logging to stdout. */
+ *  connection at a time and enable logging to stdout. */
 #define D_FLAG 0x2
 
 /*  Print a short usage summary and exit  */

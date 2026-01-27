@@ -24,8 +24,9 @@
  * @deprecated Use sigchld_handler() in main.c instead
  * @see sigchld_handler() in main.c
  */
-void reap()
+void
+reap()
 {
-    while (waitpid(-1, NULL, WNOHANG) > 0)
-        ;
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
 }
