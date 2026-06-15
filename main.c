@@ -18,47 +18,24 @@
 extern uint32_t app_flags;
 
 /**
- * @brief Signal handler for SIGCHLD to prevent zombie processes
+ * @brief Configure SIGCHLD disposition to auto-reap children
  *
- * Reaps all terminated child processes using waitpid() with WNOHANG option.
- * This handler is called asynchronously when child processes terminate and
- * ensures no zombie processes remain in the system.
+ * Sets SIGCHLD to SIG_IGN so no handler function runs on child exit, and
+ * sets the SA_NOCLDWAIT flag, which makes the kernel responsible for reaping
+ * terminated child processes. Because no handler runs, the parent's main
+ * loop is never interrupted by per-child-exit signals, which previously
+ * degraded throughput under load.
  *
- * @note This is a signal handler - must be async-signal-safe
- * @note Uses while loop to handle multiple simultaneous child deaths
- * @note Does not examine exit status of child processes
- *
- * @see setup_sigchld_handler()
- */
-void
-sigchld_handler()
-{
-	/* Reap all terminated child processes */
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		;
-}
-
-/**
- * @brief Configure SIGCHLD signal handler with proper flags
- *
- * Installs the sigchld_handler() function to handle SIGCHLD signals with
- * SA_RESTART flag to automatically restart interrupted system calls.
- * This prevents select() from returning EINTR when children terminate.
- *
- * @note Exits program on failure to install handler
- * @note SA_RESTART flag prevents EINTR errors in select()
- *
- * @see sigchld_handler()
+ * @note Child exit status is discarded (not collected via wait())
+ * @note Exits program on failure to install the disposition
  */
 void
 setup_sigchld_handler()
 {
 	struct sigaction sa;
-	// sa.sa_handler = sigchld_handler;
 	sa.sa_handler = SIG_IGN;
 	sigemptyset(&sa.sa_mask);
-	// sa.sa_flags = SA_RESTART; /* Automatically restart interrupted system
-	// calls */
+
 	sa.sa_flags = SA_NOCLDWAIT;
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
