@@ -1,4 +1,5 @@
 #include <sys/select.h>
+#include <sys/signal.h>
 #include <sys/wait.h>
 
 #include <errno.h>
@@ -53,10 +54,12 @@ void
 setup_sigchld_handler()
 {
 	struct sigaction sa;
-	sa.sa_handler = sigchld_handler;
+	// sa.sa_handler = sigchld_handler;
+	sa.sa_handler = SIG_IGN;
 	sigemptyset(&sa.sa_mask);
-	sa.sa_flags =
-	    SA_RESTART; /* Automatically restart interrupted system calls */
+	// sa.sa_flags = SA_RESTART; /* Automatically restart interrupted system
+	// calls */
+	sa.sa_flags = SA_NOCLDWAIT;
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
 		exit(EXIT_FAILURE);
@@ -146,7 +149,8 @@ main(int argc, char *argv[])
 		if (FD_ISSET(sock_v4, &ready)) {
 			handleSocket(sock_v4, TYPE_SOCK_V4, magic);
 		}
-		else if (FD_ISSET(sock_v6, &ready)) {
+
+		if (FD_ISSET(sock_v6, &ready)) {
 			handleSocket(sock_v6, TYPE_SOCK_V6, magic);
 		}
 	}
