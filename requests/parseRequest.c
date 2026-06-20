@@ -47,6 +47,8 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	}
 
 	/* Wowzers a lookup table! */
+	if (strcasecmp(ext, ".html") == 0)
+		return ("text/html");
 	if (strcasecmp(ext, ".htm") == 0)
 		return ("text/html");
 	if (strcasecmp(ext, ".txt") == 0)
@@ -65,6 +67,8 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 		return ("application/wasm");
 
 	/* CSS/JS variants */
+	if (strcasecmp(ext, ".js") == 0)
+		return ("text/javascript");
 	if (strcasecmp(ext, ".mjs") == 0)
 		return ("text/javascript");
 	if (strcasecmp(ext, ".cjs") == 0)
@@ -72,6 +76,8 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 
 	/* Images */
 	if (strcasecmp(ext, ".jpeg") == 0)
+		return ("image/jpeg");
+	if (strcasecmp(ext, ".jpg") == 0)
 		return ("image/jpeg");
 	if (strcasecmp(ext, ".svg") == 0)
 		return ("image/svg+xml");
