@@ -64,10 +64,10 @@ add_to_lists(struct pollfd **pfds,
 	(*clients)[index].fd = newfd;
 	(*clients)[index].state = READING;
 	(*clients)[index].in_buf = NULL;
-	(*clients)[index].input_cap = 0;
+	(*clients)[index].input_capacity = 0;
 	(*clients)[index].input_length = 0;
 	(*clients)[index].out_buf = NULL;
-	(*clients)[index].output_cap = 0;
+	(*clients)[index].output_capacity = 0;
 	(*clients)[index].output_length = 0;
 
 	(*clients)[index].file_ptr = NULL;

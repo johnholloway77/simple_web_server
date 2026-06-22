@@ -9,7 +9,6 @@
 
 enum client_state
 {
-	ACCEPTING,
 	READING,
 	PROCESSING,
 	SENDING_HEADER,
@@ -26,6 +25,7 @@ enum client_response
 	RESP_404, // Not found
 	RESP_500, // Internal Error
 	RESP_501, // CGI Not Enabled
+
 	NUM_CLIENT_RESP,
 };
 
@@ -36,9 +36,9 @@ typedef struct Client
 	FILE *file_ptr;
 
 	size_t input_length;
-	size_t input_cap;
+	size_t input_capacity;
 	size_t output_length;
-	size_t output_cap;
+	size_t output_capacity;
 
 	int fd;
 	enum client_state state;
