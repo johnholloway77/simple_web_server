@@ -39,6 +39,7 @@ typedef struct Client
 	size_t input_capacity;
 	size_t output_length;
 	size_t output_capacity;
+	size_t header_len;
 
 	int fd;
 	enum client_state state;
