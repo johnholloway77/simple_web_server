@@ -16,9 +16,9 @@ union sockaddr_union
 	struct sockaddr_in6 client_v6;
 };
 
-int createSocket_v4(void);
+int get_listener_v4(void);
 
-int createSocket_v6(void);
+int get_listener_v6(void);
 
 void handleSocket(int sock, enum sockType sockType, magic_t magic);
 

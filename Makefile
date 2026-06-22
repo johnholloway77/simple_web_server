@@ -8,8 +8,8 @@ DEBUG_CFLAGS = -Wall -Wextra -g -DDEBUG -fsanitize=address
 # Source files
 SOURCES = main.c \
     flags/setFlags.c \
-    sockets/createSocket_v4.c \
-    sockets/createSocket_v6.c \
+    sockets/get_listener_v4.c \
+    sockets/get_listener_v6.c \
     sockets/handleSocket.c \
     sockets/handleConnection.c \
     requests/parseRequest.c \
@@ -40,7 +40,7 @@ debug: CFLAGS = $(DEBUG_CFLAGS)
 debug: $(BINARY)
 
 .PHONY:  clean
-clean: 
+clean:
 	rm -rf $(BINARY) $(OBJECTS)
 
 #clean only the object files
