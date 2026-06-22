@@ -1,3 +1,4 @@
+#include <poll.h>
 #include <sys/select.h>
 #include <sys/signal.h>
 #include <sys/wait.h>
@@ -11,8 +12,10 @@
 
 #include "./flags/flags.h"
 #include "./sockets/socket.h"
+#include "client_conn/connections.h"
 
-#define SLEEP 5
+#define INITIAL_SIZE 32
+#define N_LISTENERS 2
 
 /* load global flags variables */
 extern uint32_t app_flags;
@@ -69,15 +72,11 @@ setup_sigchld_handler()
 int
 main(int argc, char *argv[])
 {
-	int sock_v4;
-	int sock_v6;
+	setup_sigchld_handler();
 
 	if (setFlags(argc, argv) < 0) {
 		printf("incorrect flags\nWrite some nice message here\n");
 	}
-
-	setup_sigchld_handler();
-
 	if (!(app_flags & D_FLAG)) {
 		/*
 		 * We are setting nochdir to -1 so that the daemon runs in the
@@ -90,14 +89,6 @@ main(int argc, char *argv[])
 		daemon(-1, 0);
 	}
 
-	sock_v4 = createSocket_v4();
-	sock_v6 = createSocket_v6();
-
-	printf("Simple Server %d\n", getpid());
-
-	/* need to create a block for select(2) to check the two sockets and see
-	 if they're ready */
-
 	/* initialize magic */
 	magic_t magic = magic_open(MAGIC_MIME_TYPE);
 	if (magic_load(magic, NULL) != 0) {
@@ -106,29 +97,81 @@ main(int argc, char *argv[])
 		return (EXIT_FAILURE);
 	}
 
+	printf("Simple Server %d\n", getpid());
+
+	int listener_v4 = get_listener_v4();
+	int listener_v6 = get_listener_v6();
+
+	int fd_size = INITIAL_SIZE;
+	int fd_count = 0;
+
+	struct pollfd *pfds = malloc(sizeof(*pfds) * fd_size);
+	Client *clients = malloc(sizeof(Client) * fd_size);
+	if (!pfds || !clients) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	pfds[0].fd = listener_v4;
+	pfds[0].events = POLLIN;
+	pfds[0].revents = 0;
+	pfds[1].fd = listener_v6;
+	pfds[1].events = POLLIN;
+	pfds[1].revents = 0;
+
+	// Numbers 0 and 1 are reserved for listeners
+	// Therefore, clients[0] and clients[1] are dummies
+	fd_count = 2;
+
+	// Let's get this baby spinnin!
 	for (;;) {
-		fd_set ready;
-		struct timeval to;
-
-		FD_ZERO(&ready);
-		FD_SET(sock_v4, &ready);
-		FD_SET(sock_v6, &ready);
-
-		to.tv_sec = SLEEP;
-		to.tv_usec = 0;
-
-		if (select(sock_v6 + 1, &ready, 0, 0, &to) < 0) {
-			if (errno != EINTR) {
-				perror("select");
+		int poll_count = poll(pfds, fd_count, -1);
+		if (-1 == poll_count) {
+			if (errno == EINTR) {
+				continue;
 			}
-			continue;
-		}
-		if (FD_ISSET(sock_v4, &ready)) {
-			handleSocket(sock_v4, TYPE_SOCK_V4, magic);
+			perror("poll");
+			exit(EXIT_FAILURE);
 		}
 
-		if (FD_ISSET(sock_v6, &ready)) {
-			handleSocket(sock_v6, TYPE_SOCK_V6, magic);
+		for (int i = 0; i < fd_count; i++) {
+			if (i < N_LISTENERS) {
+				if (pfds[i].revents & POLLIN) {
+					// accept_new_conn() //To do!
+				}
+				continue; // We don't want to treat a listener
+					  // as a client!
+			}
+
+			if (CLOSING == clients[i].state) {
+				close_conn(i, &fd_count, pfds, clients);
+				i--;
+				continue;
+			}
+
+			short revents = pfds[i].revents;
+			if (revents == 0) {
+				continue;
+			}
+
+			// Check if error and close if so
+			if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
+				close_conn(i, &fd_count, pfds, clients);
+				i--; // close_con will replace current value of
+				     // i, decrement to get the new value
+				continue;
+			}
+
+			if ((revents & POLLIN) &&
+			    (READING == clients[i].state)) {
+				// handle read for new request
+			}
+
+			if (revents & POLLOUT &&
+			    ((SENDING_HEADER == clients[i].state) ||
+				(SENDING_BODY == clients[i].state))) {
+				// handle writing
+			}
 		}
 	}
 
