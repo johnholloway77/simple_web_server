@@ -173,7 +173,7 @@ main(int argc, char *argv[])
 			if ((revents & POLLIN) &&
 			    (READING == clients[i].state)) {
 				// handle read for new request
-				do_read(i, &fd_count, pfds, clients);
+				do_read(i, clients);
 			}
 
 			if (revents & POLLOUT &&

@@ -42,7 +42,7 @@ append(struct Client *c, const char *data, size_t n)
 }
 
 void
-do_read(int i, int *fd_count, struct pollfd *pfds, Client *clients)
+do_read(int i, Client *clients)
 {
 	Client *c = &clients[i];
 
