@@ -7,6 +7,11 @@
 #include "./connections.h"
 #include <stdlib.h>
 
+/**
+ * @brief Remove a client connection and compact the poll/client arrays.
+ *
+ * See connections.h for full documentation.
+ */
 void
 close_conn(int i, int *fd_count, struct pollfd pfds[], Client clients[])
 {
@@ -27,6 +32,11 @@ close_conn(int i, int *fd_count, struct pollfd pfds[], Client clients[])
 	(*fd_count)--;
 }
 
+/**
+ * @brief Add a newly accepted socket to the poll and client arrays.
+ *
+ * See connections.h for full documentation.
+ */
 int
 add_to_lists(struct pollfd **pfds,
     Client **clients,

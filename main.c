@@ -48,27 +48,30 @@ setup_sigchld_handler()
 }
 
 /**
- * @brief Main entry point for the FreeBSD web server
+ * @brief Server entry point — initialises subsystems and runs the poll() event loop.
  *
- * Initializes the HTTP server with dual-stack IPv4/IPv6 support using a
- * select()-based event loop. The server operates in fork-per-connection mode,
- * creating a new child process for each incoming connection.
+ * Startup sequence:
+ *   1. Install SIGCHLD disposition (auto-reap via SA_NOCLDWAIT).
+ *   2. Parse command-line flags (port, document root, debug mode).
+ *   3. Optionally daemonise (unless -d flag is set).
+ *   4. Open the libmagic MIME-type database.
+ *   5. Create IPv4 and IPv6 listening sockets (both non-blocking).
+ *   6. Allocate the parallel pollfd / Client arrays (INITIAL_SIZE=32 slots,
+ *      indices 0-1 reserved for the listeners).
  *
- * The server supports optional daemon mode and comprehensive logging. It uses
- * libmagic for MIME type detection and handles SIGCHLD signals to prevent
- * zombie processes.
+ * Event loop:
+ *   - poll() blocks indefinitely (timeout = -1).
+ *   - EINTR is retried silently; any other poll() error is fatal.
+ *   - Listener slots (i < N_LISTENERS=2): POLLIN triggers accept_new_conn().
+ *   - Client slots: CLOSING state → close_conn() + index decrement.
+ *   - POLLERR / POLLHUP / POLLNVAL → close_conn() + index decrement.
+ *   - POLLIN + READING state → do_read().
+ *   - POLLOUT + SENDING_HEADER or SENDING_BODY state → (response send, TODO).
  *
- * @param[in] argc Number of command line arguments
- * @param[in] argv Array of command line argument strings
- *
- * @retval 0 Normal termination (never reached in practice)
- * @retval EXIT_FAILURE Fatal error during initialization
- *
- * @note The main loop runs indefinitely until the process is terminated
- * @note Requires root privileges for ports below 1024
- * @note Creates both IPv4 and IPv6 sockets regardless of availability
- *
- * @see setFlags(), createSocket_v4(), createSocket_v6(), handleSocket()
+ * @param argc  Argument count from the shell
+ * @param argv  Argument vector from the shell
+ * @return      EXIT_SUCCESS on clean shutdown (currently unreachable);
+ *              exits via exit() on fatal errors
  */
 int
 main(int argc, char *argv[])

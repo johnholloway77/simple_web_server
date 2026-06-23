@@ -5,11 +5,23 @@
 #include <sys/types.h>
 #include "../client_conn/connections.h"
 
-#define TEMP_BUFFER 2048
-#define MAX_REQUEST_SIZE 8192
+#define TEMP_BUFFER 2048      /**< Stack scratch buffer for each recv() call */
+#define MAX_REQUEST_SIZE 8192 /**< Hard ceiling on inbound request size (bytes) */
 
-/*
- * Grow a client's in buffer
+/**
+ * @brief Append received bytes to a client's input buffer, growing it as needed.
+ *
+ * If appending @p n bytes would push the total past MAX_REQUEST_SIZE, the
+ * client is transitioned to PROCESSING with resp_val RESP_400 so the event
+ * loop can send a 400 Bad Request and close the connection.
+ *
+ * The buffer is grown geometrically (doubling) via realloc() to keep
+ * amortised cost O(1) per byte.  On allocation failure the client is
+ * transitioned to CLOSING.
+ *
+ * @param c     Client whose input buffer should be extended
+ * @param data  Pointer to bytes to copy in
+ * @param n     Number of bytes to copy
  */
 void
 append(struct Client *c, const char *data, size_t n)
@@ -41,6 +53,26 @@ append(struct Client *c, const char *data, size_t n)
 	c->input_length += n;
 }
 
+/**
+ * @brief Read available bytes from a non-blocking client socket.
+ *
+ * Calls recv() in a loop until EAGAIN/EWOULDBLOCK signals that no more
+ * data is ready, then checks whether the complete HTTP request headers have
+ * arrived by searching for the "\r\n\r\n" terminator.
+ *
+ * State transitions:
+ *   - READING  → PROCESSING   when "\r\n\r\n" is found (sets header_len)
+ *   - READING  → PROCESSING   when the request exceeds MAX_REQUEST_SIZE
+ *                              (sets resp_val = RESP_400 via append())
+ *   - READING  → CLOSING      on EOF (recv returns 0) or unrecoverable error
+ *
+ * If neither a complete header nor an error is detected the function returns
+ * with the client still in READING state so the poll loop can wait for more
+ * data.
+ *
+ * @param i        Index of the client in @p clients
+ * @param clients  The Client array managed by the poll loop
+ */
 void
 do_read(int i, Client *clients)
 {
