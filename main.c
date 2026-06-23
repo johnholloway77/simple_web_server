@@ -13,6 +13,7 @@
 #include "./flags/flags.h"
 #include "./sockets/socket.h"
 #include "client_conn/connections.h"
+#include "requests/request2.h"
 
 #define INITIAL_SIZE 32
 #define N_LISTENERS 2
@@ -137,7 +138,14 @@ main(int argc, char *argv[])
 		for (int i = 0; i < fd_count; i++) {
 			if (i < N_LISTENERS) {
 				if (pfds[i].revents & POLLIN) {
-					// accept_new_conn() //To do!
+					int listener = 0 == i ? listener_v4
+							      : listener_v6;
+
+					accept_new_conn(listener,
+					    &pfds,
+					    &clients,
+					    &fd_count,
+					    &fd_size);
 				}
 				continue; // We don't want to treat a listener
 					  // as a client!
@@ -165,12 +173,15 @@ main(int argc, char *argv[])
 			if ((revents & POLLIN) &&
 			    (READING == clients[i].state)) {
 				// handle read for new request
+				do_read(i, &fd_count, pfds, clients);
 			}
 
 			if (revents & POLLOUT &&
 			    ((SENDING_HEADER == clients[i].state) ||
 				(SENDING_BODY == clients[i].state))) {
 				// handle writing
+
+				// To-do!
 			}
 		}
 	}

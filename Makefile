@@ -8,15 +8,11 @@ DEBUG_CFLAGS = -Wall -Wextra -g -DDEBUG -fsanitize=address
 # Source files
 SOURCES = main.c \
     flags/setFlags.c \
+    client_conn/connections.c \
+    client_conn/accept_new_conn.c \
     sockets/get_listener_v4.c \
     sockets/get_listener_v6.c \
-    sockets/handleSocket.c \
-    sockets/handleConnection.c \
-    requests/parseRequest.c \
-    requests/checkMethod.c \
-    requests/checkHttp.c \
-    cgi/cgiExe.c \
-    response/dirResponse.c
+    requests/do_read.c
 
 OBJECTS = $(SOURCES:.c=.o)
 

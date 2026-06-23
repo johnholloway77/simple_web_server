@@ -56,3 +56,9 @@ int add_to_lists(struct pollfd **pfds,
     int *fd_size);
 
 void close_conn(int i, int *fd_count, struct pollfd pfds[], Client clients[]);
+
+void accept_new_conn(int listener_fd,
+    struct pollfd **pfds,
+    Client **clients,
+    int *fd_count,
+    int *fd_size);
