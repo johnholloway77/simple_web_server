@@ -5,11 +5,13 @@
 #include <sys/types.h>
 #include "../client_conn/connections.h"
 
-#define TEMP_BUFFER 2048      /**< Stack scratch buffer for each recv() call */
-#define MAX_REQUEST_SIZE 8192 /**< Hard ceiling on inbound request size (bytes) */
+#define TEMP_BUFFER 2048 /**< Stack scratch buffer for each recv() call */
+#define MAX_REQUEST_SIZE                                                       \
+	8192 /**< Hard ceiling on inbound request size (bytes) */
 
 /**
- * @brief Append received bytes to a client's input buffer, growing it as needed.
+ * @brief Append received bytes to a client's input buffer, growing it as
+ * needed.
  *
  * If appending @p n bytes would push the total past MAX_REQUEST_SIZE, the
  * client is transitioned to PROCESSING with resp_val RESP_400 so the event
@@ -27,7 +29,7 @@ void
 append(struct Client *c, const char *data, size_t n)
 {
 	if (c->input_length + n > MAX_REQUEST_SIZE) {
-		c->resp_val = RESP_400;
+		c->resp_val = RESP_414;
 		c->state = PROCESSING;
 		return;
 	}

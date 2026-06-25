@@ -17,11 +17,11 @@
  */
 enum client_state
 {
-	READING,        /**< Accumulating inbound HTTP request bytes */
-	PROCESSING,     /**< Full headers received; building the response */
+	READING, /**< Accumulating inbound HTTP request bytes */
+	PROCESSING, /**< Full headers received; building the response */
 	SENDING_HEADER, /**< Writing HTTP response headers to the socket */
-	SENDING_BODY,   /**< Writing response body (file data or CGI output) */
-	CLOSING,        /**< Connection is done; pending removal from poll set */
+	SENDING_BODY, /**< Writing response body (file data or CGI output) */
+	CLOSING, /**< Connection is done; pending removal from poll set */
 	NUM_CLIENT_STATE,
 };
 
@@ -37,6 +37,7 @@ enum client_response
 	RESP_400, /**< 400 Bad Request */
 	RESP_403, /**< 403 Forbidden */
 	RESP_404, /**< 404 Not Found */
+	RESP_414, // URI too long
 	RESP_500, /**< 500 Internal Server Error */
 	RESP_501, /**< 501 Not Implemented (CGI disabled) */
 
@@ -60,27 +61,29 @@ enum client_response
  */
 typedef struct Client
 {
-	char *in_buf;   /**< Heap buffer accumulating the inbound request */
-	char *out_buf;  /**< Heap buffer holding the outbound response headers */
-	FILE *file_ptr; /**< Open file being streamed as the response body, or NULL */
+	char *in_buf; /**< Heap buffer accumulating the inbound request */
+	char *out_buf; /**< Heap buffer holding the outbound response headers */
+	FILE *file_ptr; /**< Open file being streamed as the response body, or
+			   NULL */
 
-	size_t input_length;    /**< Bytes written into in_buf so far */
-	size_t input_capacity;  /**< Allocated size of in_buf */
-	size_t output_length;   /**< Bytes written into out_buf so far */
+	size_t input_length; /**< Bytes written into in_buf so far */
+	size_t input_capacity; /**< Allocated size of in_buf */
+	size_t output_length; /**< Bytes written into out_buf so far */
 	size_t output_capacity; /**< Allocated size of out_buf */
-	size_t header_len;      /**< Byte length of the HTTP request headers
-	                         *   (including the trailing \r\n\r\n), set by
-	                         *   do_read() once the end-of-headers marker
-	                         *   is found */
+	size_t header_len; /**< Byte length of the HTTP request headers
+			    *   (including the trailing \r\n\r\n), set by
+			    *   do_read() once the end-of-headers marker
+			    *   is found */
 
-	int fd;                      /**< Socket file descriptor */
-	enum client_state state;     /**< Current lifecycle state */
-	enum client_response resp_val; /**< Response code to send; NUM_CLIENT_RESP
-	                                *   until determined by request processing */
+	int fd; /**< Socket file descriptor */
+	enum client_state state; /**< Current lifecycle state */
+	enum client_response
+	    resp_val; /**< Response code to send; NUM_CLIENT_RESP
+		       *   until determined by request processing */
 
-	char timestamp[24];                /**< RFC-formatted timestamp string */
+	char timestamp[24]; /**< RFC-formatted timestamp string */
 	char client_addr[INET6_ADDRSTRLEN]; /**< Dotted-decimal / colon-hex peer
-	                                     *   address string */
+					     *   address string */
 } Client;
 
 /**
@@ -98,7 +101,8 @@ typedef struct Client
  * Exits the process with EXIT_FAILURE if realloc() fails.
  *
  * @param pfds     Pointer to the poll array pointer (may be updated by realloc)
- * @param clients  Pointer to the Client array pointer (may be updated by realloc)
+ * @param clients  Pointer to the Client array pointer (may be updated by
+ * realloc)
  * @param newfd    File descriptor of the accepted socket
  * @param fd_count Pointer to the current number of active entries; incremented
  *                 on success
