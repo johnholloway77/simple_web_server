@@ -359,7 +359,7 @@ Test(cs631_proto, http_0_9_unsupported)
 	SETUP();
 	int rc = PARSE("GET / HTTP/0.9\r\n\r\n");
 	cr_assert_eq(rc, -1);
-	cr_assert_eq(resp, RESP_400);
+	cr_assert_eq(resp, RESP_505);
 }
 
 Test(cs631_proto, http_2_0_unsupported)
@@ -367,7 +367,7 @@ Test(cs631_proto, http_2_0_unsupported)
 	SETUP();
 	int rc = PARSE("GET / HTTP/2.0\r\n\r\n");
 	cr_assert_eq(rc, -1);
-	cr_assert_eq(resp, RESP_400);
+	cr_assert_eq(resp, RESP_505);
 }
 
 /* The length-guard payoff: "HTTP/1.0000" is NOT "HTTP/1.0" + junk. A naive

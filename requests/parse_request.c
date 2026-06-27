@@ -12,6 +12,18 @@
 	(*out).version = HTTP_VERSION_UNKNOWN;                                 \
 	return -1;
 
+#define DETERMINED_403                                                         \
+	*resp = RESP_403;                                                      \
+	return -1;
+
+#define DETERMINED_501                                                         \
+	*resp = RESP_501;                                                      \
+	return -1;
+
+#define DETERMINED_505                                                         \
+	*resp = RESP_505;                                                      \
+	return -1;
+
 enum http_method
 method_from_token(const char *tok, size_t len)
 {
@@ -53,13 +65,21 @@ version_from_token(const char *tok, size_t len)
 		return HTTP_1_1;
 	}
 
+	if (strncmp(tok, "HTTP/0.9", len) == 0) {
+		return HTTP_VERSION_UNSUPPORTED;
+	}
+
+	if (strncmp(tok, "HTTP/2.0", len) == 0) {
+		return HTTP_VERSION_UNSUPPORTED;
+	}
+
 	return HTTP_VERSION_UNKNOWN; // use for junk/incorrect
 }
 
 int
 path_has_traversal(const char *path, size_t len)
 {
-	return -1;
+	return strnstr(path, "../", len) ? 1 : 0;
 }
 
 int
@@ -106,5 +126,25 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
+	if ((*out).version == HTTP_VERSION_UNKNOWN) {
+		DETERMINED_400
+	}
+
+	if (path_has_traversal((*out).path, PATH_MAX)) {
+		DETERMINED_403
+	}
+
+	if ((*out).method == HTTP_METHOD_UNKNOWN) {
+		DETERMINED_501
+	}
+
+	if ((*out).version == HTTP_VERSION_UNSUPPORTED) {
+		DETERMINED_505
+	}
+
+	// Implement this in the future johnnyboy
+	if ((*out).method == HTTP_POST) {
+		DETERMINED_501
+	}
 	return 0;
 }

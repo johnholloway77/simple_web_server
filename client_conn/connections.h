@@ -40,6 +40,7 @@ enum client_response
 	RESP_414, // URI too long
 	RESP_500, /**< 500 Internal Server Error */
 	RESP_501, /**< 501 Not Implemented (CGI disabled) */
+	RESP_505, // HTTP version Not supported
 
 	NUM_CLIENT_RESP, /**< Sentinel — response not yet determined */
 };
