@@ -12,7 +12,9 @@ SOURCES = main.c \
     client_conn/accept_new_conn.c \
     sockets/get_listener_v4.c \
     sockets/get_listener_v6.c \
-    requests/do_read.c
+    requests/do_read.c \
+    requests/parse_request.c
+
 
 OBJECTS = $(SOURCES:.c=.o)
 
@@ -37,12 +39,54 @@ debug: $(BINARY)
 
 .PHONY:  clean
 clean:
-	rm -rf $(BINARY) $(OBJECTS)
+	rm -rf $(BINARY) $(OBJECTS)  $(TEST_BINARY)
 
 #clean only the object files
 .PHONY: clean-obj
 clean-obj:
 	rm -rf $(OBJECTS)
+
+# ─── Testing (Criterion) ──────────────────────────────────────────────
+# Unit tests for the pure functional core (parse_request, etc.).
+# Links ONLY the unit-under-test + its deps, never main.c — Criterion
+# supplies its own main(), and the parser is pure so it needs nothing
+# from the socket/event-loop layer.
+
+# Criterion install prefix (FreeBSD pkg puts it under /usr/local).
+CRITERION_PREFIX ?= /usr/local
+TEST_CFLAGS  = -std=c11 -Wall -Wextra -g -I requests -I $(CRITERION_PREFIX)/include
+TEST_LDFLAGS = -L $(CRITERION_PREFIX)/lib -lcriterion
+
+# Test sources and the production sources they exercise.
+TEST_SRC      = test_cases/test_parse_request.c
+TEST_UNIT_SRC = requests/parse_request.c
+TEST_BINARY      = test_cases/test_file
+TEST_BINARY_ASAN = test_cases/test_file_asan
+TEST_RUN_FLAGS ?= -j1 #--verbose
+
+
+.PHONY: test
+test: $(TEST_BINARY)
+	@echo "Running parse_request unit tests..."
+	@./$(TEST_BINARY) $(TEST_RUN_FLAGS)
+
+
+
+# AddressSanitizer build of the tests — catches the buffer-safety bugs
+# (read-past-len, path overflow) the suite is specifically hunting.
+.PHONY: test-asan
+test-asan: TEST_CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+test-asan: TEST_LDFLAGS += -fsanitize=address
+test-asan: clean-test $(TEST_BINARY)
+	@echo "Running parse_request unit tests under AddressSanitizer..."
+	@./$(TEST_BINARY) $(TEST_RUN_FLAGS)
+
+$(TEST_BINARY): $(TEST_SRC) $(TEST_UNIT_SRC)
+	$(CC) $(TEST_CFLAGS) -o $@ $(TEST_SRC) $(TEST_UNIT_SRC) $(TEST_LDFLAGS)
+
+.PHONY: clean-test
+clean-test:
+	rm -f $(TEST_BINARY)
 
 # Code quality and formatting targets
 .PHONY: format

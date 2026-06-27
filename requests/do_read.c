@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "../client_conn/connections.h"
+#include "parse_request.h"
 
 #define TEMP_BUFFER 2048 /**< Stack scratch buffer for each recv() call */
 #define MAX_REQUEST_SIZE                                                       \
@@ -116,6 +117,13 @@ do_read(int i, Client *clients)
 	}
 
 	c->header_len = (end - c->in_buf) + 4;
-	//	parse_request(c); //To be written
+	Request req;
+	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val) == 0) {
+		// build_response(c, &req);
+	}
+	else {
+		// build_error_response(c);
+	}
+
 	c->state = PROCESSING;
 }
