@@ -101,5 +101,10 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
+	// Check paths for validity
+	if ((*out).path[0] != '/') {
+		DETERMINED_400
+	}
+
 	return 0;
 }
