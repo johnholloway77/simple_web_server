@@ -68,7 +68,7 @@ parse_request(const char *buf,
     Request *out,
     enum client_response *resp)
 {
-	if (0 == len || !buf) {
+	if (0 == len || !buf || !strnstr(buf, "\r\n\r\n", len)) {
 		DETERMINED_400
 	}
 
@@ -77,14 +77,16 @@ parse_request(const char *buf,
 	char fmt[64] = {0};
 	char method[METHOD_MAX] = {0};
 	char version[VERSION_MAX] = {0};
+	char extra[10] = {0};
 
 	snprintf(fmt,
 	    sizeof(fmt),
-	    "%%%ds %%%ds %%%ds",
+	    "%%%ds %%%ds %%%ds %%%ds",
 	    METHOD_MAX - 1,
 	    PATH_MAX - 1,
-	    VERSION_MAX - 1);
-	int parsed = sscanf(buf, fmt, method, (*out).path, version);
+	    VERSION_MAX - 1,
+	    9);
+	int parsed = sscanf(buf, fmt, method, (*out).path, version, extra);
 
 	if (3 == parsed) {
 		// printf("Method %s\nPath: %s\nVersion %s\n",
