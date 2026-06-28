@@ -1,3 +1,4 @@
+#include <netinet/in.h>
 #include <sys/stat.h>
 
 #include <ctype.h>
@@ -6,12 +7,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
 #include "flags.h"
 
 // load or create global variables
 uint32_t app_flags = 0;
 uint32_t port_addr = 8080;
+char *bind_addr4;
+char *bind_addr6;
 char *cgi_addr;
 char *log_addr;
 
@@ -108,6 +113,50 @@ setFlags(const int argc, char *argv[])
 		else if (strcmp(argv[i], "-v") == 0) {
 			app_flags |= V_FLAG;
 			continue;
+		}
+
+		else if (strcmp(argv[i], "-bind4") == 0) {
+			if (i == argc - 1 || argv[i + 1][0] == '-') {
+				printf(
+				    "Invalid bind address \nProvide the a valid "
+				    "IPv4 address for bind "
+				    "flag. Eg: -bind4 192.168.1.1\n");
+				exit(EXIT_FAILURE);
+			}
+
+			i++;
+			bind_addr4 = argv[i];
+
+			struct in_addr tmp4;
+
+			if (inet_pton(AF_INET, bind_addr4, &tmp4) != 1) {
+				fprintf(stderr, "Invalid IPv4 address\n");
+				exit(EXIT_FAILURE);
+			}
+
+			app_flags |= B4_FLAG;
+		}
+
+		else if (strcmp(argv[i], "-bind6") == 0) {
+			if (i == argc - 1 || argv[i + 1][0] == '-') {
+				printf(
+				    "Invalid bind address \nProvide the a valid "
+				    "IPv6 address for bind "
+				    "flag. Eg: -bind6 2001:db8::20\n");
+				exit(EXIT_FAILURE);
+			}
+
+			i++;
+			bind_addr6 = argv[i];
+
+			struct in6_addr tmp6;
+
+			if (inet_pton(AF_INET6, bind_addr6, &tmp6) != 1) {
+				fprintf(stderr, "Invalid IPv6 address\n");
+				exit(EXIT_FAILURE);
+			}
+
+			app_flags |= B6_FLAG;
 		}
 
 		else if (strcmp(argv[i], "-l") == 0) {

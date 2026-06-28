@@ -17,7 +17,6 @@
 #include "debug/debug.h"
 
 #define INITIAL_SIZE 32
-#define N_LISTENERS 2
 
 /* load global flags variables */
 extern uint32_t app_flags;
@@ -114,9 +113,6 @@ main(int argc, char *argv[])
 
 	printf("Simple Server %d\n", getpid());
 
-	int listener_v4 = get_listener_v4();
-	int listener_v6 = get_listener_v6();
-
 	int fd_size = INITIAL_SIZE;
 	int fd_count = 0;
 
@@ -127,16 +123,39 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	pfds[0].fd = listener_v4;
-	pfds[0].events = POLLIN;
-	pfds[0].revents = 0;
-	pfds[1].fd = listener_v6;
-	pfds[1].events = POLLIN;
-	pfds[1].revents = 0;
+	int num_listeners = 0;
+	int listener_v4 = -1;
+	int listener_v6 = -1;
 
-	// Numbers 0 and 1 are reserved for listeners
-	// Therefore, clients[0] and clients[1] are dummies
-	fd_count = 2;
+	int use_v4 = (app_flags & B4_FLAG) || !(app_flags & B6_FLAG);
+	int use_v6 = (app_flags & B6_FLAG) || !(app_flags & B4_FLAG);
+
+	if (use_v4)
+		listener_v4 = get_listener_v4();
+
+	if (use_v6)
+		listener_v6 = get_listener_v6();
+
+	if (-1 != listener_v4) {
+		pfds[num_listeners].fd = listener_v4;
+		pfds[num_listeners].events = POLLIN;
+		pfds[num_listeners].revents = 0;
+		num_listeners++;
+	}
+
+	if (-1 != listener_v6) {
+		pfds[num_listeners].fd = listener_v6;
+		pfds[num_listeners].events = POLLIN;
+		pfds[num_listeners].revents = 0;
+		num_listeners++;
+	}
+
+	if (num_listeners == 0) {
+		fprintf(stderr, "no listeners could be created; exiting\n");
+		exit(EXIT_FAILURE);
+	}
+
+	fd_count = num_listeners;
 
 	// Let's get this baby spinnin!
 	for (;;) {
@@ -151,14 +170,11 @@ main(int argc, char *argv[])
 		}
 
 		for (int i = 0; i < fd_count; i++) {
-			if (i < N_LISTENERS) {
+			if (i < num_listeners) {
 				if (pfds[i].revents & POLLIN) {
-					int listener = 0 == i ? listener_v4
-							      : listener_v6;
-
 					DBG("New connection found\n");
 
-					accept_new_conn(listener,
+					accept_new_conn(pfds[i].fd,
 					    &pfds,
 					    &clients,
 					    &fd_count,

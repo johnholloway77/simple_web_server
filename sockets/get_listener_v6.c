@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <sys/socket.h>
 
 #include <netinet/in.h>
@@ -13,6 +14,7 @@
 
 extern uint32_t app_flags;
 extern uint32_t port_addr;
+extern char *bind_addr6;
 
 int
 get_listener_v6(void)
@@ -24,7 +26,7 @@ get_listener_v6(void)
 	socklen_t length;
 	struct sockaddr_in6 server_v6;
 
-	if ((listener_v6 = socket(PF_INET6, SOCK_STREAM, 0)) < 0) {
+	if ((listener_v6 = socket(AF_INET6, SOCK_STREAM, 0)) < 0) {
 		perror("opening IPv6 sock stream");
 		exit(EXIT_FAILURE);
 	}
@@ -49,15 +51,29 @@ get_listener_v6(void)
 
 	/* creating socket address information for IPv6 */
 	memset(&server_v6, 0, sizeof(server_v6));
-	server_v6.sin6_family = PF_INET6;
-	server_v6.sin6_addr =
-	    in6addr_any; /*  wtf isn't this an all caps macro? */
+	server_v6.sin6_family = AF_INET6;
+
+	if (app_flags & B6_FLAG) {
+		if (inet_pton(AF_INET6, bind_addr6, &server_v6.sin6_addr) !=
+		    1) {
+			fprintf(stderr, "invalid ipv6 bind address\n");
+			return -1;
+		}
+	}
+	else {
+		server_v6.sin6_addr =
+		    in6addr_any; /*  wtf isn't this an all caps macro? */
+	}
+
 	server_v6.sin6_port = htons(port_addr);
 
 	if (bind(listener_v6,
 		(struct sockaddr *)&server_v6,
 		sizeof(server_v6)) != 0) {
-		perror("binding listener_v6");
+		perror("bind listener_v6");
+		fprintf(stderr,
+		    "%s not assigned to local interface\n",
+		    bind_addr6);
 		exit(EXIT_FAILURE);
 	}
 

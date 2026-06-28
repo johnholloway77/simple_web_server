@@ -1,6 +1,7 @@
 #include <sys/socket.h>
 
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +14,7 @@
 
 extern uint32_t app_flags;
 extern uint32_t port_addr;
+extern char *bind_addr4;
 
 int
 get_listener_v4(void)
@@ -23,7 +25,7 @@ get_listener_v4(void)
 
 	struct sockaddr_in server_v4;
 
-	if ((listener_v4 = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+	if ((listener_v4 = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("opening IPv4 sock stream");
 		exit(EXIT_FAILURE);
 	}
@@ -44,14 +46,27 @@ get_listener_v4(void)
 	/* creating socket address information for IPv4 */
 	memset(&server_v4, 0, sizeof(server_v4));
 
-	server_v4.sin_family = PF_INET;
-	server_v4.sin_addr.s_addr = INADDR_ANY;
+	server_v4.sin_family = AF_INET;
+
+	if (app_flags & B4_FLAG) {
+		if (inet_pton(AF_INET, bind_addr4, &server_v4.sin_addr) != 1) {
+			fprintf(stderr, "invalid ipv4 address\n");
+			return -1;
+		}
+	}
+	else {
+		server_v4.sin_addr.s_addr = INADDR_ANY;
+	}
+
 	server_v4.sin_port = htons(port_addr);
 
 	if (bind(listener_v4,
 		(struct sockaddr *)&server_v4,
 		sizeof(server_v4)) != 0) {
-		perror("getting socket_v4 name");
+		perror("bind listener_v4");
+		fprintf(stderr,
+		    "%s not assigned to local interface\n",
+		    bind_addr4);
 		exit(EXIT_FAILURE);
 	}
 
