@@ -66,7 +66,8 @@ typedef struct Client
 	char *out_buf; /**< Heap buffer holding the outbound response headers */
 	FILE *file_ptr; /**< Open file being streamed as the response body, or
 			   NULL */
-
+	off_t file_size;
+	size_t body_sent;
 	size_t input_length; /**< Bytes written into in_buf so far */
 	size_t input_capacity; /**< Allocated size of in_buf */
 	size_t output_length; /**< Bytes written into out_buf so far */

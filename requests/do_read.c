@@ -1,3 +1,5 @@
+#include <magic.h>
+#include <stdio.h>
 #include <errno.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -5,10 +7,20 @@
 #include <sys/types.h>
 #include "../client_conn/connections.h"
 #include "parse_request.h"
+#include "./resolve_path.h"
 
 #define TEMP_BUFFER 2048 /**< Stack scratch buffer for each recv() call */
 #define MAX_REQUEST_SIZE                                                       \
 	8192 /**< Hard ceiling on inbound request size (bytes) */
+
+void
+close_resolve_path_ptr(ResolvedPath *rp)
+{
+	if (rp->file_ptr) {
+		fclose(rp->file_ptr);
+		rp->file_ptr = NULL;
+	}
+}
 
 /**
  * @brief Append received bytes to a client's input buffer, growing it as
@@ -77,7 +89,7 @@ append(struct Client *c, const char *data, size_t n)
  * @param clients  The Client array managed by the poll loop
  */
 void
-do_read(int i, Client *clients)
+do_read(int i, Client *clients, magic_t magic)
 {
 	Client *c = &clients[i];
 
@@ -117,13 +129,27 @@ do_read(int i, Client *clients)
 	}
 
 	c->header_len = (end - c->in_buf) + 4;
-	Request req;
-	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val) == 0) {
-		// build_response(c, &req);
+
+	Request req = {0};
+	ResolvedPath rp = {0};
+
+	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val) == 0 &&
+	    resolve_path(c, &req, &rp, magic) == 0) {
+		printf(
+		    "Parse request received.\nExiting at do_read.c\tline 124\n");
+		exit(EXIT_SUCCESS);
+
+		// TO DO
+		// build_response(c, &rp, magic);
 	}
 	else {
+		printf(
+		    "Parse request received.\nSuccessful Error test\nExiting at do_read.c\tline 148\n");
+		exit(EXIT_SUCCESS);
 		// build_error_response(c);
 	}
+
+	close_resolve_path_ptr(&rp);
 
 	c->state = PROCESSING;
 }

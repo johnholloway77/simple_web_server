@@ -92,7 +92,7 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
-	// printf("request:\n%s\n", buf);
+	printf("request:\n%s\n", buf);
 
 	char fmt[64] = {0};
 	char method[METHOD_MAX] = {0};
@@ -109,10 +109,10 @@ parse_request(const char *buf,
 	int parsed = sscanf(buf, fmt, method, (*out).path, version, extra);
 
 	if (3 == parsed) {
-		// printf("Method %s\nPath: %s\nVersion %s\n",
-		//     method,
-		//     (*out).path,
-		//     version);
+		printf("Method %s\nPath: %s\nVersion %s\n",
+		    method,
+		    (*out).path,
+		    version);
 
 		(*out).method = method_from_token(method, METHOD_MAX);
 		(*out).version = version_from_token(version, VERSION_MAX);

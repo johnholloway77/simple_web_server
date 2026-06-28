@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../client_conn/connections.h"
+#include <magic.h>
 
 /**
  * @brief Read available bytes from a client socket and detect end-of-headers.
@@ -13,4 +14,4 @@
  * @param i        Index of the client in the @p clients array
  * @param clients  The Client array managed by the poll loop
  */
-void do_read(int i, Client *clients);
+void do_read(int i, Client *clients, magic_t magic);
