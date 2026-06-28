@@ -1,0 +1,81 @@
+name: simple-server-ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    name: Build & Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libmagic-dev pkg-config
+          # Criterion: package name is libcriterion-dev on recent Ubuntu.
+          # CONFIRM it exists on ubuntu-latest; if not, build from source.
+          sudo apt-get install -y libcriterion-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm libmagic pkg-config criterion
+
+      - name: Build
+        run: gmake
+        # macOS: 'gmake' exists only if you 'brew install make'. Homebrew
+        # 'make' = gmake. OR just call 'make' on macOS+Linux (GNU make is
+        # the system make on both). Only FreeBSD needs the gmake distinction.
+
+      - name: Test
+        run: gmake test-all
+
+  build-test-freebsd:
+    name: Build & Test (freebsd)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cross-platform-actions/action@v0.27.0   # CONFIRM latest tag
+        with:
+          operating_system: freebsd
+          version: '14.2'
+          shell: bash
+          run: |
+            sudo pkg update
+            sudo pkg install -y gmake llvm libmagic pkgconf criterion
+            gmake
+            gmake test-all
+
+  build-illumos:
+    name: Build & Smoke (illumos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/omnios-vm@v1                   # CONFIRM latest tag
+        with:
+          usesh: true
+          prepare: |
+            pkg install developer/gcc14 system/library/libmagic || true
+          run: |
+            gmake CC=gcc          # clang may not be default on OmniOS
+            ./simple_server -v -p 8080 &
+            sleep 2
+            curl -fsS http://127.0.0.1:8080/ >/dev/null && echo "smoke OK"
+
+  docs:
+    name: Documentation (Doxygen)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+      - run: gmake docs   # requires docs/Doxyfile committed to repo
