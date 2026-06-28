@@ -66,7 +66,7 @@ Replace [options] with any applicable flags and [path] with the options below. O
 
 **−c *dir*** Allow execution of CGIs from the given directory. 
 
-**−d** Enter debugging mode. That is, do not daemonize, only accept one connection at a time
+**−v** Enter verbose mode. That is, do not daemonize, only accept one connection at a time
 and enable logging to stdout.
 
 **−i *address*** Bind to the given IPv4 or IPv6 address. If not provided, Simple_Server will listen on all IPv4 and
@@ -123,4 +123,3 @@ This approach ensures:
 - Professional-quality code review practices
 
 For more details about my educational philosophy and approach to using AI tools in learning systems programming, please see my blog post: [Benchmarking and Rebuilding an Old Web Server - Part 1](https://jholloway.dev/posts/benchmarking-and-rebuilding-an-old-web-server---part-1/)
-

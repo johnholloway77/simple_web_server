@@ -4,9 +4,9 @@
 /*  Allow execution of CGIs from the given directory. See CGIs for details  */
 #define C_FLAG 0x1
 
-/*  Enter debugging mode. That is, do not daemonize, only accept one
+/*  Enter Verbose mode. That is, do not daemonize, only accept one
  *  connection at a time and enable logging to stdout. */
-#define D_FLAG 0x2
+#define V_FLAG 0x2
 
 /*  Print a short usage summary and exit  */
 #define H_FLAG 0x4

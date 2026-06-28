@@ -61,13 +61,13 @@ get_listener_v4(void)
 		perror("getting listener_v4 name");
 		exit(EXIT_FAILURE);
 	}
-	if (app_flags & D_FLAG) {
+	if (app_flags & V_FLAG) {
 		(void)printf("listener_v4 has port #%d\n",
 		    ntohs(server_v4.sin_port));
 	}
 
 	if (listen(listener_v4, BACKLOG) < 0) {
-		if (app_flags & D_FLAG) {
+		if (app_flags & V_FLAG) {
 			perror("listen listener_v4");
 		}
 		exit(EXIT_FAILURE);

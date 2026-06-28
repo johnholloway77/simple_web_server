@@ -68,7 +68,7 @@ get_listener_v6(void)
 		exit(EXIT_FAILURE);
 	}
 
-	if (app_flags & D_FLAG) {
+	if (app_flags & V_FLAG) {
 		(void)printf("listener_v6 has port #%d\n",
 		    ntohs(server_v6.sin6_port));
 	}

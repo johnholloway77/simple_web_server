@@ -105,8 +105,8 @@ setFlags(const int argc, char *argv[])
 			continue;
 		}
 
-		if (strcmp(argv[i], "-d") == 0) {
-			app_flags |= D_FLAG;
+		if (strcmp(argv[i], "-v") == 0) {
+			app_flags |= V_FLAG;
 			continue;
 		}
 

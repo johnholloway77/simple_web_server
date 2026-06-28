@@ -91,7 +91,7 @@ main(int argc, char *argv[])
 // There is a difference between build DEBUG and terminal display debug...should
 // rename it verbose...
 #ifndef DEBUG
-	if (!(app_flags & D_FLAG)) {
+	if (!(app_flags & V_FLAG)) {
 		/*
 		 * We are setting nochdir to -1 so that the daemon runs in the
 		 * current working directory. Otherwise entering the correct url
