@@ -3,4 +3,4 @@
 
 char *cgiExe(char *file, int cgi_argc, char *cgi_args[], int *resp_status);
 
-#endif  // CGI_H
+#endif // CGI_H

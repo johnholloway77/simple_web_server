@@ -3,4 +3,4 @@
 
 void reap();
 
-#endif  // REAP_H
+#endif // REAP_H
