@@ -3,11 +3,16 @@
 #include <errno.h>
 #include <poll.h>
 #include <sys/socket.h>
-#include <string.h>
 #include <sys/types.h>
 #include "../client_conn/connections.h"
 #include "parse_request.h"
 #include "./resolve_path.h"
+
+#ifdef __linux__
+#include <bsd/string.h>
+#else
+#include <string.h>
+#endif
 
 #define TEMP_BUFFER 2048 /**< Stack scratch buffer for each recv() call */
 #define MAX_REQUEST_SIZE                                                       \

@@ -1,8 +1,13 @@
 #include "./parse_request.h"
 #include <stddef.h>
-#include <string.h>
 #include <stdio.h>
 #include <limits.h>
+
+#ifdef __linux__
+#include <bsd/string.h>
+#else
+#include <string.h>
+#endif
 
 #include "../debug/debug.h"
 

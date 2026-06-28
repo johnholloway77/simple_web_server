@@ -19,7 +19,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang libmagic-dev pkg-config
+          sudo apt-get install -y clang libmagic-dev pkg-config libbsd-dev
           # Criterion: package name is libcriterion-dev on recent Ubuntu.
           # CONFIRM it exists on ubuntu-latest; if not, build from source.
           sudo apt-get install -y libcriterion-dev
