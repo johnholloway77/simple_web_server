@@ -105,12 +105,12 @@ setFlags(const int argc, char *argv[])
 			continue;
 		}
 
-		if (strcmp(argv[i], "-v") == 0) {
+		else if (strcmp(argv[i], "-v") == 0) {
 			app_flags |= V_FLAG;
 			continue;
 		}
 
-		if (strcmp(argv[i], "-l") == 0) {
+		else if (strcmp(argv[i], "-l") == 0) {
 			if (i == argc - 1 || argv[i + 1][0] == '-') {
 				printf("Invalid log file \nProvide the a valid "
 				       "address for log "
@@ -134,7 +134,7 @@ setFlags(const int argc, char *argv[])
 			continue;
 		}
 
-		if (strcmp(argv[i], "-p") == 0) {
+		else if (strcmp(argv[i], "-p") == 0) {
 			if (i == argc - 1 ||
 			    checkPortNumber(argv[i + 1]) == 0) {
 				printf("Invalid port number\nProvide port "
@@ -159,6 +159,10 @@ setFlags(const int argc, char *argv[])
 
 			i++;
 			continue;
+		}
+		else {
+			printf("Invalid flag %s\n", argv[i]);
+			exit(EXIT_FAILURE);
 		}
 	}
 
