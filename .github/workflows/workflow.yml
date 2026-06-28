@@ -46,14 +46,13 @@ jobs:
       - uses: cross-platform-actions/action@v0.27.0
         with:
           operating_system: freebsd
-          version: '14.3'        # match the current pkg repo
+          version: '14.2'              # the image that actually exists
           shell: bash
-          environment_variables: IGNORE_OSVERSION   # belt-and-suspenders
           run: |
             export IGNORE_OSVERSION=yes
             export ASSUME_ALWAYS_YES=yes
-            sudo pkg update -f
-            sudo pkg install -y gmake llvm libmagic pkgconf criterion
+            sudo -E pkg update -f
+            sudo -E pkg install -y gmake llvm libmagic pkgconf criterion
             gmake
             gmake test-all
 
