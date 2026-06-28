@@ -12,7 +12,6 @@
 #define TEMP_BUFFER 2048 /**< Stack scratch buffer for each recv() call */
 #define MAX_REQUEST_SIZE                                                       \
 	8192 /**< Hard ceiling on inbound request size (bytes) */
-}
 
 /**
  * @brief Append received bytes to a client's input buffer, growing it as
