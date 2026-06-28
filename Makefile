@@ -1,22 +1,101 @@
 # ═══════════════════════════════════════════════════════════════════════
-#  FreeBSD poll-based HTTP server — Makefile
+#  poll-based HTTP server — Makefile (portable)
+#  Primary target: FreeBSD.  Also builds on Linux, macOS, OmniOS/illumos.
+# ═══════════════════════════════════════════════════════════════════════
+#
+#  GNU make required. On FreeBSD/OmniOS the base 'make' is BSD/Sun make —
+#  use gmake. On Linux/macOS the system 'make' IS GNU make.
+#
+#  libmagic is OPTIONAL. It is a fallback for MIME detection; the static
+#  extension table is the primary source. Define USE_LIBMAGIC to compile
+#  the libmagic fallback in. It is ON by default everywhere EXCEPT OmniOS,
+#  where libmagic is not reliably packaged.
+#    -> This requires the C source to guard <magic.h> and all magic_*()
+#       calls behind  #ifdef USE_LIBMAGIC  (see note at bottom of file).
 # ═══════════════════════════════════════════════════════════════════════
 
-# ─── GNU make required ─────────────────────────────────────────────────
-# BSD make (FreeBSD base system 'make') is not compatible with this
-# Makefile. Use gmake: pkg install gmake
+# ─── Platform detection ────────────────────────────────────────────────
+UNAME_S := $(shell uname -s)
 
+# ─── Compiler (overridable: `gmake CC=gcc`) ────────────────────────────
+# clang is the native compiler on FreeBSD and macOS. On OmniOS, gcc is the
+# norm, so the OmniOS recipe below flips CC to gcc.
+CC ?= clang
 
-# Compiler
-CC = clang
+# ─── Base flags ────────────────────────────────────────────────────────
+CFLAGS  ?= -Wall -Wextra -std=c11
+LIBS    =
+LDFLAGS =
 
-# Compiler flags
-CFLAGS       = -Wall -Wextra -std=c11
-DEBUG_CFLAGS = -Wall -Wextra -std=c11 -g -DDEBUG -fsanitize=address \
-               -fno-omit-frame-pointer
-DEBUG_LDFLAGS = -fsanitize=address
+# libmagic on by default; switched off for OmniOS further down.
+USE_LIBMAGIC ?= 1
 
-# Source files
+# ═══════════════════════════════════════════════════════════════════════
+#  Per-platform configuration
+# ═══════════════════════════════════════════════════════════════════════
+
+# ─── FreeBSD (PRIMARY) ─────────────────────────────────────────────────
+# libmagic + headers ship in the base system; nothing extra to point at.
+# Criterion installs under /usr/local via pkg.
+ifeq ($(UNAME_S),FreeBSD)
+    CC ?= clang
+    CRITERION_PREFIX ?= /usr/local
+    # base-system libmagic is on the default search path; no -I/-L needed
+endif
+
+# ─── Linux ─────────────────────────────────────────────────────────────
+# libmagic-dev and criterion install to standard /usr paths.
+ifeq ($(UNAME_S),Linux)
+    CC ?= clang
+    CRITERION_PREFIX ?= /usr
+    # libmagic headers/lib on default path via libmagic-dev; no -I/-L needed
+endif
+
+# ─── macOS (Darwin) ────────────────────────────────────────────────────
+# Homebrew formulae are keg-only and NOT on the default search path. On
+# Apple Silicon the prefix is /opt/homebrew. Resolve each prefix via brew.
+ifeq ($(UNAME_S),Darwin)
+    CC ?= clang
+    BREW_MAGIC     := $(shell brew --prefix libmagic 2>/dev/null)
+    BREW_CRITERION := $(shell brew --prefix criterion 2>/dev/null)
+    CRITERION_PREFIX ?= $(BREW_CRITERION)
+    CFLAGS  += -I$(BREW_MAGIC)/include
+    LIBS    += -L$(BREW_MAGIC)/lib
+endif
+
+# ─── OmniOS / illumos (SunOS) ──────────────────────────────────────────
+# UNCONFIRMED: the following package/path values were never verified on a
+# live OmniOS build. Adjust after checking on the box:
+#   gmake : developer/build/gnu-make   (confirm: pkg search -r gmake)
+#   gcc   : developer/gcc14
+#   crit. : likely NOT in IPS; may need pkgsrc  (confirm: pkg search -r criterion)
+#   magic : NOT found under system/library/libmagic  (confirm: pkg search -r libmagic)
+# Because libmagic is unconfirmed, libmagic is DISABLED here by default.
+ifeq ($(UNAME_S),SunOS)
+    CC ?= gcc
+    USE_LIBMAGIC = 0
+    # gcc on OmniOS lives here; adjust if your gcc14 install differs
+    CRITERION_PREFIX ?= /opt/ooce
+    # If you locate libmagic (e.g. via pkgsrc /opt/local), you can re-enable:
+    #   USE_LIBMAGIC = 1
+    #   CFLAGS += -I/opt/local/include
+    #   LIBS   += -L/opt/local/lib
+endif
+
+# ─── Apply libmagic toggle ─────────────────────────────────────────────
+# When enabled: define the macro (so the C guards compile the fallback in)
+# and link the library. When disabled: neither, and the C falls back to the
+# extension table only.
+ifeq ($(USE_LIBMAGIC),1)
+    CFLAGS += -DUSE_LIBMAGIC
+    LIBS   += -lmagic
+endif
+
+# ─── Debug flags (symbols + ASan + -DDEBUG) ────────────────────────────
+DEBUG_CFLAGS  = $(CFLAGS) -g -DDEBUG -fsanitize=address -fno-omit-frame-pointer
+DEBUG_LDFLAGS = $(LDFLAGS) -fsanitize=address
+
+# ─── Source files ──────────────────────────────────────────────────────
 SOURCES = main.c \
     flags/setFlags.c \
     client_conn/connections.c \
@@ -27,21 +106,12 @@ SOURCES = main.c \
     requests/parse_request.c \
     requests/resolve_path.c
 
-# Libraries to link
-LIBS = -lmagic
-
-# Output binaries
 BINARY       = simple_server
 DEBUG_BINARY = simple_server_debug
 
 # ─── Build directories ─────────────────────────────────────────────────
-# Release and debug objects live in SEPARATE trees so they never collide
-# on timestamp. This is what makes `make debug` reliably rebuild with the
-# debug flags without needing a `clean` first — Make can tell a release .o
-# from a debug .o because they're at different paths.
 RELEASE_DIR = build/release
 DEBUG_DIR   = build/debug
-
 RELEASE_OBJECTS = $(SOURCES:%.c=$(RELEASE_DIR)/%.o)
 DEBUG_OBJECTS   = $(SOURCES:%.c=$(DEBUG_DIR)/%.o)
 
@@ -50,15 +120,13 @@ DEBUG_OBJECTS   = $(SOURCES:%.c=$(DEBUG_DIR)/%.o)
 all: $(BINARY)
 
 $(BINARY): $(RELEASE_OBJECTS)
-	$(CC) -o $@ $(RELEASE_OBJECTS) $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $(RELEASE_OBJECTS) $(LIBS)
 
 $(RELEASE_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# ─── Debug build (symbols + AddressSanitizer + -DDEBUG) ────────────────
-# Separate objects and separate binary, so debug and release coexist.
-# No `clean` needed — the separate build dir handles correctness.
+# ─── Debug build ───────────────────────────────────────────────────────
 .PHONY: debug
 debug: $(DEBUG_BINARY)
 
@@ -77,7 +145,6 @@ clean:
 	       $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
 	       test_cases/fixtures
 
-# Clean only object files (keep binaries)
 .PHONY: clean-obj
 clean-obj:
 	rm -rf build
@@ -85,26 +152,33 @@ clean-obj:
 # ═══════════════════════════════════════════════════════════════════════
 #  Testing (Criterion)
 # ═══════════════════════════════════════════════════════════════════════
-# Each test binary links ONLY the unit-under-test plus the exact production
-# files that unit needs — never main.c (Criterion supplies its own main()),
-# never $(SOURCES), never a glob. This keeps test binaries fast and keeps a
-# break in one unit from blocking another unit's tests.
-
-# Criterion install prefix (FreeBSD pkg puts it under /usr/local).
 CRITERION_PREFIX ?= /usr/local
 TEST_CFLAGS  = -std=c11 -Wall -Wextra -g \
                -I requests -I $(CRITERION_PREFIX)/include
 TEST_LDFLAGS = -L $(CRITERION_PREFIX)/lib -lcriterion
 
-# ASan flavour of the test flags (used by the *-asan targets).
+# macOS: also need libmagic's keg path in the test flags (resolve_path
+# suite includes <magic.h> and links -lmagic when USE_LIBMAGIC is on).
+ifeq ($(UNAME_S),Darwin)
+    TEST_CFLAGS  += -I$(BREW_MAGIC)/include
+    TEST_LDFLAGS += -L$(BREW_MAGIC)/lib
+endif
+
+# Propagate the libmagic toggle into the test build too, so the resolve
+# suite compiles its #ifdef USE_LIBMAGIC branch consistently with the
+# server. When off (OmniOS), the suite must not reference -lmagic/magic.h.
+TEST_MAGIC_LIB =
+ifeq ($(USE_LIBMAGIC),1)
+    TEST_CFLAGS    += -DUSE_LIBMAGIC
+    TEST_MAGIC_LIB  = -lmagic
+endif
+
 TEST_ASAN_CFLAGS  = $(TEST_CFLAGS) -fsanitize=address -fno-omit-frame-pointer
 TEST_ASAN_LDFLAGS = $(TEST_LDFLAGS) -fsanitize=address
 
-# Run flags: -j1 makes output deterministic and grouped; --quiet shows
-# only failures. Override on the CLI, e.g. `make test TEST_RUN_FLAGS=-j1`.
 TEST_RUN_FLAGS ?= -j1 #--quiet
 
-# ─── parse_request suite (pure: links only parse_request.c) ────────────
+# ─── parse_request suite ───────────────────────────────────────────────
 PARSE_SRC         = test_cases/test_parse_request.c
 PARSE_UNIT        = requests/parse_request.c
 PARSE_BINARY      = test_cases/test_parse_request
@@ -127,8 +201,7 @@ $(PARSE_BINARY_ASAN): $(PARSE_SRC) $(PARSE_UNIT)
 	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
 	    $(PARSE_SRC) $(PARSE_UNIT) $(TEST_ASAN_LDFLAGS)
 
-# ─── resolve_path suite (links resolve_path.c + parse_request.c) ───────
-# Needs -lmagic because resolve_path calls get_mime_type_by_ext.
+# ─── resolve_path suite (needs libmagic when enabled) ──────────────────
 RESOLVE_SRC         = test_cases/test_resolve_path.c
 RESOLVE_UNIT        = requests/resolve_path.c requests/parse_request.c
 RESOLVE_BINARY      = test_cases/test_resolve_path
@@ -146,29 +219,28 @@ test-resolve-asan: $(RESOLVE_BINARY_ASAN)
 
 $(RESOLVE_BINARY): $(RESOLVE_SRC) $(RESOLVE_UNIT)
 	$(CC) $(TEST_CFLAGS) -o $@ \
-	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_LDFLAGS) -lmagic
+	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_LDFLAGS) $(TEST_MAGIC_LIB)
 
 $(RESOLVE_BINARY_ASAN): $(RESOLVE_SRC) $(RESOLVE_UNIT)
 	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
-	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_ASAN_LDFLAGS) -lmagic
+	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_ASAN_LDFLAGS) $(TEST_MAGIC_LIB)
 
-# ─── Run every test suite ──────────────────────────────────────────────
+# ─── Aggregate test targets ────────────────────────────────────────────
 .PHONY: test
 test: test-parse test-resolve
 
 .PHONY: test-all
 test-all: test-parse test-resolve
 
+# FIXED: was 'test-asan' (nonexistent) -> 'test-parse-asan'
 .PHONY: test-all-asan
-test-all-asan: test-asan test-resolve-asan
+test-all-asan: test-parse-asan test-resolve-asan
 
-# Remove only test binaries (not the server build)
 .PHONY: clean-test
 clean-test:
 	rm -f $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
 	      $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN)
 	rm -rf test_cases/fixtures
-
 # ═══════════════════════════════════════════════════════════════════════
 #  Code quality and formatting
 # ═══════════════════════════════════════════════════════════════════════
