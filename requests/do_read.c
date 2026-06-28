@@ -127,7 +127,8 @@ do_read(int i, Client *clients, magic_t magic)
 	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val) == 0 &&
 	    resolve_path(c, &req, &rp, magic) == 0) {
 		printf(
-		    "Parse request received.\nExiting at do_read.c\tline 124\n");
+		    "Parse request and resolve path succeeded\n\tTo do: build_response().\nExiting at do_read.c\tline %d\n",
+		    __LINE__);
 		exit(EXIT_SUCCESS);
 
 		// TO DO
@@ -135,7 +136,8 @@ do_read(int i, Client *clients, magic_t magic)
 	}
 	else {
 		printf(
-		    "Parse request received.\nSuccessful Error test\nExiting at do_read.c\tline 148\n");
+		    "Parse request failed or resolve failed.\n\tTo do: build error response\nExiting at do_read.c\tline %d\n",
+		    __LINE__);
 		exit(EXIT_SUCCESS);
 		// build_error_response(c);
 	}
