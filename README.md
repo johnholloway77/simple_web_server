@@ -32,11 +32,11 @@ gmake test-all
 ```
 
 Object files live in `build/release/` and `build/debug/` so the two builds
-never collide — switching between them does not require a `make clean`.
+never collide — switching between them does not require a `gmake clean`.
 
 ```sh
-make clean        # remove all binaries and build/ objects
-make clean-obj    # remove only object files
+gmake clean        # remove all binaries and build/ objects
+gmake clean-obj    # remove only object files
 ```
 
 ### Dependencies
@@ -105,19 +105,19 @@ Each test suite links only the unit under test — never `main.c` — so a
 break in one unit never blocks another suite from running.
 
 ```sh
-make test-parse          # parse_request suite (39 tests)
-make test-parse-asan     # ...under AddressSanitizer
-make test-resolve        # resolve_path suite
-make test-resolve-asan   # ...under AddressSanitizer
-make test-all            # all suites
-make test-all-asan       # all suites under ASan
+gmake test-parse          # parse_request suite (39 tests)
+gmake test-parse-asan     # ...under AddressSanitizer
+gmake test-resolve        # resolve_path suite
+gmake test-resolve-asan   # ...under AddressSanitizer
+gmake test-all            # all suites
+gmake test-all-asan       # all suites under ASan
 ```
 
 Output defaults to `-j1 --quiet` (failures only, deterministic order).
 Override with `TEST_RUN_FLAGS`:
 
 ```sh
-make test-parse TEST_RUN_FLAGS='-j1 --verbose'
+gmake test-parse TEST_RUN_FLAGS='-j1 --verbose'
 ```
 
 ---
@@ -125,11 +125,11 @@ make test-parse TEST_RUN_FLAGS='-j1 --verbose'
 ## Code Quality
 
 ```sh
-make check          # format check + static analysis
-make format         # auto-format with clang-format
-make format-check   # check formatting without modifying files
-make lint           # cppcheck + cpplint
-make fix            # apply formatting
+gmake check          # format check + static analysis
+gmake format         # auto-format with clang-format
+gmake format-check   # check formatting without modifying files
+gmake lint           # cppcheck + cpplint
+gmake fix            # apply formatting
 ```
 
 ---
@@ -137,10 +137,10 @@ make fix            # apply formatting
 ## Documentation
 
 ```sh
-make docs           # generate Doxygen docs with call graphs (requires Graphviz)
-make docs-no-graphs # generate without diagrams (faster)
-make docs-init      # create initial Doxyfile
-make docs-clean     # remove generated docs
+gmake docs           # generate Doxygen docs with call graphs (requires Graphviz)
+gmake docs-no-graphs # generate without diagrams (faster)
+gmake docs-init      # create initial Doxyfile
+ggmake docs-clean     # remove generated docs
 ```
 
 Generated output is at `docs/html/index.html`.
