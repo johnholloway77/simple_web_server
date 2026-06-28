@@ -12,14 +12,6 @@
 #define TEMP_BUFFER 2048 /**< Stack scratch buffer for each recv() call */
 #define MAX_REQUEST_SIZE                                                       \
 	8192 /**< Hard ceiling on inbound request size (bytes) */
-
-void
-close_resolve_path_ptr(ResolvedPath *rp)
-{
-	if (rp->file_ptr) {
-		fclose(rp->file_ptr);
-		rp->file_ptr = NULL;
-	}
 }
 
 /**

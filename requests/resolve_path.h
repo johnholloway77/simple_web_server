@@ -19,5 +19,7 @@ typedef struct ResolvedPath
 	int is_cgi_bin; /* 1 if true */
 } ResolvedPath;
 
+void close_resolve_path_ptr(ResolvedPath *rp);
+
 int
 resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic);
