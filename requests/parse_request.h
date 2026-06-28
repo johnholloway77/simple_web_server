@@ -3,6 +3,9 @@
 #include <unistd.h>
 #include "../client_conn/connections.h"
 
+#define MAX_REQUEST_SIZE                                                       \
+	8192 /**< Hard ceiling on inbound request size (bytes) */
+
 enum http_method
 {
 	HTTP_GET,

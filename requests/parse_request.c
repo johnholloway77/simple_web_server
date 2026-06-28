@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <sys/syslimits.h>
 
+#include "../debug/debug.h"
+
 #define METHOD_MAX 10
 #define VERSION_MAX 10
 
@@ -88,11 +90,18 @@ parse_request(const char *buf,
     Request *out,
     enum client_response *resp)
 {
+	DBG("Entering parse_request()\n");
+
 	if (0 == len || !buf || !strnstr(buf, "\r\n\r\n", len)) {
+		DBG("Determined 400\n");
 		DETERMINED_400
 	}
 
-	printf("request:\n%s\n", buf);
+	char line_buf[MAX_REQUEST_SIZE];
+	memcpy(line_buf, buf, len);
+	line_buf[len] = '\0';
+
+	DBG("request:\n%s\n", line_buf);
 
 	char fmt[64] = {0};
 	char method[METHOD_MAX] = {0};
@@ -106,10 +115,11 @@ parse_request(const char *buf,
 	    PATH_MAX - 1,
 	    VERSION_MAX - 1,
 	    9);
-	int parsed = sscanf(buf, fmt, method, (*out).path, version, extra);
+
+	int parsed = sscanf(line_buf, fmt, method, (*out).path, version, extra);
 
 	if (3 == parsed) {
-		printf("Method %s\nPath: %s\nVersion %s\n",
+		DBG("Method %s\nPath: %s\nVersion %s\n",
 		    method,
 		    (*out).path,
 		    version);
