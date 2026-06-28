@@ -1,9 +1,15 @@
-#Compiler
+# ═══════════════════════════════════════════════════════════════════════
+#  FreeBSD poll-based HTTP server — Makefile
+# ═══════════════════════════════════════════════════════════════════════
+
+# Compiler
 CC = clang
 
-#Compiler flags
-CFLAGS = -Wall -Wextra
-DEBUG_CFLAGS = -Wall -Wextra -g -DDEBUG -fsanitize=address
+# Compiler flags
+CFLAGS       = -Wall -Wextra -std=c11
+DEBUG_CFLAGS = -Wall -Wextra -std=c11 -g -DDEBUG -fsanitize=address \
+               -fno-omit-frame-pointer
+DEBUG_LDFLAGS = -fsanitize=address
 
 # Source files
 SOURCES = main.c \
@@ -13,82 +19,151 @@ SOURCES = main.c \
     sockets/get_listener_v4.c \
     sockets/get_listener_v6.c \
     requests/do_read.c \
-    requests/parse_request.c
+    requests/parse_request.c \
+    requests/resolve_path.c
 
-
-OBJECTS = $(SOURCES:.c=.o)
-
-#libraries to link
+# Libraries to link
 LIBS = -lmagic
 
-#output binary
-BINARY=simple_server
+# Output binaries
+BINARY       = simple_server
+DEBUG_BINARY = simple_server_debug
 
-#rule to link the binary
-$(BINARY): $(OBJECTS)
-	$(CC) -o $@ $(OBJECTS) $(LIBS)
+# ─── Build directories ─────────────────────────────────────────────────
+# Release and debug objects live in SEPARATE trees so they never collide
+# on timestamp. This is what makes `make debug` reliably rebuild with the
+# debug flags without needing a `clean` first — Make can tell a release .o
+# from a debug .o because they're at different paths.
+RELEASE_DIR = build/release
+DEBUG_DIR   = build/debug
 
-#rule to compile source files into object files
-%.o:  %.c
+RELEASE_OBJECTS = $(SOURCES:%.c=$(RELEASE_DIR)/%.o)
+DEBUG_OBJECTS   = $(SOURCES:%.c=$(DEBUG_DIR)/%.o)
+
+# ─── Default: release build ────────────────────────────────────────────
+.PHONY: all
+all: $(BINARY)
+
+$(BINARY): $(RELEASE_OBJECTS)
+	$(CC) -o $@ $(RELEASE_OBJECTS) $(LIBS)
+
+$(RELEASE_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-#debug build with debug symbols and AddressSanitizer
+# ─── Debug build (symbols + AddressSanitizer + -DDEBUG) ────────────────
+# Separate objects and separate binary, so debug and release coexist.
+# No `clean` needed — the separate build dir handles correctness.
 .PHONY: debug
-debug: CFLAGS = $(DEBUG_CFLAGS)
-debug: $(BINARY)
+debug: $(DEBUG_BINARY)
 
-.PHONY:  clean
+$(DEBUG_BINARY): $(DEBUG_OBJECTS)
+	$(CC) $(DEBUG_LDFLAGS) -o $@ $(DEBUG_OBJECTS) $(LIBS)
+
+$(DEBUG_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(DEBUG_CFLAGS) -c -o $@ $<
+
+# ─── Clean ─────────────────────────────────────────────────────────────
+.PHONY: clean
 clean:
-	rm -rf $(BINARY) $(OBJECTS)  $(TEST_BINARY)
+	rm -rf $(BINARY) $(DEBUG_BINARY) build \
+	       $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
+	       $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
+	       test_cases/fixtures
 
-#clean only the object files
+# Clean only object files (keep binaries)
 .PHONY: clean-obj
 clean-obj:
-	rm -rf $(OBJECTS)
+	rm -rf build
 
-# ─── Testing (Criterion) ──────────────────────────────────────────────
-# Unit tests for the pure functional core (parse_request, etc.).
-# Links ONLY the unit-under-test + its deps, never main.c — Criterion
-# supplies its own main(), and the parser is pure so it needs nothing
-# from the socket/event-loop layer.
+# ═══════════════════════════════════════════════════════════════════════
+#  Testing (Criterion)
+# ═══════════════════════════════════════════════════════════════════════
+# Each test binary links ONLY the unit-under-test plus the exact production
+# files that unit needs — never main.c (Criterion supplies its own main()),
+# never $(SOURCES), never a glob. This keeps test binaries fast and keeps a
+# break in one unit from blocking another unit's tests.
 
 # Criterion install prefix (FreeBSD pkg puts it under /usr/local).
 CRITERION_PREFIX ?= /usr/local
-TEST_CFLAGS  = -std=c11 -Wall -Wextra -g -I requests -I $(CRITERION_PREFIX)/include
+TEST_CFLAGS  = -std=c11 -Wall -Wextra -g \
+               -I requests -I $(CRITERION_PREFIX)/include
 TEST_LDFLAGS = -L $(CRITERION_PREFIX)/lib -lcriterion
 
-# Test sources and the production sources they exercise.
-TEST_SRC      = test_cases/test_parse_request.c
-TEST_UNIT_SRC = requests/parse_request.c
-TEST_BINARY      = test_cases/test_file
-TEST_BINARY_ASAN = test_cases/test_file_asan
-TEST_RUN_FLAGS ?= -j1 #--verbose
+# ASan flavour of the test flags (used by the *-asan targets).
+TEST_ASAN_CFLAGS  = $(TEST_CFLAGS) -fsanitize=address -fno-omit-frame-pointer
+TEST_ASAN_LDFLAGS = $(TEST_LDFLAGS) -fsanitize=address
 
+# Run flags: -j1 makes output deterministic and grouped; --quiet shows
+# only failures. Override on the CLI, e.g. `make test TEST_RUN_FLAGS=-j1`.
+TEST_RUN_FLAGS ?= -j1 #--quiet
+
+# ─── parse_request suite (pure: links only parse_request.c) ────────────
+PARSE_SRC         = test_cases/test_parse_request.c
+PARSE_UNIT        = requests/parse_request.c
+PARSE_BINARY      = test_cases/test_parse_request
+PARSE_BINARY_ASAN = test_cases/test_parse_request_asan
 
 .PHONY: test
-test: $(TEST_BINARY)
+test: $(PARSE_BINARY)
 	@echo "Running parse_request unit tests..."
-	@./$(TEST_BINARY) $(TEST_RUN_FLAGS)
+	@./$(PARSE_BINARY) $(TEST_RUN_FLAGS)
 
-
-
-# AddressSanitizer build of the tests — catches the buffer-safety bugs
-# (read-past-len, path overflow) the suite is specifically hunting.
 .PHONY: test-asan
-test-asan: TEST_CFLAGS += -fsanitize=address -fno-omit-frame-pointer
-test-asan: TEST_LDFLAGS += -fsanitize=address
-test-asan: clean-test $(TEST_BINARY)
+test-asan: $(PARSE_BINARY_ASAN)
 	@echo "Running parse_request unit tests under AddressSanitizer..."
-	@./$(TEST_BINARY) $(TEST_RUN_FLAGS)
+	@./$(PARSE_BINARY_ASAN) $(TEST_RUN_FLAGS)
 
-$(TEST_BINARY): $(TEST_SRC) $(TEST_UNIT_SRC)
-	$(CC) $(TEST_CFLAGS) -o $@ $(TEST_SRC) $(TEST_UNIT_SRC) $(TEST_LDFLAGS)
+$(PARSE_BINARY): $(PARSE_SRC) $(PARSE_UNIT)
+	$(CC) $(TEST_CFLAGS) -o $@ $(PARSE_SRC) $(PARSE_UNIT) $(TEST_LDFLAGS)
 
+$(PARSE_BINARY_ASAN): $(PARSE_SRC) $(PARSE_UNIT)
+	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
+	    $(PARSE_SRC) $(PARSE_UNIT) $(TEST_ASAN_LDFLAGS)
+
+# ─── resolve_path suite (links resolve_path.c + parse_request.c) ───────
+# Needs -lmagic because resolve_path calls get_mime_type_by_ext.
+RESOLVE_SRC         = test_cases/test_resolve_path.c
+RESOLVE_UNIT        = requests/resolve_path.c requests/parse_request.c
+RESOLVE_BINARY      = test_cases/test_resolve_path
+RESOLVE_BINARY_ASAN = test_cases/test_resolve_path_asan
+
+.PHONY: test-resolve
+test-resolve: $(RESOLVE_BINARY)
+	@echo "Running resolve_path unit tests..."
+	@./$(RESOLVE_BINARY) $(TEST_RUN_FLAGS)
+
+.PHONY: test-resolve-asan
+test-resolve-asan: $(RESOLVE_BINARY_ASAN)
+	@echo "Running resolve_path unit tests under AddressSanitizer..."
+	@./$(RESOLVE_BINARY_ASAN) $(TEST_RUN_FLAGS)
+
+$(RESOLVE_BINARY): $(RESOLVE_SRC) $(RESOLVE_UNIT)
+	$(CC) $(TEST_CFLAGS) -o $@ \
+	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_LDFLAGS) -lmagic
+
+$(RESOLVE_BINARY_ASAN): $(RESOLVE_SRC) $(RESOLVE_UNIT)
+	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
+	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_ASAN_LDFLAGS) -lmagic
+
+# ─── Run every test suite ──────────────────────────────────────────────
+.PHONY: test-all
+test-all: test test-resolve
+
+.PHONY: test-all-asan
+test-all-asan: test-asan test-resolve-asan
+
+# Remove only test binaries (not the server build)
 .PHONY: clean-test
 clean-test:
-	rm -f $(TEST_BINARY)
+	rm -f $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
+	      $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN)
+	rm -rf test_cases/fixtures
 
-# Code quality and formatting targets
+# ═══════════════════════════════════════════════════════════════════════
+#  Code quality and formatting
+# ═══════════════════════════════════════════════════════════════════════
 .PHONY: format
 format:
 	@echo "Formatting C source files..."
@@ -139,7 +214,9 @@ check: format-check lint
 fix: format
 	@echo "✅ Code formatting applied. Run 'make check' to verify."
 
-# Documentation generation targets
+# ═══════════════════════════════════════════════════════════════════════
+#  Documentation (Doxygen)
+# ═══════════════════════════════════════════════════════════════════════
 .PHONY: docs
 docs: docs-graphs
 
@@ -312,41 +389,62 @@ docs-clean:
 	@rm -rf docs/html docs/latex docs/man docs/xml docs/Doxyfile.tmp
 	@echo "✅ Documentation cleaned"
 
-# Help target
+# ═══════════════════════════════════════════════════════════════════════
+#  Help
+# ═══════════════════════════════════════════════════════════════════════
 .PHONY: help
 help:
 	@echo "🔨 FreeBSD Web Server - Available Make Targets"
 	@echo ""
 	@echo "📦 Building:"
-	@echo "  make                  Build the web server binary"
-	@echo "  make debug           Build with debug symbols and AddressSanitizer"
-	@echo "  make clean           Remove binary and object files"
-	@echo "  make clean-obj       Remove only object files"
+	@echo "  make / make all       Build the release server binary ($(BINARY))"
+	@echo "  make debug            Build debug binary ($(DEBUG_BINARY)):"
+	@echo "                        symbols + AddressSanitizer + -DDEBUG"
+	@echo "  make clean            Remove all binaries and build/ objects"
+	@echo "  make clean-obj        Remove only object files (keep binaries)"
+	@echo ""
+	@echo "  Release and debug objects live in separate trees"
+	@echo "  (build/release, build/debug) so they never collide — you can"
+	@echo "  switch between 'make' and 'make debug' without cleaning."
+	@echo ""
+	@echo "🧪 Testing (Criterion):"
+	@echo "  make test             Run parse_request unit tests"
+	@echo "  make test-asan        ...under AddressSanitizer"
+	@echo "  make test-resolve     Run resolve_path unit tests"
+	@echo "  make test-resolve-asan ...under AddressSanitizer"
+	@echo "  make test-all         Run every test suite"
+	@echo "  make test-all-asan    Run every suite under ASan"
+	@echo "  make clean-test       Remove test binaries and fixtures"
+	@echo ""
+	@echo "  Output flags: override TEST_RUN_FLAGS (default '-j1 --quiet')."
+	@echo "  e.g. make test TEST_RUN_FLAGS='-j1 --verbose'"
 	@echo ""
 	@echo "🔍 Code Quality:"
-	@echo "  make check           Run all code quality checks (format + lint)"
-	@echo "  make format-check    Check if code formatting is correct"
-	@echo "  make format          Auto-format code with clang-format"
-	@echo "  make lint            Run static analysis (cppcheck + cpplint)"
-	@echo "  make fix             Apply automatic formatting"
+	@echo "  make check            Run all code quality checks (format + lint)"
+	@echo "  make format-check     Check if code formatting is correct"
+	@echo "  make format           Auto-format code with clang-format"
+	@echo "  make lint             Run static analysis (cppcheck + cpplint)"
+	@echo "  make fix              Apply automatic formatting"
 	@echo ""
 	@echo "📚 Documentation:"
-	@echo "  make docs            Generate docs with diagrams (requires Graphviz)"
-	@echo "  make docs-graphs     Same as 'make docs' - generates with diagrams"
-	@echo "  make docs-no-graphs  Generate docs without diagrams (faster)"
-	@echo "  make docs-init       Initialize Doxygen configuration"
-	@echo "  make docs-clean      Clean generated documentation"
+	@echo "  make docs             Generate docs with diagrams (requires Graphviz)"
+	@echo "  make docs-graphs      Same as 'make docs' - generates with diagrams"
+	@echo "  make docs-no-graphs   Generate docs without diagrams (faster)"
+	@echo "  make docs-init        Initialize Doxygen configuration"
+	@echo "  make docs-clean       Clean generated documentation"
 	@echo ""
 	@echo "📋 Dependencies:"
+	@echo "  Build (required):         clang, libmagic"
+	@echo "  Testing (required):       criterion"
 	@echo "  Documentation (required): doxygen"
-	@echo "  Documentation (optional): graphviz (for call graphs, dependency diagrams)"
-	@echo "  Code quality (optional): clang-format, cppcheck, cpplint"
+	@echo "  Documentation (optional): graphviz (call/dependency graphs)"
+	@echo "  Code quality (optional):  clang-format, cppcheck, cpplint"
 	@echo ""
 	@echo "📦 Installing Dependencies (FreeBSD):"
-	@echo "  pkg install doxygen graphviz llvm cppcheck py39-cpplint"
+	@echo "  pkg install doxygen graphviz llvm cppcheck py39-cpplint criterion"
 	@echo ""
 	@echo "🚀 Quick Start:"
 	@echo "  make                  # Build the server"
+	@echo "  make test-all         # Run all unit tests"
 	@echo "  make check            # Verify code quality"
-	@echo "  make docs             # Generate documentation"
 	@echo "  ./simple_server -d    # Run in debug mode"
