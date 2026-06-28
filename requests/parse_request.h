@@ -3,6 +3,10 @@
 #include <unistd.h>
 #include "../client_conn/connections.h"
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 #define MAX_REQUEST_SIZE                                                       \
 	8192 /**< Hard ceiling on inbound request size (bytes) */
 

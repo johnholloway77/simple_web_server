@@ -49,6 +49,7 @@ ifeq ($(UNAME_S),Linux)
     CC ?= clang
     CRITERION_PREFIX ?= /usr
     CFLAGS += -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
+    TEST_CFLAGS += -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
     # libmagic headers/lib on default path via libmagic-dev; no -I/-L needed
     LIBS += -lbsd
 endif
