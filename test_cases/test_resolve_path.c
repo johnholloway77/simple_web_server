@@ -68,6 +68,7 @@
 #include "../requests/parse_request.h" /* Request, enums, client_response */
 #include "../requests/resolve_path.h" /* ResolvedPath, resolve_path,
                                           close_resolve_path_ptr */
+#include "../flags/flags.h" /* C_FLAG */
 
 /* ------------------------------------------------------------------ *
  *  app_flags — the extern resolve_path reads for C_FLAG.
@@ -122,14 +123,22 @@ write_fixture(const char *relpath, const char *content)
 }
 
 /* ------------------------------------------------------------------ *
- *  Suite-level setup/teardown — runs ONCE, not per test.
+ *  Fixture lifecycle.
+ *
+ *  This Criterion version (2.4.3) has no per-suite .init_suite/.fini_suite
+ *  TestSuite fields — only per-test .init/.fini. So the fixture tree is
+ *  built ONCE per test process, guarded by a static flag in test_setup,
+ *  and torn down via atexit().
+ *
+ *  Criterion forks each test into its own process, so the static guard
+ *  resets per fork — each test rebuilds the tiny tree in its own process.
+ *  That's fine and is in fact why a crash in one test can't corrupt
+ *  another's fixtures. The atexit handler cleans up each fork's copy.
  * ------------------------------------------------------------------ */
-void
-suite_setup(void)
-{
-	cr_assert_not_null(getcwd(orig_dir, sizeof orig_dir),
-	    "getcwd failed in suite_setup");
 
+static void
+build_fixtures(void)
+{
 	mkdir(FIXTURE_DIR, 0755);
 	mkdir(FIXTURE_DIR "/testdir", 0755);
 	mkdir(FIXTURE_DIR "/testdir/dir", 0755);
@@ -154,17 +163,11 @@ suite_setup(void)
 	chmod(path, 0755);
 	snprintf(path, sizeof path, "%s/testdir/notallowed", FIXTURE_DIR);
 	chmod(path, 0000);
-
-	test_magic = magic_open(MAGIC_MIME_TYPE);
-	cr_assert_not_null(test_magic, "magic_open failed");
-	magic_load(test_magic, NULL);
 }
 
-void
-suite_teardown(void)
+static void
+destroy_fixtures(void)
 {
-	magic_close(test_magic);
-
 	/* Restore permissions so rm -rf can remove the file. */
 	char path[PATH_MAX];
 	snprintf(path, sizeof path, "%s/testdir/notallowed", FIXTURE_DIR);
@@ -173,14 +176,28 @@ suite_teardown(void)
 	char cmd[PATH_MAX + 32];
 	snprintf(cmd, sizeof cmd, "rm -rf %s", FIXTURE_DIR);
 	system(cmd);
-
-	chdir(orig_dir);
 }
 
-/* Per-test setup: chdir into fixtures and reset app_flags. */
+/* Per-test setup: build fixtures + init magic once per test process,
+ * then chdir into the fixture dir and reset app_flags every test. */
 void
 test_setup(void)
 {
+	static int initialised = 0;
+
+	if (!initialised) {
+		cr_assert_not_null(getcwd(orig_dir, sizeof orig_dir),
+		    "getcwd failed in test_setup");
+		build_fixtures();
+		atexit(destroy_fixtures);
+
+		test_magic = magic_open(MAGIC_MIME_TYPE);
+		cr_assert_not_null(test_magic, "magic_open failed");
+		magic_load(test_magic, NULL);
+
+		initialised = 1;
+	}
+
 	app_flags = 0;
 	cr_assert_eq(chdir(FIXTURE_DIR),
 	    0,
@@ -195,15 +212,9 @@ test_teardown(void)
 }
 
 /* ------------------------------------------------------------------ *
- *  Attach setup/teardown to each suite.
- *  Only resolve_root carries suite_setup/suite_teardown — it runs
- *  once and the fixture tree persists for all suites.
+ *  Attach per-test setup/teardown to every suite.
  * ------------------------------------------------------------------ */
-TestSuite(resolve_root,
-    .init_suite = suite_setup,
-    .fini_suite = suite_teardown,
-    .init = test_setup,
-    .fini = test_teardown);
+TestSuite(resolve_root, .init = test_setup, .fini = test_teardown);
 TestSuite(resolve_file, .init = test_setup, .fini = test_teardown);
 TestSuite(resolve_dir, .init = test_setup, .fini = test_teardown);
 TestSuite(resolve_error, .init = test_setup, .fini = test_teardown);
