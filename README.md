@@ -1,125 +1,196 @@
-# Simple Web Server
-This program was designed for and designed on FreeBSD 14.1. It is the group project from the class CS631 Advanced Programming in the Unix Enviroment as taught by Jan Schaumann.
-The objective of this assignemnt is to write a simple web server that speaks a limited version of HTTP/1.0 as defined in [RFC1945](https://www.rfc-editor.org/rfc/rfc1945.html). For more inforamtion on the specific of the assignment, please visit the [assigment page](https://stevens.netmeister.org/631/f23-group-project.html).
+# Simple Web Server — Phase 1 (Poll Revision)
 
-This program is made simply for me to learn more about interprocess communication and sockets.
+This program was designed for and developed on FreeBSD. It is the group
+project from CS631 Advanced Programming in the Unix Environment, as taught
+by Jan Schaumann. The objective is to write a simple web server that speaks
+a limited subset of HTTP/1.0 as defined in
+[RFC 1945](https://www.rfc-editor.org/rfc/rfc1945.html). For more
+information on the assignment specifics, see the
+[assignment page](https://stevens.netmeister.org/631/f23-group-project.html).
 
-## Assignment Goals
-The objective of this assignment is to write a simple web server that speaks a limited version of HTTP/1.0 as defined in RFC1945.
-Your program should behave as one would expect from a regular system daemon. That is, it should detach from the controlling terminal and run in the background, accept multiple simultaneous connections, not generate any messages on stdout unless in debugging mode etc.
+This implementation uses a single-process `poll()`-based event loop instead
+of the original fork-per-connection model, which was benchmarked at
+approximately 60,000 req/s on the development machine versus ~20,000 req/s
+for the fork model.
 
-**Important:** This is not a production server. It has limited functionality, probable bugs and security issues. It is purely made for educational purposes. It is **not** recommended that you use it exposed to the internet.
+> **Important:** This is not a production server. It has limited
+> functionality, probable bugs, and security issues. It is made purely for
+> educational purposes and is **not** recommended for internet-facing use.
 
-## Building the Program
-To build the program, run cmake in the main directory of the program. Ensure you have cmake installed on your system.
+---
 
-To build the program, follow these steps:
+## Building
 
-1. Navigate to the main directory of the program.
-2. Run the following commands:
-```sh
-$ ./setup.sh
-```
-
-The setup file will run the Makefile, as well as create several files and subdirectories. The files will be a mix of HTML files, CGI scripts, and text files.
-```
-.
-├── cgi-bin
-│   ├── guestBook.c
-│   ├── guestBook.cgi
-│   ├── helloWorld.c
-│   └── helloWorld.cgi
-├── cgi-data
-├── index.html
-├── simple_server
-├── subNoIndex
-│   ├── test1.txt
-│   └── test2.txt
-└── subWithIndex
-    └── index.html
-```
-
-
-Should you wish to only build the server instead run the command:
-```sh
-make
-```
-To remove the only object files after compiling the binary run the following command
-```sh
-make clean-obj
-```
-
-To remove all files created during the make process including the binary run the following
-```sh
-make clean
-```
-
-If the application is built on another *nix machine it is recommended that the code be reviewed for any library or system calls that may need to be refactored.
-
-## Running the Program
+This project requires GNU make. On FreeBSD, install it with
+`pkg install gmake` and use `gmake` in place of `make`:
 
 ```sh
-./simple_server [option] [path] ...
+gmake          # release build  →  ./simple_server
+gmake debug    # debug build    →  ./simple_server_debug
+gmake clean
+gmake test-all
 ```
 
-Replace [options] with any applicable flags and [path] with the options below. One started the server will run and provide requested files through a web browser, cURL or even telnet.
+Object files live in `build/release/` and `build/debug/` so the two builds
+never collide — switching between them does not require a `make clean`.
 
-**−c *dir*** Allow execution of CGIs from the given directory. 
-
-**−v** Enter verbose mode. That is, do not daemonize, only accept one connection at a time
-and enable logging to stdout.
-
-**−i *address*** Bind to the given IPv4 or IPv6 address. If not provided, Simple_Server will listen on all IPv4 and
-IPv6 addresses on this host.
-
-**−l *file*** Log all requests to the given file. See LOGGING for details.
-
-**−p *port*** Listen on the given port. If not provided, Simple_Server will listen on port 8080.
-
-Once the server is running it can be accessed in a browser with http://localhost:[portnumber]. If using the setup script, the server will load the index.html file in the directory.
-
-## Closing the application
-
-Simple_server is designed to run as a daemon and will be inaccessable from the terminal unless the *-d* flag has been enabled.
-
-To close the application while running as a daemon you will need to kill the process using the process ID. The process ID can be found using the sockstat command and grepping the respective port number.
+```sh
+make clean        # remove all binaries and build/ objects
+make clean-obj    # remove only object files
 ```
-$ ./simple_server 
-$ sockstat | grep 8080
-jholloway simple_server 31863 3   tcp4   *:8080                *:*
-jholloway simple_server 31863 4   tcp6   *:8080                *:*
-$ kill 31863
+
+### Dependencies
+
+| Package | Purpose |
+|---|---|
+| `libmagic` | MIME-type detection fallback |
+| `criterion` | Unit testing framework |
+| `doxygen` | Documentation generation (optional) |
+| `graphviz` | Call/dependency diagrams (optional) |
+| `llvm` / `clang-format` | Code formatting (optional) |
+| `cppcheck` / `cpplint` | Static analysis (optional) |
+
+Install on FreeBSD:
+
+```sh
+pkg install doxygen graphviz llvm cppcheck py39-cpplint criterion
 ```
+
+---
+
+## Running
+
+```sh
+./simple_server [options]
+```
+
+Once started the server responds to requests from a browser, cURL, or
+telnet. With default settings it listens on port 8080 on all interfaces.
+
+### Flags
+
+| Flag | Argument | Description |
+|---|---|---|
+| `-c` | `dir` | Allow CGI execution from the given directory. |
+| `-v` | — | Verbose mode: do not daemonize, log to stdout. |
+| `-bind4` | `address` | Bind the IPv4 listener to a specific address (e.g. `192.168.1.10` or `0.0.0.0`). Default: all IPv4 addresses. |
+| `-bind6` | `address` | Bind the IPv6 listener to a specific address (e.g. `::1` or `::`). Default: all IPv6 addresses. |
+| `-l` | `file` | Log all requests to the given file. |
+| `-p` | `port` | Listen on the given port. Default: 8080. |
+
+`-bind4` and `-bind6` are independent — you can specify one, both, or
+neither. If neither is given both listeners bind to the wildcard address.
+Addresses are validated with `inet_pton` at startup; an invalid address
+exits immediately with an error message.
+
+### Example
+
+```sh
+# Verbose mode on all interfaces, port 8000
+./simple_server -v -p 8000
+
+# Bind IPv4 to a specific address, IPv6 to loopback only
+./simple_server -bind4 192.168.1.10 -bind6 ::1 -p 8080
+
+# Enable CGI, log requests
+./simple_server -c ./cgi-bin -l ./server.log
+```
+
+---
+
+## Testing
+
+Unit tests use the [Criterion](https://github.com/Snaipe/Criterion) framework.
+Each test suite links only the unit under test — never `main.c` — so a
+break in one unit never blocks another suite from running.
+
+```sh
+make test-parse          # parse_request suite (39 tests)
+make test-parse-asan     # ...under AddressSanitizer
+make test-resolve        # resolve_path suite
+make test-resolve-asan   # ...under AddressSanitizer
+make test-all            # all suites
+make test-all-asan       # all suites under ASan
+```
+
+Output defaults to `-j1 --quiet` (failures only, deterministic order).
+Override with `TEST_RUN_FLAGS`:
+
+```sh
+make test-parse TEST_RUN_FLAGS='-j1 --verbose'
+```
+
+---
+
+## Code Quality
+
+```sh
+make check          # format check + static analysis
+make format         # auto-format with clang-format
+make format-check   # check formatting without modifying files
+make lint           # cppcheck + cpplint
+make fix            # apply formatting
+```
+
+---
+
+## Documentation
+
+```sh
+make docs           # generate Doxygen docs with call graphs (requires Graphviz)
+make docs-no-graphs # generate without diagrams (faster)
+make docs-init      # create initial Doxyfile
+make docs-clean     # remove generated docs
+```
+
+Generated output is at `docs/html/index.html`.
+
+---
+
+## Stopping the Server
+
+The server daemonizes by default (suppressed by `-v`). To stop it:
+
+```sh
+sockstat | grep 8080
+# jholloway simple_server 31863 3  tcp4  *:8080  *:*
+kill 31863
+```
+
+---
 
 ## Memory Management
-This program has been carefully developed to handle memory management correctly, ensuring no memory leaks. Valgrind was used extensively to check for and fix any memory issues.
+
+Memory safety is validated with both Valgrind and AddressSanitizer as part
+of normal development. Per-connection allocations (`in_buf`, `out_buf`,
+`file_ptr`) are freed in `close_conn` on every connection close. Valgrind
+confirms zero definitely-lost blocks across single and multi-request runs.
+
+---
 
 ## Use of AI Tools (Claude)
 
-This project makes use of Claude, an AI assistant, in a specific and limited capacity for educational purposes. It's important to understand the role Claude plays in this development process:
+This project uses Claude as a knowledgeable reviewer and tutor, in a
+specific and limited capacity:
 
-### What Claude IS used for:
-- **Makefile Revisions**: Original Makefile has been improved upon for expediency as documentation, formatting, etc. options have increased. 
-- **Code review and analysis**: Identifying potential bugs, security vulnerabilities, and performance issues
-- **Documentation assistance**: Helping to structure and improve documentation
-- **Educational guidance**: Providing explanations of systems programming concepts and best practices
-- **Performance analysis**: Helping interpret profiling data and benchmark results
-- **Linter scripting**: assistance in ensuring cppcheck follows BSD coding standards over Google standards
-- **Formatting**: Assisted in writing a .clang-format file to ensure code style follows BSD coding styles
+**Claude IS used for:**
+- Makefile improvements and build system structure
+- Code review: identifying bugs, security issues, performance problems
+- Documentation assistance and structuring
+- Explaining systems programming concepts and tradeoffs
+- Interpreting profiling and benchmark data (DTrace, Valgrind, `hey`)
+- Criterion test suite design (tests are written by Claude, implementation
+  is written independently by the developer)
+- Formatting guidance (`.clang-format`, BSD style)
 
-### What Claude is NOT used for:
-- **Code generation**: All code in this repository is human-written
-- **Implementation**: Problem-solving and coding decisions are made independently
-- **Shortcuts**: Claude does not write solutions or complete assignments
+**Claude is NOT used for:**
+- Writing implementation code — all `.c` source is human-written
+- Making design decisions — those are made independently
+- Shortcuts — problem-solving and implementation remain the developer's work
 
-### Educational Philosophy
+The goal is to use AI as a senior engineer or TA would be used: review,
+explanation, and a second pair of eyes. All implementation decisions and
+code remain the developer's own, for better and worse.
 
-The goal is to use AI as a knowledgeable tutor and code reviewer, similar to how one might work with a senior engineer or teaching assistant. All code remains my own work, for better and worse. The AI serves as an additional layer of review and learning support, not as a replacement for understanding the underlying systems programming concepts.
-
-This approach ensures:
-- Deep learning of systems programming fundamentals
-- Ownership of all implementation decisions
-- Authentic problem-solving experience
-- Professional-quality code review practices
-
-For more details about my educational philosophy and approach to using AI tools in learning systems programming, please see my blog post: [Benchmarking and Rebuilding an Old Web Server - Part 1](https://jholloway.dev/posts/benchmarking-and-rebuilding-an-old-web-server---part-1/)
+For more on this approach, see:
+[Benchmarking and Rebuilding an Old Web Server — Part 1](https://jholloway.dev/posts/benchmarking-and-rebuilding-an-old-web-server---part-1/)

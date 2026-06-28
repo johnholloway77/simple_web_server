@@ -2,6 +2,11 @@
 #  FreeBSD poll-based HTTP server — Makefile
 # ═══════════════════════════════════════════════════════════════════════
 
+# ─── GNU make required ─────────────────────────────────────────────────
+# BSD make (FreeBSD base system 'make') is not compatible with this
+# Makefile. Use gmake: pkg install gmake
+
+
 # Compiler
 CC = clang
 
@@ -450,4 +455,4 @@ help:
 	@echo "  make                  # Build the server"
 	@echo "  make test-all         # Run all unit tests"
 	@echo "  make check            # Verify code quality"
-	@echo "  ./simple_server -d    # Run in debug mode"
+	@echo "  ./simple_server -v    # Run in verbose mode"
