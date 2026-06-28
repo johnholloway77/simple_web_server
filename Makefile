@@ -105,13 +105,13 @@ PARSE_UNIT        = requests/parse_request.c
 PARSE_BINARY      = test_cases/test_parse_request
 PARSE_BINARY_ASAN = test_cases/test_parse_request_asan
 
-.PHONY: test
-test: $(PARSE_BINARY)
+.PHONY: test-parse
+test-parse: $(PARSE_BINARY)
 	@echo "Running parse_request unit tests..."
 	@./$(PARSE_BINARY) $(TEST_RUN_FLAGS)
 
-.PHONY: test-asan
-test-asan: $(PARSE_BINARY_ASAN)
+.PHONY: test-parse-asan
+test-parse-asan: $(PARSE_BINARY_ASAN)
 	@echo "Running parse_request unit tests under AddressSanitizer..."
 	@./$(PARSE_BINARY_ASAN) $(TEST_RUN_FLAGS)
 
@@ -148,8 +148,11 @@ $(RESOLVE_BINARY_ASAN): $(RESOLVE_SRC) $(RESOLVE_UNIT)
 	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_ASAN_LDFLAGS) -lmagic
 
 # ─── Run every test suite ──────────────────────────────────────────────
+.PHONY: test
+test: test-parse test-resolve
+
 .PHONY: test-all
-test-all: test test-resolve
+test-all: test-parse test-resolve
 
 .PHONY: test-all-asan
 test-all-asan: test-asan test-resolve-asan
