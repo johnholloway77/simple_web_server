@@ -20,6 +20,36 @@ char *bind_addr6;
 char *cgi_addr;
 char *log_addr;
 
+void
+print_flag_error(const char *bad_flag)
+{
+	fprintf(stderr,
+	    "\n[ERROR] Unknown flag: '%s'\n\n",
+	    bad_flag ? bad_flag : "(null)");
+
+	fprintf(stderr,
+	    "Valid flags are:\n"
+	    "  -c <dir>        Enable CGI execution from directory\n"
+	    "  -v              Verbose mode (single connection, debug output)\n"
+	    "  -p <port>       Set listen port (default: 8080)\n"
+	    "  -l <file>       Log requests to file\n"
+	    "  -bind4 <addr>   Bind IPv4 to specific address\n"
+	    "  -bind6 <addr>   Bind IPv6 to specific address\n"
+	    "\n"
+	    "Rules:\n"
+	    "  - IPv4 and IPv6 are independent\n"
+	    "  - If neither -bind4 nor -bind6 is used, both are enabled\n"
+	    "  - Addresses must belong to a local interface or use wildcard\n"
+	    "  - Example IPv4: 192.168.1.10 or 0.0.0.0\n"
+	    "  - Example IPv6: ::1 or ::\n"
+	    "\n"
+	    "Example usage:\n"
+	    "  ./simple_server -v -bind4 0.0.0.0 -bind6 :: -p 8080\n"
+	    "\n");
+
+	exit(EXIT_FAILURE);
+}
+
 /**
  * @brief Validate port number string contains only digits
  *
@@ -210,8 +240,7 @@ setFlags(const int argc, char *argv[])
 			continue;
 		}
 		else {
-			printf("Invalid flag %s\n", argv[i]);
-			exit(EXIT_FAILURE);
+			print_flag_error(argv[i]);
 		}
 	}
 
