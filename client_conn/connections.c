@@ -7,6 +7,8 @@
 #include "./connections.h"
 #include <stdlib.h>
 
+#include "../debug/debug.h"
+
 /**
  * @brief Remove a client connection and compact the poll/client arrays.
  *
@@ -15,6 +17,8 @@
 void
 close_conn(int i, int *fd_count, struct pollfd pfds[], Client clients[])
 {
+	DBG("Closing connection with fd %d\n", clients[i].fd);
+
 	if (0 == i) {
 		fprintf(stderr, "Close_connect listener!");
 		return;
@@ -27,8 +31,11 @@ close_conn(int i, int *fd_count, struct pollfd pfds[], Client clients[])
 	free(clients[i].in_buf);
 	free(clients[i].out_buf);
 
-	pfds[i] = pfds[*fd_count - 1];
-	clients[i] = clients[*fd_count - 1];
+	// Don't swap if i is last index, avoid self-memcpy
+	if (i != *fd_count - 1) {
+		pfds[i] = pfds[*fd_count - 1];
+		clients[i] = clients[*fd_count - 1];
+	}
 	(*fd_count)--;
 }
 
@@ -44,6 +51,8 @@ add_to_lists(struct pollfd **pfds,
     int *fd_count,
     int *fd_size)
 {
+	DBG("Adding newfd %d to list\n", newfd);
+
 	// Increase size of array if we do not have enough room
 	if (*fd_count == *fd_size) {
 		*fd_size *= 2;
