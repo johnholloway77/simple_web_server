@@ -163,6 +163,11 @@ TEST_CFLAGS  = -std=c11 -Wall -Wextra -g \
                -I requests -I $(CRITERION_PREFIX)/include
 TEST_LDFLAGS = -L $(CRITERION_PREFIX)/lib -lcriterion
 
+ifeq ($(UNAME_S),Linux)
+    TEST_CFLAGS  += -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
+    TEST_LDFLAGS += -lbsd
+endif
+
 # macOS: also need libmagic's keg path in the test flags (resolve_path
 # suite includes <magic.h> and links -lmagic when USE_LIBMAGIC is on).
 ifeq ($(UNAME_S),Darwin)
