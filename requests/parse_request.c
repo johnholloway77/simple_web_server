@@ -1,4 +1,5 @@
 #include "./parse_request.h"
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include <sys/syslimits.h>
@@ -18,6 +19,10 @@
 	*resp = RESP_403;                                                      \
 	return -1;
 
+#define DETERMINED_414                                                         \
+	*resp = RESP_414;                                                      \
+	return -1;
+
 #define DETERMINED_501                                                         \
 	*resp = RESP_501;                                                      \
 	return -1;
@@ -33,21 +38,18 @@ method_from_token(const char *tok, size_t len)
 		return HTTP_METHOD_UNKNOWN;
 	}
 
-	if (strncmp(tok, "GET", len) == 0) {
+	if (len == strlen("GET") && strncmp(tok, "GET", len) == 0)
 		return HTTP_GET;
-	}
-
-	if (strncmp(tok, "POST", len) == 0) {
+	if (len == strlen("POST") && strncmp(tok, "POST", len) == 0)
 		return HTTP_POST;
-	}
 
-	if (strncmp(tok, "PUT", len) == 0) {
-		return HTTP_METHOD_UNKNOWN;
-	}
+	// if (strncmp(tok, "PUT", len) == 0) {
+	// 	return HTTP_METHOD_UNKNOWN;
+	// }
 
-	if (strncmp(tok, "DELETE", len) == 0) {
-		return HTTP_METHOD_UNKNOWN;
-	}
+	// if (strncmp(tok, "DELETE", len) == 0) {
+	// 	return HTTP_METHOD_UNKNOWN;
+	// }
 
 	return HTTP_METHOD_UNKNOWN; // use for junk/incorrect
 };
@@ -59,21 +61,14 @@ version_from_token(const char *tok, size_t len)
 		return HTTP_VERSION_UNKNOWN;
 	}
 
-	if (strncmp(tok, "HTTP/1.0", len) == 0) {
+	if (len == strlen("HTTP/1.0") && strncmp(tok, "HTTP/1.0", len) == 0)
 		return HTTP_1_0;
-	}
-
-	if (strncmp(tok, "HTTP/1.1", len) == 0) {
+	if (len == strlen("HTTP/1.1") && strncmp(tok, "HTTP/1.1", len) == 0)
 		return HTTP_1_1;
-	}
-
-	if (strncmp(tok, "HTTP/0.9", len) == 0) {
+	if (len == strlen("HTTP/0.9") && strncmp(tok, "HTTP/0.9", len) == 0)
 		return HTTP_VERSION_UNSUPPORTED;
-	}
-
-	if (strncmp(tok, "HTTP/2.0", len) == 0) {
+	if (len == strlen("HTTP/2.0") && strncmp(tok, "HTTP/2.0", len) == 0)
 		return HTTP_VERSION_UNSUPPORTED;
-	}
 
 	return HTTP_VERSION_UNKNOWN; // use for junk/incorrect
 }
@@ -97,37 +92,46 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
-	char line_buf[MAX_REQUEST_SIZE];
-	memcpy(line_buf, buf, len);
-	line_buf[len] = '\0';
+	const char *first_line = strnstr(buf, "\r\n", len);
+	size_t line_length = first_line ? (size_t)(first_line - buf) : len;
+	char line_buf[MAX_REQUEST_SIZE + 1];
+	memcpy(line_buf, buf, line_length);
+	line_buf[line_length] = '\0';
 
 	DBG("request:\n%s\n", line_buf);
 
-	char fmt[64] = {0};
-	char method[METHOD_MAX] = {0};
-	char version[VERSION_MAX] = {0};
-	char extra[10] = {0};
+	char *method = NULL;
+	char *path = NULL;
+	char *version = NULL;
+	char *extra = NULL;
 
-	snprintf(fmt,
-	    sizeof(fmt),
-	    "%%%ds %%%ds %%%ds %%%ds",
-	    METHOD_MAX - 1,
-	    PATH_MAX - 1,
-	    VERSION_MAX - 1,
-	    9);
+	char *deliminator = " ";
 
-	int parsed = sscanf(line_buf, fmt, method, (*out).path, version, extra);
+	method = strtok(line_buf, deliminator);
+	path = strtok(NULL, deliminator);
+	version = strtok(NULL, deliminator);
+	extra = strtok(NULL, deliminator);
 
-	if (3 == parsed) {
-		DBG("Method %s\nPath: %s\nVersion %s\n",
-		    method,
-		    (*out).path,
-		    version);
+	if (method && path && version && !extra) {
+		DBG("Method %s\tPath: %s\tVersion %s\n", method, path, version);
 
-		(*out).method = method_from_token(method, METHOD_MAX);
-		(*out).version = version_from_token(version, VERSION_MAX);
+		(*out).method = method_from_token(method, strlen(method));
+		(*out).version = version_from_token(version, strlen(version));
+
+		size_t path_len = strlcpy((*out).path, path, PATH_MAX);
+		if (path_len >= PATH_MAX) {
+			DETERMINED_414
+		}
 	}
+
 	else {
+		DBG("Invalid:"
+		    "Method %s\tPath: %s\tVersion %s\textra? %s\n",
+		    method,
+		    path,
+		    version,
+		    extra);
+
 		DETERMINED_400
 	}
 
@@ -140,7 +144,7 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
-	if (path_has_traversal((*out).path, PATH_MAX)) {
+	if (path_has_traversal((*out).path, strlen((*out).path))) {
 		DETERMINED_403
 	}
 

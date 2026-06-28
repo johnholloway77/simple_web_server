@@ -40,7 +40,7 @@
  *  defaults to RESP_400. If you add RESP_414 to enum client_response,
  *  change this single line and the relevant tests follow.
  * ------------------------------------------------------------------ */
-#define OVERLONG_PATH_RESP RESP_400
+#define OVERLONG_PATH_RESP RESP_414
 
 #define SETUP()                                                                \
 	Request out;                                                           \
