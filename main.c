@@ -14,6 +14,7 @@
 #include "./sockets/socket.h"
 #include "client_conn/connections.h"
 #include "requests/request2.h"
+#include "debug/debug.h"
 
 #define INITIAL_SIZE 32
 #define N_LISTENERS 2
@@ -45,10 +46,13 @@ setup_sigchld_handler()
 		perror("sigaction");
 		exit(EXIT_FAILURE);
 	}
+
+	DBG("Sigchild handler setup\n");
 }
 
 /**
- * @brief Server entry point — initialises subsystems and runs the poll() event loop.
+ * @brief Server entry point — initialises subsystems and runs the poll() event
+ * loop.
  *
  * Startup sequence:
  *   1. Install SIGCHLD disposition (auto-reap via SA_NOCLDWAIT).
@@ -76,11 +80,17 @@ setup_sigchld_handler()
 int
 main(int argc, char *argv[])
 {
+	DBG("Loaded in debug mode\n");
+
 	setup_sigchld_handler();
 
 	if (setFlags(argc, argv) < 0) {
 		printf("incorrect flags\nWrite some nice message here\n");
 	}
+
+// There is a difference between build DEBUG and terminal display debug...should
+// rename it verbose...
+#ifndef DEBUG
 	if (!(app_flags & D_FLAG)) {
 		/*
 		 * We are setting nochdir to -1 so that the daemon runs in the
@@ -92,6 +102,7 @@ main(int argc, char *argv[])
 		 */
 		daemon(-1, 0);
 	}
+#endif
 
 	/* initialize magic */
 	magic_t magic = magic_open(MAGIC_MIME_TYPE);
@@ -129,6 +140,7 @@ main(int argc, char *argv[])
 
 	// Let's get this baby spinnin!
 	for (;;) {
+		DBG("Entering first for loop\n");
 		int poll_count = poll(pfds, fd_count, -1);
 		if (-1 == poll_count) {
 			if (errno == EINTR) {
@@ -144,6 +156,8 @@ main(int argc, char *argv[])
 					int listener = 0 == i ? listener_v4
 							      : listener_v6;
 
+					DBG("New connection found\n");
+
 					accept_new_conn(listener,
 					    &pfds,
 					    &clients,
@@ -152,12 +166,6 @@ main(int argc, char *argv[])
 				}
 				continue; // We don't want to treat a listener
 					  // as a client!
-			}
-
-			if (CLOSING == clients[i].state) {
-				close_conn(i, &fd_count, pfds, clients);
-				i--;
-				continue;
 			}
 
 			short revents = pfds[i].revents;
@@ -175,8 +183,9 @@ main(int argc, char *argv[])
 
 			if ((revents & POLLIN) &&
 			    (READING == clients[i].state)) {
+				DBG("Incoming from client detected\n");
 				// handle read for new request
-				do_read(i, clients);
+				do_read(i, clients, magic);
 			}
 
 			if (revents & POLLOUT &&
@@ -185,6 +194,13 @@ main(int argc, char *argv[])
 				// handle writing
 
 				// To-do!
+			}
+
+			if (CLOSING == clients[i].state) {
+				printf("Closign connection\n");
+				close_conn(i, &fd_count, pfds, clients);
+				i--;
+				continue;
 			}
 		}
 	}
