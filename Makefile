@@ -74,7 +74,7 @@ endif
 # Because libmagic is unconfirmed, libmagic is DISABLED here by default.
 ifeq ($(UNAME_S),SunOS)
     CC ?= gcc
-    USE_LIBMAGIC = 0
+    USE_LIBMAGIC = 1
     # gcc on OmniOS lives here; adjust if your gcc14 install differs
     CRITERION_PREFIX ?= /opt/ooce
     CFLAGS += -D_POSIX_C_SOURCE=200809L -D__EXTENSIONS__
