@@ -52,6 +52,7 @@ ifeq ($(UNAME_S),Linux)
     TEST_CFLAGS += -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
     # libmagic headers/lib on default path via libmagic-dev; no -I/-L needed
     LIBS += -lbsd
+    TEST_LDFLAGS += -lbsd
 endif
 
 # ─── macOS (Darwin) ────────────────────────────────────────────────────
