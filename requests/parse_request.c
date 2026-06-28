@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/syslimits.h>
+#include <limits.h>
 
 #include "../debug/debug.h"
 
