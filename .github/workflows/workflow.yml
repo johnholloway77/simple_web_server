@@ -66,7 +66,7 @@ jobs:
           usesh: true
           mem: 6144
           prepare: |
-            pkg install developer/gcc14 developer/build/gnu-make
+            pkg install developer/gcc14 developer/build/gnu-make file
             # libmagic FMRI is uncertain on OmniOS — confirm real name:
             #   pkg search -r libmagic   (run on local OmniOS box)
             # then add it here, e.g. pkg install file/...
