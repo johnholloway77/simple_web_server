@@ -52,7 +52,7 @@ jobs:
             export IGNORE_OSVERSION=yes
             export ASSUME_ALWAYS_YES=yes
             sudo -E pkg update -f
-            sudo -E pkg install -y gmake llvm libmagic pkgconf criterion
+            sudo -E pkg install -y gmake llvm pkgconf criterion
             gmake
             gmake test-all
 
