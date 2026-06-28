@@ -30,13 +30,13 @@ jobs:
           brew install llvm libmagic pkg-config criterion
 
       - name: Build
-        run: gmake
+        run: make
         # macOS: 'gmake' exists only if you 'brew install make'. Homebrew
         # 'make' = gmake. OR just call 'make' on macOS+Linux (GNU make is
         # the system make on both). Only FreeBSD needs the gmake distinction.
 
       - name: Test
-        run: gmake test-all
+        run: make test-all
 
   build-test-freebsd:
     name: Build & Test (freebsd)
