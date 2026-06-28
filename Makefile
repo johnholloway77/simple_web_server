@@ -48,6 +48,7 @@ endif
 ifeq ($(UNAME_S),Linux)
     CC ?= clang
     CRITERION_PREFIX ?= /usr
+    CFLAGS += -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L
     # libmagic headers/lib on default path via libmagic-dev; no -I/-L needed
 endif
 
@@ -76,6 +77,7 @@ ifeq ($(UNAME_S),SunOS)
     USE_LIBMAGIC = 0
     # gcc on OmniOS lives here; adjust if your gcc14 install differs
     CRITERION_PREFIX ?= /opt/ooce
+    CFLAGS += -D_POSIX_C_SOURCE=200809L -D__EXTENSIONS__
     # If you locate libmagic (e.g. via pkgsrc /opt/local), you can re-enable:
     #   USE_LIBMAGIC = 1
     #   CFLAGS += -I/opt/local/include
