@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <sys/syslimits.h>
+#include <limits.h>
 
 #ifdef __linux__
 #include <bsd/string.h>
