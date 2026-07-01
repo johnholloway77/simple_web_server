@@ -145,6 +145,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 	}
 	else {
 		printf("open failed\n");
+		return -1;
 	}
 
 	return -1;
