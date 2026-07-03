@@ -34,7 +34,7 @@
  * @param data  Pointer to bytes to copy in
  * @param n     Number of bytes to copy
  */
-void
+static void
 append(struct Client *c, const char *data, size_t n)
 {
 	if (c->input_length + n > MAX_REQUEST_SIZE) {

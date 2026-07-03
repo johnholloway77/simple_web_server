@@ -33,7 +33,7 @@ extern uint32_t app_flags;
  * @note Child exit status is discarded (not collected via wait())
  * @note Exits program on failure to install the disposition
  */
-void
+static void
 setup_sigchld_handler()
 {
 	struct sigaction sa;

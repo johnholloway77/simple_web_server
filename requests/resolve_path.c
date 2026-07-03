@@ -147,7 +147,7 @@ path_includes_cgi(const char *path)
 	return strnstr(path, "./cgi-bin/", 10) ? 1 : 0;
 }
 
-enum trailing_char
+static enum trailing_char
 get_last_char(const char *path)
 {
 	int len = strlen(path);

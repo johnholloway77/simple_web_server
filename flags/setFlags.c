@@ -20,7 +20,7 @@ char *bind_addr6;
 char *cgi_addr;
 char *log_addr;
 
-void
+static void
 print_flag_error(const char *bad_flag)
 {
 	fprintf(stderr,
@@ -67,8 +67,8 @@ print_flag_error(const char *bad_flag)
  *
  * @see setFlags()
  */
-int
-checkPortNumber(char *port)
+static int
+checkPortNumber(const char *port)
 {
 	for (int i = 0; i < (int)strlen(port); i++) {
 		if (!isdigit(port[i])) {
