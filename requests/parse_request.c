@@ -130,12 +130,16 @@ parse_request(const char *buf,
 	}
 
 	else {
-		DBG("Invalid:"
-		    "Method %s\tPath: %s\tVersion %s\textra? %s\n",
-		    method,
-		    path,
-		    version,
-		    extra);
+#ifdef DEBUG
+		char *m, *p, *v, *e;
+
+		*m = method ? method : "missing";
+		*p = path ? path : "missing";
+		*v = version ? version : "missing";
+		*e = extra ? extra : "no provided";
+		
+		DBG("Method %s\tPath: %s\tVersion %s\textra? %s\n",m, p, v, e);
+#endif
 
 		DETERMINED_400
 	}
