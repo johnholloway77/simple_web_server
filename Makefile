@@ -110,7 +110,8 @@ SOURCES = main.c \
     sockets/get_listener_v6.c \
     requests/do_read.c \
     requests/parse_request.c \
-    requests/resolve_path.c
+    requests/resolve_path.c \
+    requests/close_resolve_path.c
 
 BINARY       = simple_server
 DEBUG_BINARY = simple_server_debug
