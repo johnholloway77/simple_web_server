@@ -39,18 +39,6 @@ enum trailing_char
 	TRAILING_COUNT
 };
 
-enum dir_options
-{
-	CONTAINS_INDEX,
-	MISSING_INXED,
-	DIR_OPTIONS_COUNT
-};
-
-struct dir_info
-{
-	struct stat st;
-};
-
 static FILE *
 get_file_path_slash(const char *path, const char *dir_index)
 {
@@ -233,6 +221,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 			}
 
 			rp->is_dir_listing = 1;
+			rp->file_ptr = NULL;
 			return 0;
 		}
 
