@@ -159,8 +159,9 @@ clean-obj:
 #  Testing (Criterion)
 # ═══════════════════════════════════════════════════════════════════════
 CRITERION_PREFIX ?= /usr/local
-TEST_CFLAGS  = -std=c11 -Wall -Wextra -g \
-               -I requests -I $(CRITERION_PREFIX)/include
+TEST_CFLAGS  = -std=c11 -Wall -Wextra  -g \
+               -I requests -I $(CRITERION_PREFIX)/include \
+               #-DDEBUG
 TEST_LDFLAGS = -L $(CRITERION_PREFIX)/lib -lcriterion
 
 ifeq ($(UNAME_S),Linux)
@@ -187,7 +188,7 @@ endif
 TEST_ASAN_CFLAGS  = $(TEST_CFLAGS) -fsanitize=address -fno-omit-frame-pointer
 TEST_ASAN_LDFLAGS = $(TEST_LDFLAGS) -fsanitize=address
 
-TEST_RUN_FLAGS ?= -j1 #--quiet
+TEST_RUN_FLAGS ?= -j1 #--verbose #--quiet
 
 # ─── parse_request suite ───────────────────────────────────────────────
 PARSE_SRC         = test_cases/test_parse_request.c

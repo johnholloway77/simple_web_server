@@ -21,3 +21,10 @@ test_questions/
 
 # backup files
 *.backup
+*.bak
+benchmark_results/*
+build/*
+dtrace_scripts/*
+docs/*
+markdown_files/*
+requests/OLD-parseRequest.cpp

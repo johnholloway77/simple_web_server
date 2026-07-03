@@ -1,7 +1,9 @@
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <sys/syslimits.h>
 
 #ifdef __linux__
 #include <bsd/string.h>
@@ -15,11 +17,58 @@
 
 #define BASE_URL "."
 #define BASE_LEN strlen(BASE_URL)
+#define DIR_INDEX "index.htm"
+#define DIR_INDEX2 "index.html"
+
+#define HANDLE_DIR_INDEX                                                       \
+	fstat(fileno(rp->file_ptr), &st);                                      \
+	rp->file_size = st.st_size;                                            \
+	rp->mime_type = "text/html";                                           \
+	fclose(rp->file_ptr);                                                  \
+	rp->file_ptr = index;
 
 #include "../debug/debug.h"
 
 extern char *cgi_addr;
 extern uint32_t app_flags;
+
+enum trailing_char
+{
+	TRAILING_SLASH,
+	TRAILING_CHAR,
+	TRAILING_COUNT
+};
+
+enum dir_options
+{
+	CONTAINS_INDEX,
+	MISSING_INXED,
+	DIR_OPTIONS_COUNT
+};
+
+struct dir_info
+{
+	struct stat st;
+};
+
+static FILE *
+get_file_path_slash(const char *path, const char *dir_index)
+{
+	char path_buffer2[PATH_MAX];
+	snprintf(path_buffer2, PATH_MAX, "%s%s", path, dir_index);
+	return fopen(path_buffer2, "r");
+}
+static FILE *
+get_file_path_char(const char *path, const char *dir_index)
+{
+	char path_buffer2[PATH_MAX];
+	snprintf(path_buffer2, PATH_MAX, "%s/%s", path, dir_index);
+	return fopen(path_buffer2, "r");
+}
+
+static FILE *(*get_file_path[TRAILING_COUNT])(const char *,
+    const char *) = {[TRAILING_SLASH] = get_file_path_slash,
+    [TRAILING_CHAR] = get_file_path_char};
 
 const char *
 get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
@@ -30,6 +79,8 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	}
 
 	// Wowzers a lookup table!
+	if (strcasecmp(ext, ".html") == 0)
+		return "text/html";
 	if (strcasecmp(ext, ".htm") == 0)
 		return "text/html";
 	if (strcasecmp(ext, ".txt") == 0)
@@ -55,6 +106,8 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 
 	// Images
 	if (strcasecmp(ext, ".jpeg") == 0)
+		return "image/jpeg";
+	if (strcasecmp(ext, ".jpg") == 0)
 		return "image/jpeg";
 	if (strcasecmp(ext, ".svg") == 0)
 		return "image/svg+xml";
@@ -115,18 +168,24 @@ close_resolve_path_ptr(ResolvedPath *rp)
 	}
 }
 
+enum trailing_char
+get_last_char(const char *path)
+{
+	int len = strlen(path);
+
+	return ('/' == path[len - 1]) ? TRAILING_SLASH : TRAILING_CHAR;
+}
+
 int
+
 resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 {
-	int path_length = strlen(req->path);
-
 	char path_buffer[PATH_MAX];
 	struct stat st = {0};
 
 	DBG("---- New Test run -----\n\treq->path: %s length %ld\n",
 	    req->path,
 	    strlen(req->path));
-	DBG("base_url: %s\t base_len: %ld\n", BASE_URL, BASE_LEN);
 
 	snprintf(path_buffer, PATH_MAX, "%s%s", BASE_URL, req->path);
 
@@ -142,25 +201,11 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 		}
 	}
 
-	DBG("Entering resolve_path ! \n");
 	DBG("path_buffer: %s\n", path_buffer);
 
-	if (('/' == req->path[path_length - 1]) ||
-	    '.' == req->path[path_length - 1]) {
-		if (rp->is_cgi_bin) {
-			// no cgi file provided.
-			DBG("CGI file not listed");
-			c->resp_val = RESP_501;
-			return -1;
-		}
+	enum trailing_char trailing_char = get_last_char(path_buffer);
 
-		DBG("searching for index.html\n");
-		rp->file_ptr = fopen("./index.html", "r");
-	}
-	else {
-		DBG("In else branch\n");
-		rp->file_ptr = fopen(path_buffer, "r");
-	}
+	rp->file_ptr = fopen(path_buffer, "r");
 
 	if (rp->file_ptr) {
 		DBG("file opened!\n");
@@ -171,6 +216,22 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 		};
 
 		if (S_ISDIR(st.st_mode)) {
+			FILE *index = get_file_path[trailing_char](path_buffer,
+			    DIR_INDEX);
+			if (index) {
+				DBG("Index.htm found!\n");
+				HANDLE_DIR_INDEX
+				return 0;
+			}
+
+			index = get_file_path[trailing_char](path_buffer,
+			    DIR_INDEX2);
+			if (index) {
+				DBG("Index.htm found!\n");
+				HANDLE_DIR_INDEX
+				return 0;
+			}
+
 			rp->is_dir_listing = 1;
 			return 0;
 		}
@@ -184,10 +245,12 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 	}
 	else {
 		DBG("open failed\n");
-		c->resp_val = RESP_404;
+		if (EACCES == errno) {
+			c->resp_val = RESP_403;
+		}
+		else {
+			c->resp_val = RESP_404;
+		}
 		return -1;
 	}
-
-	fclose(rp->file_ptr);
-	return -1;
 }
