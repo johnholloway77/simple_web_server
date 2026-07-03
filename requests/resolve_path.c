@@ -11,9 +11,15 @@
 
 #include "./resolve_path.h"
 #include "../debug/debug.h"
+#include "../flags/flags.h"
 
 #define BASE_URL "."
 #define BASE_LEN strlen(BASE_URL)
+
+#include "../debug/debug.h"
+
+extern char *cgi_addr;
+extern uint32_t app_flags;
 
 const char *
 get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
@@ -94,6 +100,12 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	return magic_descriptor(magic, file_des);
 }
 
+int
+path_includes_cgi(const char *path)
+{
+	return strnstr(path, "./cgi-bin/", 10) ? 1 : 0;
+}
+
 void
 close_resolve_path_ptr(ResolvedPath *rp)
 {
@@ -111,42 +123,71 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 	char path_buffer[PATH_MAX];
 	struct stat st = {0};
 
-	printf("req->path: %s length %ld\n", req->path, strlen(req->path));
-	printf("base_url: %s\t base_len: %ld\n", BASE_URL, BASE_LEN);
-
-	// strlcpy(path_buffer, BASE_URL, BASE_LEN);
-	// strlcpy(path_buffer + BASE_LEN, req->path, strlen(req->path));
+	DBG("---- New Test run -----\n\treq->path: %s length %ld\n",
+	    req->path,
+	    strlen(req->path));
+	DBG("base_url: %s\t base_len: %ld\n", BASE_URL, BASE_LEN);
 
 	snprintf(path_buffer, PATH_MAX, "%s%s", BASE_URL, req->path);
 
-	printf("Entering resolve_path ! \n");
-	printf("path_buffer: %s\n", path_buffer);
+	if (path_includes_cgi(path_buffer)) {
+		if (app_flags & C_FLAG) {
+			// Will handle cgi-bin
+			rp->is_cgi_bin = 1;
+		}
+		else {
+			rp->file_ptr = NULL;
+			c->resp_val = RESP_501;
+			return -1;
+		}
+	}
 
-	if ('/' == req->path[path_length]) {
-		printf("searching for index.html\n");
+	DBG("Entering resolve_path ! \n");
+	DBG("path_buffer: %s\n", path_buffer);
+
+	if (('/' == req->path[path_length - 1]) ||
+	    '.' == req->path[path_length - 1]) {
+		if (rp->is_cgi_bin) {
+			// no cgi file provided.
+			DBG("CGI file not listed");
+			c->resp_val = RESP_501;
+			return -1;
+		}
+
+		DBG("searching for index.html\n");
 		rp->file_ptr = fopen("./index.html", "r");
 	}
 	else {
-		printf("In else branch\n");
+		DBG("In else branch\n");
 		rp->file_ptr = fopen(path_buffer, "r");
 	}
 
 	if (rp->file_ptr) {
-		printf("file opened!\n");
+		DBG("file opened!\n");
 
 		if (-1 == fstat(fileno(rp->file_ptr), &st)) {
 			perror("resolve_path fstat");
 			exit(EXIT_FAILURE);
 		};
 
+		if (S_ISDIR(st.st_mode)) {
+			rp->is_dir_listing = 1;
+			return 0;
+		}
+
+		rp->mime_type = get_mime_type_by_ext(path_buffer,
+		    magic,
+		    fileno(rp->file_ptr));
 		rp->file_size = st.st_size;
 
 		return 0;
 	}
 	else {
-		printf("open failed\n");
+		DBG("open failed\n");
+		c->resp_val = RESP_404;
 		return -1;
 	}
 
+	fclose(rp->file_ptr);
 	return -1;
 }
