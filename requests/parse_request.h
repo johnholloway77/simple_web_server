@@ -33,12 +33,6 @@ typedef struct Request
 	char path[PATH_MAX];
 } Request;
 
-enum http_method method_from_token(const char *tok, size_t len);
-
-enum http_version version_from_token(const char *tok, size_t len);
-
-int path_has_traversal(const char *path, size_t len);
-
 int parse_request(const char *buf,
     size_t len,
     Request *out,

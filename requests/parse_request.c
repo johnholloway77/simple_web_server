@@ -36,7 +36,7 @@
 	*resp = RESP_505;                                                      \
 	return -1;
 
-enum http_method
+static enum http_method
 method_from_token(const char *tok, size_t len)
 {
 	if (0 == len) {
@@ -48,18 +48,10 @@ method_from_token(const char *tok, size_t len)
 	if (len == strlen("POST") && strncmp(tok, "POST", len) == 0)
 		return HTTP_POST;
 
-	// if (strncmp(tok, "PUT", len) == 0) {
-	// 	return HTTP_METHOD_UNKNOWN;
-	// }
-
-	// if (strncmp(tok, "DELETE", len) == 0) {
-	// 	return HTTP_METHOD_UNKNOWN;
-	// }
-
 	return HTTP_METHOD_UNKNOWN; // use for junk/incorrect
 };
 
-enum http_version
+static enum http_version
 version_from_token(const char *tok, size_t len)
 {
 	if (0 == len) {
@@ -78,7 +70,7 @@ version_from_token(const char *tok, size_t len)
 	return HTTP_VERSION_UNKNOWN; // use for junk/incorrect
 }
 
-int
+static int
 path_has_traversal(const char *path, size_t len)
 {
 	return strnstr(path, "../", len) ? 1 : 0;
@@ -105,12 +97,12 @@ parse_request(const char *buf,
 
 	DBG("request:\n%s\n", line_buf);
 
-	char *method = NULL;
-	char *path = NULL;
-	char *version = NULL;
-	char *extra = NULL;
+	const char *method = NULL;
+	const char *path = NULL;
+	const char *version = NULL;
+	const char *extra = NULL;
 
-	char *deliminator = " ";
+	const char *deliminator = " ";
 
 	method = strtok(line_buf, deliminator);
 	path = strtok(NULL, deliminator);
@@ -131,14 +123,11 @@ parse_request(const char *buf,
 
 	else {
 #ifdef DEBUG
-		char *m, *p, *v, *e;
-
-		*m = method ? method : "missing";
-		*p = path ? path : "missing";
-		*v = version ? version : "missing";
-		*e = extra ? extra : "no provided";
-		
-		DBG("Method %s\tPath: %s\tVersion %s\textra? %s\n",m, p, v, e);
+		DBG("Method %s\tPath: %s\tVersion %s\textra? %s\n",
+		    method ? method : "missing",
+		    path ? path : "missing",
+		    version ? version : "missing",
+		    extra ? extra : "no provided");
 #endif
 
 		DETERMINED_400
