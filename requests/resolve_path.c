@@ -186,7 +186,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 
 	struct stat st = {0};
 
-	DBG("---- New Test run -----\n\treq->path: %s length %ld\n",
+	DBG("---- New Test run -----\n\treq->path: %s length %z\n",
 	    req->path,
 	    strlen(req->path));
 
