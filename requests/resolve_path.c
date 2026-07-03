@@ -58,7 +58,7 @@ static FILE *(*get_file_path[TRAILING_COUNT])(const char *,
     const char *) = {[TRAILING_SLASH] = get_file_path_slash,
     [TRAILING_CHAR] = get_file_path_char};
 
-const char *
+static const char *
 get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 {
 	const char *ext = strrchr(filename, '.');
@@ -141,19 +141,10 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 	return magic_descriptor(magic, file_des);
 }
 
-int
+static int
 path_includes_cgi(const char *path)
 {
 	return strnstr(path, "./cgi-bin/", 10) ? 1 : 0;
-}
-
-void
-close_resolve_path_ptr(ResolvedPath *rp)
-{
-	if (rp->file_ptr) {
-		fclose(rp->file_ptr);
-		rp->file_ptr = NULL;
-	}
 }
 
 enum trailing_char
@@ -171,7 +162,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 	char path_buffer[PATH_MAX] = {0};
 	char *local_path = NULL;
 	char *query_buffer = NULL;
-	char *request_delim = "?";
+	const char *request_delim = "?";
 
 	snprintf(path_buffer, PATH_MAX, "%s%s", BASE_URL, req->path);
 
@@ -186,7 +177,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 
 	struct stat st = {0};
 
-	DBG("---- New Test run -----\n\treq->path: %s length %z\n",
+	DBG("---- New Test run -----\n\treq->path: %s length %zu\n",
 	    req->path,
 	    strlen(req->path));
 
