@@ -117,7 +117,7 @@ do_read(int i, Client *clients, magic_t magic)
 		return;
 	}
 
-	char *end = strnstr(c->in_buf, "\r\n\r\n", c->input_length);
+	const char *end = strnstr(c->in_buf, "\r\n\r\n", c->input_length);
 
 	if (!end) {
 		// request not fully received;
