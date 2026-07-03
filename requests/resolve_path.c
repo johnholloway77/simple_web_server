@@ -42,16 +42,16 @@ enum trailing_char
 static FILE *
 get_file_path_slash(const char *path, const char *dir_index)
 {
-	char path_buffer2[PATH_MAX];
-	snprintf(path_buffer2, PATH_MAX, "%s%s", path, dir_index);
-	return fopen(path_buffer2, "r");
+	char buffer[PATH_MAX];
+	snprintf(buffer, PATH_MAX, "%s%s", path, dir_index);
+	return fopen(buffer, "r");
 }
 static FILE *
 get_file_path_char(const char *path, const char *dir_index)
 {
-	char path_buffer2[PATH_MAX];
-	snprintf(path_buffer2, PATH_MAX, "%s/%s", path, dir_index);
-	return fopen(path_buffer2, "r");
+	char buffer[PATH_MAX];
+	snprintf(buffer, PATH_MAX, "%s/%s", path, dir_index);
+	return fopen(buffer, "r");
 }
 
 static FILE *(*get_file_path[TRAILING_COUNT])(const char *,
@@ -168,19 +168,33 @@ int
 
 resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 {
-	char path_buffer[PATH_MAX];
+	char path_buffer[PATH_MAX] = {0};
+	char *local_path = NULL;
+	char *query_buffer = NULL;
+	char *request_delim = "?";
+
+	snprintf(path_buffer, PATH_MAX, "%s%s", BASE_URL, req->path);
+
+	local_path = strtok(path_buffer, request_delim);
+	query_buffer = strtok(NULL, request_delim);
+
+	if (query_buffer) {
+		strlcpy(rp->query_string,
+		    query_buffer,
+		    strlen(query_buffer) + 1);
+	}
+
 	struct stat st = {0};
 
 	DBG("---- New Test run -----\n\treq->path: %s length %ld\n",
 	    req->path,
 	    strlen(req->path));
 
-	snprintf(path_buffer, PATH_MAX, "%s%s", BASE_URL, req->path);
-
-	if (path_includes_cgi(path_buffer)) {
+	if (path_includes_cgi(local_path)) {
 		if (app_flags & C_FLAG) {
 			// Will handle cgi-bin
 			rp->is_cgi_bin = 1;
+			// printf("\tCGI-bin path: %s\n", path_buffer);
 		}
 		else {
 			rp->file_ptr = NULL;
@@ -189,11 +203,11 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 		}
 	}
 
-	DBG("path_buffer: %s\n", path_buffer);
+	DBG("local_path: %s\n", local_path);
 
-	enum trailing_char trailing_char = get_last_char(path_buffer);
+	enum trailing_char trailing_char = get_last_char(local_path);
 
-	rp->file_ptr = fopen(path_buffer, "r");
+	rp->file_ptr = fopen(local_path, "r");
 
 	if (rp->file_ptr) {
 		DBG("file opened!\n");
@@ -204,7 +218,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 		};
 
 		if (S_ISDIR(st.st_mode)) {
-			FILE *index = get_file_path[trailing_char](path_buffer,
+			FILE *index = get_file_path[trailing_char](local_path,
 			    DIR_INDEX);
 			if (index) {
 				DBG("Index.htm found!\n");
@@ -212,7 +226,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 				return 0;
 			}
 
-			index = get_file_path[trailing_char](path_buffer,
+			index = get_file_path[trailing_char](local_path,
 			    DIR_INDEX2);
 			if (index) {
 				DBG("Index.htm found!\n");
@@ -225,7 +239,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 			return 0;
 		}
 
-		rp->mime_type = get_mime_type_by_ext(path_buffer,
+		rp->mime_type = get_mime_type_by_ext(local_path,
 		    magic,
 		    fileno(rp->file_ptr));
 		rp->file_size = st.st_size;
