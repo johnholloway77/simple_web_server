@@ -111,7 +111,8 @@ SOURCES = main.c \
     requests/do_read.c \
     requests/parse_request.c \
     requests/resolve_path.c \
-    requests/close_resolve_path.c
+    requests/close_resolve_path.c \
+    response/build_error_response.c
 
 BINARY       = simple_server
 DEBUG_BINARY = simple_server_debug
@@ -316,8 +317,12 @@ format-check:
 .PHONY: lint
 lint:
 	@echo "Running cppcheck static analysis..."
-	@cppcheck --enable=all --suppress=missingIncludeSystem --suppress=unusedFunction \
-		--error-exitcode=1 $(SOURCES)
+	@cppcheck --enable=all --suppress=missingIncludeSystem \
+    --check-level=exhaustive --error-exitcode=1 $(SOURCES)
+	# @cppcheck --enable=all --suppress=missingIncludeSystem \
+ #    --error-exitcode=1 $(SOURCES)
+	# @cppcheck --enable=all --suppress=missingIncludeSystem --suppress=unusedFunction \
+	# 	--error-exitcode=1 $(SOURCES)
 	# cppcheck --enable=all --suppress=missingIncludeSystem --suppress=unusedFunction --error-exitcode=1 $(SOURCES); echo "exit: $?"
 	@echo "Running cpplint style check..."
 	@cpplint --filter=-whitespace/line_length,-build/include_subdir \

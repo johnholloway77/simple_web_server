@@ -4,9 +4,11 @@
 #include <poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
 #include "../client_conn/connections.h"
-#include "parse_request.h"
+#include "./parse_request.h"
 #include "./resolve_path.h"
+#include "../response/build_response.h"
 
 #ifdef __linux__
 #include <bsd/string.h>
@@ -140,9 +142,12 @@ do_read(int i, Client *clients, magic_t magic)
 		// build_response(c, &rp, magic);
 	}
 	else {
+		build_error_response(c);
+
 		printf(
-		    "Parse request failed or resolve failed.\n\tTo do: build error response\nExiting at do_read.c\tline %d\n",
-		    __LINE__);
+		    "successfully built error response for client:\n\n%s\n\nWill exit now\n",
+		    c->out_buf);
+
 		exit(EXIT_SUCCESS);
 		// build_error_response(c);
 	}
