@@ -217,7 +217,9 @@ $(PARSE_BINARY_ASAN): $(PARSE_SRC) $(PARSE_UNIT)
 
 # ─── resolve_path suite (needs libmagic when enabled) ──────────────────
 RESOLVE_SRC         = test_cases/test_resolve_path.c
-RESOLVE_UNIT        = requests/resolve_path.c requests/parse_request.c
+RESOLVE_UNIT        = requests/resolve_path.c \
+					  requests/close_resolve_path.c \
+				      requests/parse_request.c
 RESOLVE_BINARY      = test_cases/test_resolve_path
 RESOLVE_BINARY_ASAN = test_cases/test_resolve_path_asan
 
