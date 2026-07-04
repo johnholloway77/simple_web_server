@@ -42,7 +42,7 @@ enum client_response
 	RESP_501, /**< 501 Not Implemented (CGI disabled) */
 	RESP_505, // HTTP version Not supported
 
-	NUM_CLIENT_RESP, /**< Sentinel — response not yet determined */
+	NUM_CLIENT_RESP,
 };
 
 /**

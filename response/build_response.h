@@ -3,3 +3,5 @@
 #include "../requests/resolve_path.h"
 
 int build_response(Client *c, ResolvedPath *rp, magic_t magic);
+
+int build_error_response(Client *c);

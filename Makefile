@@ -189,7 +189,7 @@ endif
 TEST_ASAN_CFLAGS  = $(TEST_CFLAGS) -fsanitize=address -fno-omit-frame-pointer
 TEST_ASAN_LDFLAGS = $(TEST_LDFLAGS) -fsanitize=address
 
-TEST_RUN_FLAGS ?= -j1 #--verbose #--quiet
+TEST_RUN_FLAGS ?= -j1 --verbose #--quiet
 
 # ─── parse_request suite ───────────────────────────────────────────────
 PARSE_SRC         = test_cases/test_parse_request.c
@@ -238,16 +238,39 @@ $(RESOLVE_BINARY_ASAN): $(RESOLVE_SRC) $(RESOLVE_UNIT)
 	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
 	    $(RESOLVE_SRC) $(RESOLVE_UNIT) $(TEST_ASAN_LDFLAGS) $(TEST_MAGIC_LIB)
 
+# ─── build_error suite ─────────────────────────────────────────────────
+BUILD_ERR_SRC         = test_cases/test_build_error.c
+BUILD_ERR_UNIT        = response/build_error_response.c
+BUILD_ERR_BINARY      = test_cases/test_build_error
+BUILD_ERR_BINARY_ASAN = test_cases/test_build_error_asan
+
+.PHONY: test-build-error
+test-build-error: $(BUILD_ERR_BINARY)
+	@echo "Running build_error_response unit tests..."
+	@./$(BUILD_ERR_BINARY) $(TEST_RUN_FLAGS)
+
+.PHONY: test-build-error-asan
+test-build-error-asan: $(BUILD_ERR_BINARY_ASAN)
+	@echo "Running build_error_response unit tests under AddressSanitizer..."
+	@./$(BUILD_ERR_BINARY_ASAN) $(TEST_RUN_FLAGS)
+
+$(BUILD_ERR_BINARY): $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT)
+	$(CC) $(TEST_CFLAGS) -o $@ $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT) $(TEST_LDFLAGS)
+
+$(BUILD_ERR_BINARY_ASAN): $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT)
+	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
+	    $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT) $(TEST_ASAN_LDFLAGS)
+
 # ─── Aggregate test targets ────────────────────────────────────────────
 .PHONY: test
-test: test-parse test-resolve
+test: test-parse test-resolve test-build-error
 
 .PHONY: test-all
-test-all: test-parse test-resolve
+test-all: test-parse test-resolve test-build-error
 
 # FIXED: was 'test-asan' (nonexistent) -> 'test-parse-asan'
 .PHONY: test-all-asan
-test-all-asan: test-parse-asan test-resolve-asan
+test-all-asan: test-parse-asan test-resolve-asan test-build-error-asan
 
 .PHONY: clean-test
 clean-test:
@@ -295,6 +318,7 @@ lint:
 	@echo "Running cppcheck static analysis..."
 	@cppcheck --enable=all --suppress=missingIncludeSystem --suppress=unusedFunction \
 		--error-exitcode=1 $(SOURCES)
+	# cppcheck --enable=all --suppress=missingIncludeSystem --suppress=unusedFunction --error-exitcode=1 $(SOURCES); echo "exit: $?"
 	@echo "Running cpplint style check..."
 	@cpplint --filter=-whitespace/line_length,-build/include_subdir \
 		--linelength=80 $(SOURCES) $(wildcard */*.h)
