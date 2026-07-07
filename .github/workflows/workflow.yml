@@ -73,6 +73,9 @@ jobs:
           run: |
             # gmake from gnu-make package; gcc from gcc14
             gmake CC=gcc
+            ./simple_server -v -p 8080 &
+            sleep 2
+            curl -fsS http://127.0.0.1:8080/ >/dev/null && echo "smoke OK"
 
   # build-illumos:
   #   name: Build & Smoke (illumos)
