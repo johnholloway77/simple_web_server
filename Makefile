@@ -112,7 +112,8 @@ SOURCES = main.c \
     requests/parse_request.c \
     requests/resolve_path.c \
     requests/close_resolve_path.c \
-    response/build_error_response.c
+    response/build_error_response.c \
+    response/do_write.c
 
 BINARY       = simple_server
 DEBUG_BINARY = simple_server_debug

@@ -2,6 +2,7 @@
 
 #include "../client_conn/connections.h"
 #include <magic.h>
+#include <poll.h>
 
 /**
  * @brief Read available bytes from a client socket and detect end-of-headers.
@@ -14,4 +15,4 @@
  * @param i        Index of the client in the @p clients array
  * @param clients  The Client array managed by the poll loop
  */
-void do_read(int i, Client *clients, magic_t magic);
+void do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic);

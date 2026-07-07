@@ -87,6 +87,7 @@ add_to_lists(struct pollfd **pfds,
 	(*clients)[index].out_buf = NULL;
 	(*clients)[index].output_capacity = 0;
 	(*clients)[index].output_length = 0;
+	(*clients)[index].output_sent = 0;
 
 	(*clients)[index].file_ptr = NULL;
 	(*clients)[index].resp_val = NUM_CLIENT_RESP; // Use for unknown/not set

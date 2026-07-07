@@ -87,9 +87,10 @@ append(struct Client *c, const char *data, size_t n)
  * @param clients  The Client array managed by the poll loop
  */
 void
-do_read(int i, Client *clients, magic_t magic)
+do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 {
 	Client *c = &clients[i];
+	struct pollfd *p = &pfds[i];
 
 	for (;;) {
 		char tmp[TEMP_BUFFER];
@@ -144,15 +145,12 @@ do_read(int i, Client *clients, magic_t magic)
 	else {
 		build_error_response(c);
 
-		printf(
-		    "successfully built error response for client:\n\n%s\n\nWill exit now\n",
+		printf("successfully built error response for client:\n\n%s\n",
 		    c->out_buf);
-
-		exit(EXIT_SUCCESS);
-		// build_error_response(c);
 	}
 
 	close_resolve_path_ptr(&rp);
 
-	c->state = PROCESSING;
+	p->events = POLLOUT;
+	c->state = SENDING_HEADER;
 }

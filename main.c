@@ -12,6 +12,7 @@
 
 #include "./flags/flags.h"
 #include "./sockets/socket.h"
+#include "./response/do_write.h"
 #include "client_conn/connections.h"
 #include "requests/request2.h"
 #include "debug/debug.h"
@@ -201,7 +202,7 @@ main(int argc, char *argv[])
 			    (READING == clients[i].state)) {
 				DBG("Incoming from client detected\n");
 				// handle read for new request
-				do_read(i, clients, magic);
+				do_read(i, clients, pfds, magic);
 			}
 
 			if (revents & POLLOUT &&
@@ -209,7 +210,7 @@ main(int argc, char *argv[])
 				(SENDING_BODY == clients[i].state))) {
 				// handle writing
 
-				// To-do!
+				do_write(i, clients);
 			}
 
 			if (CLOSING == clients[i].state) {
