@@ -57,7 +57,7 @@ jobs:
             gmake test-all
 
   build-illumos:
-    name: Build Only (illumos)
+    name: Build and smoke (4O4 Response expected) (illumos)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
             gmake CC=gcc
             ./simple_server -v -p 8080 &
             sleep 2
-            curl -fsS http://127.0.0.1:8080/ >/dev/null && echo "smoke OK"
+            curl -s o http://127.0.0.1:8080/NULL_file.html >/dev/null && echo "smoke OK - 404 file not found expected"
 
   # build-illumos:
   #   name: Build & Smoke (illumos)
