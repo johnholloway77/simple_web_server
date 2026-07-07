@@ -72,6 +72,7 @@ typedef struct Client
 	size_t input_capacity; /**< Allocated size of in_buf */
 	size_t output_length; /**< Bytes written into out_buf so far */
 	size_t output_capacity; /**< Allocated size of out_buf */
+	ssize_t output_sent;
 	size_t header_len; /**< Byte length of the HTTP request headers
 			    *   (including the trailing \r\n\r\n), set by
 			    *   do_read() once the end-of-headers marker
