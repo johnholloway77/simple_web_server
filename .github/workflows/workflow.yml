@@ -74,8 +74,12 @@ jobs:
             # gmake from gnu-make package; gcc from gcc14
             gmake CC=gcc
             ./simple_server -v -p 8080 &
+            SERVER_PID=$!
             sleep 2
-            curl -s o http://127.0.0.1:8080/NULL_file.html >/dev/null && echo "smoke OK - 404 file not found expected"
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/NULL_file.html)
+            kill $SERVER_PID
+            wait $SERVER_PID 2>/dev/null
+            [ "$code" = "404" ] && echo "smoke OK - server responded with 404" || (echo "smoke FAIL: got $code"; exit 1)
 
   # build-illumos:
   #   name: Build & Smoke (illumos)
