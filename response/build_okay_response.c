@@ -1,0 +1,79 @@
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include "../client_conn/connections.h"
+#include "../requests/resolve_path.h"
+#include "../debug/debug.h"
+
+#define MAX_HEADER_BUF 750
+
+static int
+build_response_cgi(Client *c, ResolvedPath *rp)
+{
+	printf("build_response_cgi not finished, exiting\n");
+	exit(EXIT_FAILURE);
+	return -1;
+}
+
+static int
+build_response_dir(Client *c, ResolvedPath *rp)
+{
+	printf("build_response_dir not finished, exiting\n");
+	exit(EXIT_FAILURE);
+	return -1;
+}
+
+static int
+build_response_file(Client *c, ResolvedPath *rp)
+{
+	char header[MAX_HEADER_BUF];
+
+	int header_len = snprintf(header,
+	    MAX_HEADER_BUF,
+	    "HTTP/1.0 200 OK\r\n"
+	    "Content-Type: %s\r\n"
+	    "Content-Length: %zu\r\n"
+	    "Connection: close\r\n"
+	    "\r\n",
+	    rp->mime_type,
+	    rp->file_size);
+
+	DBG("Header:\n%s\n", header);
+
+	DBG("Client info:\n"
+	    "c->file_size = %zu\n",
+	    c->file_size);
+
+	c->out_buf = malloc(header_len + c->file_size + 1);
+	if (!c->out_buf) {
+		perror("error build response file: ");
+		return -1;
+	}
+
+	memcpy(c->out_buf, header, header_len);
+
+	size_t n = fread(c->out_buf + header_len, 1, c->file_size, c->file_ptr);
+
+	c->output_length = header_len + n;
+
+	return 0;
+}
+
+int
+build_okay_response(Client *c, ResolvedPath *rp)
+{
+	if (!c || !rp) {
+		DBG("Null client or resolved path pointer\n");
+		return -1;
+	}
+
+	if (rp->is_cgi_bin) {
+		return build_response_cgi(c, rp);
+	}
+
+	if (rp->is_dir_listing) {
+		return build_response_dir(c, rp);
+	}
+
+	return build_response_file(c, rp);
+}
