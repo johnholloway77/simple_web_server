@@ -129,7 +129,6 @@ jobs:
             # then add it here, e.g. pkg install file/...
           run: |
             gmake CC=gcc
-
             echo "<html><body><h1>smoke test</h1></body></html>" > index.html
 
             nohup ./simple_server -v -p 8080 </dev/null > /tmp/server.log 2>&1 &
@@ -146,11 +145,12 @@ jobs:
             echo "--- server log ---"
             cat /tmp/server.log
 
-            kill $SERVER_PID 2>/dev/null
-            wait $SERVER_PID 2>/dev/null
+            kill $SERVER_PID 2>/dev/null || true
+            wait $SERVER_PID 2>/dev/null || true
 
             if [ "$code" = "200" ] && grep -q "smoke test" /tmp/response.html; then
                 echo "smoke OK - served index.html successfully"
+                exit 0
             else
                 echo "smoke FAIL: got HTTP $code"
                 exit 1
