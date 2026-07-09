@@ -25,7 +25,9 @@
 	rp->file_size = st.st_size;                                            \
 	rp->mime_type = "text/html";                                           \
 	fclose(rp->file_ptr);                                                  \
-	rp->file_ptr = index;
+	rp->file_ptr = index;                                                  \
+	c->file_ptr = rp->file_ptr;                                            \
+	c->file_size = st.st_size;
 
 #include "../debug/debug.h"
 
