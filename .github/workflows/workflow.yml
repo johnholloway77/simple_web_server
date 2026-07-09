@@ -133,7 +133,6 @@ jobs:
             echo "<html><body><h1>smoke test</h1></body></html>" > index.html
 
             nohup ./simple_server -v -p 8080 </dev/null > /tmp/server.log 2>&1 &
-            disown
             SERVER_PID=$!
             sleep 1
             cat /tmp/server.log
