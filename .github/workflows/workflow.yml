@@ -71,7 +71,7 @@ jobs:
             pkg install developer/gcc14 developer/build/gnu-make file
           run: |
             gmake CC=gcc
-            ./simple_server -v -p 8080 > /tmp/server.log 2>&1 &
+            ./simple_server -p 8080 > /tmp/server.log 2>&1 &
             SERVER_PID=$!
             sleep 1
             cat /tmp/server.log
