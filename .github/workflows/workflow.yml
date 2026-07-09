@@ -76,10 +76,11 @@ jobs:
             ./simple_server -v -p 8080 &
             SERVER_PID=$!
             sleep 2
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/NULL_file.html)
-            kill $SERVER_PID
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 --connect-timeout 3 \
+                http://127.0.0.1:8080/NULL_file.html)
+            kill $SERVER_PID 2>/dev/null
             wait $SERVER_PID 2>/dev/null
-            [ "$code" = "404" ] && echo "smoke OK - server responded with 404" || (echo "smoke FAIL: got $code"; exit 1)
+            [ "$code" = "404" ] && echo "smoke OK" || (echo "smoke FAIL: got $code"; exit 1)
 
   # build-illumos:
   #   name: Build & Smoke (illumos)
