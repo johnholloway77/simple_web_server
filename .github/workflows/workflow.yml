@@ -57,11 +57,10 @@ jobs:
             gmake test-all
 
   build-illumos:
-    name: Build and smoke (4O4 Response expected) (illumos)
+    name: Build & Smoke (illumos)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: vmactions/omnios-vm@v1
       - uses: vmactions/omnios-vm@v1
         with:
           usesh: true
@@ -69,19 +68,38 @@ jobs:
           timeout: 120
           prepare: |
             pkg install developer/gcc14 developer/build/gnu-make file
+            # libmagic FMRI is uncertain on OmniOS — confirm real name:
+            #   pkg search -r libmagic   (run on local OmniOS box)
+            # then add it here, e.g. pkg install file/...
           run: |
+            # gmake from gnu-make package; gcc from gcc14
             gmake CC=gcc
-            ./simple_server -p 8080 > /tmp/server.log 2>&1 &
+
+            echo "<html><body><h1>smoke test</h1></body></html>" > index.html
+
+            setsid ./simple_server -v -p 8080 </dev/null > /tmp/server.log 2>&1 &
             SERVER_PID=$!
             sleep 1
             cat /tmp/server.log
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 --connect-timeout 3 \
-                http://127.0.0.1:8080/NULL_file.html)
+
+            code=$(curl -s -o /tmp/response.html -w "%{http_code}" \
+                --max-time 5 --connect-timeout 3 \
+                http://127.0.0.1:8080/index.html)
+
+            echo "--- response body ---"
+            cat /tmp/response.html
+            echo "--- server log ---"
+            cat /tmp/server.log
+
             kill $SERVER_PID 2>/dev/null
             wait $SERVER_PID 2>/dev/null
-            cat /tmp/server.log
-            [ "$code" = "404" ] && echo "smoke OK" || (echo "smoke FAIL: got $code"; exit 1)
 
+            if [ "$code" = "200" ] && grep -q "smoke test" /tmp/response.html; then
+                echo "smoke OK - served index.html successfully"
+            else
+                echo "smoke FAIL: got HTTP $code"
+                exit 1
+            fi
   # build-illumos:
   #   name: Build & Smoke (illumos)
   #   runs-on: ubuntu-latest
@@ -101,7 +119,7 @@ jobs:
   #           gmake CC=gcc
   #           ./simple_server -v -p 8080 &
   #           sleep 2
-  #           curl -fsS http://127.0.0.1:8080/ >/dev/null && echo "smoke OK"
+  #           curl -fsS http://127.0.0.1:8080/index.html >/dev/null && echo "smoke OK"
 
   docs:
     name: Documentation (Doxygen)
