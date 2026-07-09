@@ -17,7 +17,8 @@ test_questions/
 .idea/
 *.swp
 *.tmp
-
+.claude/*
+.cache/*
 
 # backup files
 *.backup
@@ -28,3 +29,11 @@ dtrace_scripts/*
 docs/*
 markdown_files/*
 requests/OLD-parseRequest.cpp
+.cache/clangd/index/connections.h.07FA7B234EFA7069.idx
+
+#errors
+*.core
+
+#personal
+*.txt
+*.json

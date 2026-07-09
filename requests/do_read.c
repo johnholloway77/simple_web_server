@@ -134,13 +134,8 @@ do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 
 	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val) == 0 &&
 	    resolve_path(c, &req, &rp, magic) == 0) {
-		printf(
-		    "Parse request and resolve path succeeded\n\tTo do: build_response().\nExiting at do_read.c\tline %d\n",
-		    __LINE__);
-		exit(EXIT_SUCCESS);
-
 		// TO DO
-		// build_response(c, &rp, magic);
+		build_okay_response(c, &rp);
 	}
 	else {
 		build_error_response(c);

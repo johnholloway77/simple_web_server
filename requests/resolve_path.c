@@ -235,6 +235,9 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 		    fileno(rp->file_ptr));
 		rp->file_size = st.st_size;
 
+		c->file_ptr = rp->file_ptr;
+		c->file_size = st.st_size;
+
 		return 0;
 	}
 	else {

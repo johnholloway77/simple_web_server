@@ -77,7 +77,8 @@ build_error_response(Client *c)
 		return -1;
 	}
 
-	c->output_length = resp_len;
+	c->header_len = resp_len;
+	c->output_length = c->header_len + (size_t)c->file_size;
 
 	return 0;
 }
