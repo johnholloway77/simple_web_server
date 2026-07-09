@@ -21,11 +21,10 @@
 #define DIR_INDEX2 "index.html"
 
 #define HANDLE_DIR_INDEX                                                       \
+	rp->file_ptr = index;                                                  \
 	fstat(fileno(rp->file_ptr), &st);                                      \
 	rp->file_size = st.st_size;                                            \
 	rp->mime_type = "text/html";                                           \
-	fclose(rp->file_ptr);                                                  \
-	rp->file_ptr = index;                                                  \
 	c->file_ptr = rp->file_ptr;                                            \
 	c->file_size = st.st_size;
 
@@ -46,6 +45,7 @@ get_file_path_slash(const char *path, const char *dir_index)
 {
 	char buffer[PATH_MAX];
 	snprintf(buffer, PATH_MAX, "%s%s", path, dir_index);
+	DBG("get_file_path_slash buffer: %s\n", buffer);
 	return fopen(buffer, "r");
 }
 static FILE *
@@ -53,6 +53,8 @@ get_file_path_char(const char *path, const char *dir_index)
 {
 	char buffer[PATH_MAX];
 	snprintf(buffer, PATH_MAX, "%s/%s", path, dir_index);
+
+	DBG("get_file_path_char buffer: %s\n", buffer);
 	return fopen(buffer, "r");
 }
 
@@ -213,6 +215,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 		if (S_ISDIR(st.st_mode)) {
 			FILE *index = get_file_path[trailing_char](local_path,
 			    DIR_INDEX);
+
 			if (index) {
 				DBG("Index.htm found!\n");
 				HANDLE_DIR_INDEX
@@ -222,7 +225,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 			index = get_file_path[trailing_char](local_path,
 			    DIR_INDEX2);
 			if (index) {
-				DBG("Index.htm found!\n");
+				DBG("Index.html found!\n");
 				HANDLE_DIR_INDEX
 				return 0;
 			}
