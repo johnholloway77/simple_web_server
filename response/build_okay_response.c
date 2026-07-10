@@ -75,8 +75,16 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 int
 build_okay_response(Client *c, ResolvedPath *rp, Request *req)
 {
-	if (!c || !rp) {
-		DBG("Null client or resolved path pointer\n");
+	if (!c) {
+		DBG("Null client pointer\n");
+		return -1;
+	}
+	if (!rp) {
+		DBG("NULL ResolvedPath pointer\n");
+		return -1;
+	}
+	if (!req) {
+		DBG("Null request pointer\n");
 		return -1;
 	}
 

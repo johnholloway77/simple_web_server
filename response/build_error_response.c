@@ -42,7 +42,11 @@ int
 build_error_response(Client *c, Request *req)
 {
 	if (NULL == c) {
-		perror("build error - Null client");
+		DBG("build error - Null client Pointer");
+		return -1;
+	}
+	if (NULL == req) {
+		DBG("build error - Null Request Pointer");
 		return -1;
 	}
 
