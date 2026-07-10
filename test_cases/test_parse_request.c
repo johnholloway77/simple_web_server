@@ -170,14 +170,6 @@ Test(parse_400, empty_method_double_leading_space)
  *  so we assert on `resp`, not on the enum.
  * ================================================================== */
 
-Test(parse_501, head_not_implemented)
-{
-	SETUP();
-	int rc = PARSE("HEAD / HTTP/1.0\r\n\r\n");
-	cr_assert_eq(rc, -1);
-	cr_assert_eq(resp, RESP_501);
-}
-
 Test(parse_501, post_not_implemented)
 {
 	SETUP();
@@ -424,12 +416,13 @@ Test(cs631_proto, version_token_absurdly_long)
 
 /* --- REQUESTS block: method classification (mirrors Group 3) --- */
 
+// Updated to reflect that it is now implemented
 Test(cs631_method, head_via_harness)
 {
 	SETUP();
 	int rc = PARSE("HEAD / HTTP/1.0\r\n\r\n");
-	cr_assert_eq(rc, -1);
-	cr_assert_eq(resp, RESP_501);
+	cr_assert_eq(rc, 0, "HEAD is now implemented");
+	cr_assert_eq(out.method, HTTP_HEAD);
 }
 
 Test(cs631_method, delete_via_harness)

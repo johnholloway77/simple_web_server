@@ -23,8 +23,7 @@
 #include <string.h>
 
 #include "../client_conn/connections.h"
-
-int build_error_response(Client *c);
+#include "../response/build_response.h"
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -44,6 +43,15 @@ make_client(int resp_val)
 	c->out_buf = NULL;
 	c->output_length = 0;
 	return (c);
+}
+
+static Request
+make_request(enum http_method method)
+{
+	Request req;
+	memset(&req, 0, sizeof req);
+	req.method = method;
+	return req;
 }
 
 static void
@@ -138,7 +146,8 @@ assert_well_formed(Client *c, int rc, const char *expect_status)
 Test(build_error, resp_400)
 {
 	Client *c = make_client(RESP_400);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	assert_well_formed(c, rc, "400 Bad Request");
 	free_client(c);
 }
@@ -146,7 +155,8 @@ Test(build_error, resp_400)
 Test(build_error, resp_403)
 {
 	Client *c = make_client(RESP_403);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	assert_well_formed(c, rc, "403 Forbidden");
 	free_client(c);
 }
@@ -154,7 +164,8 @@ Test(build_error, resp_403)
 Test(build_error, resp_404)
 {
 	Client *c = make_client(RESP_404);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	assert_well_formed(c, rc, "404 Not Found");
 	/* 404 has an HTML body — verify it actually arrived. */
 	cr_assert_not_null(strstr(c->out_buf, "<html>"),
@@ -167,7 +178,8 @@ Test(build_error, resp_404)
 Test(build_error, resp_414)
 {
 	Client *c = make_client(RESP_414);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	assert_well_formed(c, rc, "414 URI Too Long");
 	free_client(c);
 }
@@ -175,7 +187,8 @@ Test(build_error, resp_414)
 Test(build_error, resp_500)
 {
 	Client *c = make_client(RESP_500);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	assert_well_formed(c, rc, "500 Internal Server Error");
 	free_client(c);
 }
@@ -183,7 +196,8 @@ Test(build_error, resp_500)
 Test(build_error, resp_501)
 {
 	Client *c = make_client(RESP_501);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	assert_well_formed(c, rc, "501 Not Implemented");
 	cr_assert_not_null(strstr(c->out_buf, "<html>"),
 	    "501 body should contain HTML");
@@ -195,7 +209,8 @@ Test(build_error, resp_501)
 Test(build_error, resp_505)
 {
 	Client *c = make_client(RESP_505);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	assert_well_formed(c, rc, "505 HTTP Version Not Supported");
 	free_client(c);
 }
@@ -207,7 +222,7 @@ Test(build_error, resp_505)
 /* NULL client must return -1, not crash, not exit. */
 Test(build_error, null_client_returns_error)
 {
-	int rc = build_error_response(NULL);
+	int rc = build_error_response(NULL, NULL);
 	cr_assert_eq(rc, -1, "NULL client must return -1");
 }
 
@@ -215,7 +230,8 @@ Test(build_error, null_client_returns_error)
 Test(build_error, ok_range_rejected)
 {
 	Client *c = make_client(RESP_200);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	cr_assert_eq(rc, -1, "RESP_200 (OK range) must return -1");
 	cr_assert_null(c->out_buf,
 	    "out_buf must not be allocated on the reject path");
@@ -226,7 +242,8 @@ Test(build_error, ok_range_rejected)
 Test(build_error, sentinel_rejected)
 {
 	Client *c = make_client(NUM_CLIENT_RESP);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	cr_assert_eq(rc, -1, "NUM_CLIENT_RESP sentinel must return -1");
 	cr_assert_null(c->out_buf, "out_buf must not be allocated");
 	free_client(c);
@@ -236,7 +253,8 @@ Test(build_error, sentinel_rejected)
 Test(build_error, above_sentinel_rejected)
 {
 	Client *c = make_client(NUM_CLIENT_RESP + 5);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	cr_assert_eq(rc, -1, "resp_val past sentinel must return -1");
 	cr_assert_null(c->out_buf, "out_buf must not be allocated");
 	free_client(c);
@@ -246,7 +264,8 @@ Test(build_error, above_sentinel_rejected)
 Test(build_error, negative_resp_val_rejected)
 {
 	Client *c = make_client(-1);
-	int rc = build_error_response(c);
+	Request req = make_request(HTTP_GET);
+	int rc = build_error_response(c, &req);
 	cr_assert_eq(rc, -1, "negative resp_val must return -1");
 	cr_assert_null(c->out_buf, "out_buf must not be allocated");
 	free_client(c);
