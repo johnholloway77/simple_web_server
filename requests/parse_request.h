@@ -14,6 +14,7 @@ enum http_method
 {
 	HTTP_GET,
 	HTTP_POST,
+	HTTP_HEAD,
 	HTTP_METHOD_UNKNOWN,
 	NUM_HTTP_METHOD
 };

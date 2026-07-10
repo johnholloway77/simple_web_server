@@ -4,6 +4,7 @@
 #include "../client_conn/connections.h"
 #include "../requests/resolve_path.h"
 #include "../debug/debug.h"
+#include "../requests/parse_request.h"
 
 #define MAX_HEADER_BUF 750
 
@@ -24,7 +25,7 @@ build_response_dir(Client *c, ResolvedPath *rp)
 }
 
 static int
-build_response_file(Client *c, ResolvedPath *rp)
+build_response_file(Client *c, ResolvedPath *rp, Request *req)
 {
 	char header[MAX_HEADER_BUF];
 
@@ -37,6 +38,18 @@ build_response_file(Client *c, ResolvedPath *rp)
 	    "\r\n",
 	    rp->mime_type,
 	    rp->file_size);
+
+	if (HTTP_HEAD == req->method) {
+		c->out_buf = malloc(header_len + 1);
+		if (!c->out_buf) {
+			perror("error build response file: ");
+			return -1;
+		}
+		memcpy(c->out_buf, header, header_len);
+		c->output_length = header_len;
+
+		return 0;
+	}
 
 	DBG("Header:\n%s\n", header);
 
@@ -60,7 +73,7 @@ build_response_file(Client *c, ResolvedPath *rp)
 }
 
 int
-build_okay_response(Client *c, ResolvedPath *rp)
+build_okay_response(Client *c, ResolvedPath *rp, Request *req)
 {
 	if (!c || !rp) {
 		DBG("Null client or resolved path pointer\n");
@@ -75,5 +88,5 @@ build_okay_response(Client *c, ResolvedPath *rp)
 		return build_response_dir(c, rp);
 	}
 
-	return build_response_file(c, rp);
+	return build_response_file(c, rp, req);
 }

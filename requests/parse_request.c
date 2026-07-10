@@ -43,10 +43,15 @@ method_from_token(const char *tok, size_t len)
 		return HTTP_METHOD_UNKNOWN;
 	}
 
-	if (len == strlen("GET") && strncmp(tok, "GET", len) == 0)
+	if (len == strlen("GET") && strncmp(tok, "GET", len) == 0) {
 		return HTTP_GET;
-	if (len == strlen("POST") && strncmp(tok, "POST", len) == 0)
+	}
+	if (len == strlen("POST") && strncmp(tok, "POST", len) == 0) {
 		return HTTP_POST;
+	}
+	if (len == strlen("HEAD") && strncmp(tok, "HEAD", len) == 0) {
+		return HTTP_HEAD;
+	}
 
 	return HTTP_METHOD_UNKNOWN; // use for junk/incorrect
 };

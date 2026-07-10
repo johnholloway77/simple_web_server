@@ -135,10 +135,10 @@ do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val) == 0 &&
 	    resolve_path(c, &req, &rp, magic) == 0) {
 		// TO DO
-		build_okay_response(c, &rp);
+		build_okay_response(c, &rp, &req);
 	}
 	else {
-		build_error_response(c);
+		build_error_response(c, &req);
 
 		printf("successfully built error response for client:\n\n%s\n",
 		    c->out_buf);

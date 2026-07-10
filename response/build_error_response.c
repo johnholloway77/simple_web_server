@@ -1,5 +1,7 @@
 #include "../client_conn/connections.h"
+#include "../requests/parse_request.h"
 #include "../debug/debug.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +39,7 @@ static const Response error_responses[] = {[RESP_400] = {"400 Bad Request",
     [RESP_505] = {"505 HTTP Version Not Supported", TEXT_RESPONSE, ""}};
 
 int
-build_error_response(Client *c)
+build_error_response(Client *c, Request *req)
 {
 	if (NULL == c) {
 		perror("build error - Null client");
@@ -57,18 +59,34 @@ build_error_response(Client *c)
 		return -1;
 	}
 
-	int resp_len = snprintf(c->out_buf,
-	    MAX_RESPONSE_BUF,
-	    "HTTP/1.0 %s\r\n"
-	    "Content-Type: %s\r\n"
-	    "Content-Length: %zu\r\n"
-	    "Connection: close\r\n"
-	    "\r\n"
-	    "%s",
-	    error_resp.status_line,
-	    error_resp.mime_type,
-	    strlen(error_resp.body),
-	    error_resp.body);
+	int resp_len;
+
+	if (HTTP_HEAD != req->method) {
+		resp_len = snprintf(c->out_buf,
+		    MAX_RESPONSE_BUF,
+		    "HTTP/1.0 %s\r\n"
+		    "Content-Type: %s\r\n"
+		    "Content-Length: %zu\r\n"
+		    "Connection: close\r\n"
+		    "\r\n"
+		    "%s",
+		    error_resp.status_line,
+		    error_resp.mime_type,
+		    strlen(error_resp.body),
+		    error_resp.body);
+	}
+	else {
+		resp_len = snprintf(c->out_buf,
+		    MAX_RESPONSE_BUF,
+		    "HTTP/1.0 %s\r\n"
+		    "Content-Type: %s\r\n"
+		    "Content-Length: %zu\r\n"
+		    "Connection: close\r\n"
+		    "\r\n",
+		    error_resp.status_line,
+		    error_resp.mime_type,
+		    strlen(error_resp.body));
+	}
 
 	if (resp_len < 0 || (size_t)resp_len >= MAX_RESPONSE_BUF) {
 		DBG("error response truncated");
