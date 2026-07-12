@@ -9,16 +9,48 @@
 #define MAX_HEADER_BUF 750
 
 static int
-build_response_cgi(Client *c, ResolvedPath *rp)
+check_resolve_args(const Client *c, const ResolvedPath *rp, const Request *req)
 {
+	if (!c) {
+		DBG("Null client pointer\n");
+		return -1;
+	}
+	if (!rp) {
+		DBG("NULL ResolvedPath pointer\n");
+		return -1;
+	}
+	if (!req) {
+		DBG("Null request pointer\n");
+		return -1;
+	}
+	return 0;
+}
+
+static int
+build_response_cgi(Client *c, ResolvedPath *rp, Request *req)
+{
+	if (check_resolve_args(c, rp, req) != 0) {
+		return -1;
+	}
+
 	printf("build_response_cgi not finished, exiting\n");
 	exit(EXIT_FAILURE);
 	return -1;
 }
 
 static int
-build_response_dir(Client *c, ResolvedPath *rp)
+build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 {
+	if (check_resolve_args(c, rp, req) != 0) {
+		return -1;
+	}
+
+	if (!rp->is_dir_listing) {
+		return -1;
+	}
+
+	DBG("dir path: %s\n", req->path);
+
 	printf("build_response_dir not finished, exiting\n");
 	exit(EXIT_FAILURE);
 	return -1;
@@ -27,6 +59,10 @@ build_response_dir(Client *c, ResolvedPath *rp)
 static int
 build_response_file(Client *c, ResolvedPath *rp, Request *req)
 {
+	if (check_resolve_args(c, rp, req) != 0) {
+		return -1;
+	}
+
 	char header[MAX_HEADER_BUF];
 
 	int header_len = snprintf(header,
@@ -75,25 +111,12 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 int
 build_okay_response(Client *c, ResolvedPath *rp, Request *req)
 {
-	if (!c) {
-		DBG("Null client pointer\n");
-		return -1;
-	}
-	if (!rp) {
-		DBG("NULL ResolvedPath pointer\n");
-		return -1;
-	}
-	if (!req) {
-		DBG("Null request pointer\n");
-		return -1;
-	}
-
 	if (rp->is_cgi_bin) {
-		return build_response_cgi(c, rp);
+		return build_response_cgi(c, rp, req);
 	}
 
 	if (rp->is_dir_listing) {
-		return build_response_dir(c, rp);
+		return build_response_dir(c, rp, req);
 	}
 
 	return build_response_file(c, rp, req);
