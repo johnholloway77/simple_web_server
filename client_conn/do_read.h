@@ -23,6 +23,7 @@
  * @param i        Index of the client in @p clients / @p pfds
  * @param clients  The Client array managed by the poll loop
  * @param pfds     The pollfd array; events field updated to POLLOUT on success
- * @param magic    Libmagic handle forwarded to resolve_path() for MIME detection
+ * @param magic    Libmagic handle forwarded to resolve_path() for MIME
+ * detection
  */
 void do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic);

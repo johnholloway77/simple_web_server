@@ -25,16 +25,17 @@
 typedef struct ResolvedPath
 {
 	char query_string[PATH_MAX]; /**< Query string portion of the URI
-	                              *   (everything after '?'), or "" if none */
-	FILE *file_ptr;              /**< Open read handle for the resolved file,
-	                              *   or NULL for directory listings / CGI */
-	off_t file_size;             /**< Size of the file in bytes (0 for dirs) */
-	const char *mime_type;       /**< MIME type string from extension table or
-	                              *   libmagic; NULL for dirs and CGI */
-	time_t last_mod;             /**< st_mtime of the resolved filesystem entry */
-	int is_dir_listing;          /**< 1 when the URI resolves to a directory
-	                              *   that has no index.htm / index.html */
-	int is_cgi_bin;              /**< 1 when the URI path is under cgi-bin */
+				      *   (everything after '?'), or "" if none
+				      */
+	FILE *file_ptr; /**< Open read handle for the resolved file,
+			 *   or NULL for directory listings / CGI */
+	off_t file_size; /**< Size of the file in bytes (0 for dirs) */
+	const char *mime_type; /**< MIME type string from extension table or
+				*   libmagic; NULL for dirs and CGI */
+	time_t last_mod; /**< st_mtime of the resolved filesystem entry */
+	int is_dir_listing; /**< 1 when the URI resolves to a directory
+			     *   that has no index.htm / index.html */
+	int is_cgi_bin; /**< 1 when the URI path is under cgi-bin */
 } ResolvedPath;
 
 /**
@@ -74,4 +75,5 @@ void close_resolve_path_ptr(ResolvedPath *rp);
  * @param magic  Libmagic handle for MIME detection fallback
  * @return       0 on success, -1 on error (c->resp_val set to error code)
  */
-int resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic);
+int
+resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic);

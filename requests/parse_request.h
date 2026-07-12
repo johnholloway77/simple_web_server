@@ -19,10 +19,10 @@
  */
 enum http_method
 {
-	HTTP_GET,             /**< GET — retrieve a resource */
-	HTTP_POST,            /**< POST — currently returns 501 Not Implemented */
-	HTTP_HEAD,            /**< HEAD — headers only, no body sent */
-	HTTP_METHOD_UNKNOWN,  /**< Unrecognised method token */
+	HTTP_GET, /**< GET — retrieve a resource */
+	HTTP_POST, /**< POST — currently returns 501 Not Implemented */
+	HTTP_HEAD, /**< HEAD — headers only, no body sent */
+	HTTP_METHOD_UNKNOWN, /**< Unrecognised method token */
 	NUM_HTTP_METHOD
 };
 
@@ -36,10 +36,11 @@ enum http_method
  */
 enum http_version
 {
-	HTTP_1_0,                  /**< HTTP/1.0 — fully supported */
-	HTTP_1_1,                  /**< HTTP/1.1 — accepted, served as 1.0 */
-	HTTP_VERSION_UNSUPPORTED,  /**< Recognised but not supported (0.9, 2.0) */
-	HTTP_VERSION_UNKNOWN,      /**< Unrecognisable version string */
+	HTTP_1_0, /**< HTTP/1.0 — fully supported */
+	HTTP_1_1, /**< HTTP/1.1 — accepted, served as 1.0 */
+	HTTP_VERSION_UNSUPPORTED, /**< Recognised but not supported (0.9, 2.0)
+				   */
+	HTTP_VERSION_UNKNOWN, /**< Unrecognisable version string */
 	NUM_HTTP_VERSION
 };
 
@@ -51,10 +52,11 @@ enum http_version
  */
 typedef struct Request
 {
-	enum http_method method;    /**< HTTP verb */
-	enum http_version version;  /**< Protocol version */
-	time_t time_received;       /**< Wall-clock time headers were fully received */
-	char path[PATH_MAX];        /**< URI path component (no query string) */
+	enum http_method method; /**< HTTP verb */
+	enum http_version version; /**< Protocol version */
+	time_t
+	    time_received; /**< Wall-clock time headers were fully received */
+	char path[PATH_MAX]; /**< URI path component (no query string) */
 } Request;
 
 /**
