@@ -3,7 +3,7 @@
  *
  * Two layers of coverage, deliberately:
  *
- *   1. UNIT LAYER (build_okay/*): calls the REAL resolve_path() to populate
+ *   1. UNIT LAYER (build_okay suite): calls the REAL resolve_path() to populate
  *      a ResolvedPath, then calls the REAL build_okay_response() on it.
  *      This is NOT mocked — it deliberately exercises the resolve_path ->
  *      build_okay_response handoff, because that handoff is exactly where
@@ -14,7 +14,7 @@
  *      what. Testing them together, through the real resolve_path, closes
  *      that gap.
  *
- *   2. INTEGRATION LAYER (build_okay_integration/*): forks and execs the
+ *   2. INTEGRATION LAYER (build_okay_integration suite): forks and execs the
  *      REAL server binary, waits for it to start listening, fires real
  *      HTTP requests at it over a real socket (via curl), then sends
  *      SIGTERM and asserts a clean, graceful exit. This is the only place
@@ -101,6 +101,55 @@ make_request(const char *path, enum http_method method)
 	req.version = HTTP_1_0;
 	strlcpy(req.path, path, sizeof req.path);
 	return req;
+}
+
+/*
+ * out_buf is a RAW BYTE BUFFER whose real length is c->output_length —
+ * exactly like in_buf on the read side. do_write() sends output_length
+ * bytes via send(); nothing guarantees out_buf is null-terminated, and a
+ * full fread() of a file's exact byte count can leave no terminator at
+ * all. strstr()/strlen() on out_buf directly is therefore UNSAFE and can
+ * walk past the allocation hunting for a '\0' that isn't there — exactly
+ * what ASan caught in the first version of this test file. Every search
+ * against out_buf must be bounded by output_length, never by an assumed
+ * terminator. Same principle as parse_request using strnstr on in_buf
+ * instead of strstr — output side instead of input side.
+ */
+static const char *
+bounded_find(const char *haystack, size_t haystack_len, const char *needle)
+{
+	size_t needle_len = strlen(needle);
+	if (needle_len == 0 || needle_len > haystack_len)
+		return NULL;
+	for (size_t i = 0; i + needle_len <= haystack_len; i++) {
+		if (memcmp(haystack + i, needle, needle_len) == 0)
+			return haystack + i;
+	}
+	return NULL;
+}
+
+/* Parse the Content-Length value bounded by out_buf's real length, by
+ * copying just the digit run into a small NUL-terminated local buffer
+ * before calling strtol — never handing strtol a pointer into
+ * potentially-unterminated out_buf directly. */
+static long
+bounded_content_length(const char *out_buf, size_t output_length)
+{
+	const char *cl =
+	    bounded_find(out_buf, output_length, "Content-Length:");
+	if (!cl)
+		return -1;
+	cl += strlen("Content-Length:");
+	size_t remaining = output_length - (size_t)(cl - out_buf);
+
+	char digits[32] = {0};
+	size_t n = 0;
+	while (n < remaining && n < sizeof digits - 1 &&
+	       (cl[n] == ' ' || (cl[n] >= '0' && cl[n] <= '9'))) {
+		digits[n] = cl[n];
+		n++;
+	}
+	return strtol(digits, NULL, 10);
 }
 
 static void
@@ -200,11 +249,16 @@ Test(build_okay, serves_plain_text_file)
 	RESOLVE_AND_BUILD("/plain.txt", HTTP_GET);
 	cr_assert_eq(rc, 0);
 	cr_assert_not_null(c.out_buf);
-	cr_assert(strncmp(c.out_buf, "HTTP/1.0 200", 12) == 0,
+	cr_assert(c.output_length >= 12 &&
+		      memcmp(c.out_buf, "HTTP/1.0 200", 12) == 0,
 	    "must be a 200 response");
-	cr_assert_not_null(strstr(c.out_buf, "text/plain"),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "text/plain"),
 	    ".txt must resolve to text/plain");
-	cr_assert_not_null(strstr(c.out_buf, "hello from a plain text file"),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "hello from a plain text file"),
 	    "response must contain the actual file content");
 	free(c.out_buf);
 	OKAY_CLEANUP();
@@ -214,9 +268,13 @@ Test(build_okay, serves_html_file)
 {
 	RESOLVE_AND_BUILD("/page.html", HTTP_GET);
 	cr_assert_eq(rc, 0);
-	cr_assert_not_null(strstr(c.out_buf, "text/html"),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "text/html"),
 	    ".html must resolve to text/html");
-	cr_assert_not_null(strstr(c.out_buf, "a real page"),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "a real page"),
 	    "response must contain the real page content");
 	free(c.out_buf);
 	OKAY_CLEANUP();
@@ -228,11 +286,10 @@ Test(build_okay, file_content_length_matches_body)
 	RESOLVE_AND_BUILD("/plain.txt", HTTP_GET);
 	cr_assert_eq(rc, 0);
 
-	const char *cl = strstr(c.out_buf, "Content-Length:");
-	cr_assert_not_null(cl);
-	long declared = strtol(cl + strlen("Content-Length:"), NULL, 10);
+	long declared = bounded_content_length(c.out_buf, c.output_length);
+	cr_assert_geq(declared, 0, "Content-Length header must be present");
 
-	const char *body = strstr(c.out_buf, "\r\n\r\n");
+	const char *body = bounded_find(c.out_buf, c.output_length, "\r\n\r\n");
 	cr_assert_not_null(body);
 	body += 4;
 
@@ -257,7 +314,7 @@ Test(build_okay, head_request_file_has_no_body)
 	RESOLVE_AND_BUILD("/plain.txt", HTTP_HEAD);
 	cr_assert_eq(rc, 0);
 
-	const char *body = strstr(c.out_buf, "\r\n\r\n");
+	const char *body = bounded_find(c.out_buf, c.output_length, "\r\n\r\n");
 	cr_assert_not_null(body);
 	size_t header_len = (size_t)(body + 4 - c.out_buf);
 
@@ -265,8 +322,7 @@ Test(build_okay, head_request_file_has_no_body)
 	    header_len,
 	    "HEAD response must contain ONLY the header, no body bytes");
 
-	const char *cl = strstr(c.out_buf, "Content-Length:");
-	long declared = strtol(cl + strlen("Content-Length:"), NULL, 10);
+	long declared = bounded_content_length(c.out_buf, c.output_length);
 	cr_assert_gt(declared,
 	    0,
 	    "HEAD must still report the real Content-Length");
@@ -287,7 +343,9 @@ Test(build_okay, serves_directory_with_index_transparently)
 	cr_assert_eq(rp.is_dir_listing,
 	    0,
 	    "a directory with an index.html is NOT a listing");
-	cr_assert_not_null(strstr(c.out_buf, "index served transparently"),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "index served transparently"),
 	    "must serve withindex/index.html's actual content");
 	free(c.out_buf);
 	OKAY_CLEANUP();
@@ -302,16 +360,20 @@ Test(build_okay, lists_directory_with_file_and_subdirectory)
 	cr_assert_eq(rp.is_dir_listing,
 	    1,
 	    "no index.html present -> must be a listing");
-	cr_assert_not_null(strstr(c.out_buf, "text/HTML"),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "text/HTML"),
 	    "listing response must be HTML");
 
-	cr_assert_not_null(strstr(c.out_buf, "afile.txt"),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "afile.txt"),
 	    "listing must include the file inside the directory");
-	cr_assert_not_null(strstr(c.out_buf, "subdir"),
+	cr_assert_not_null(bounded_find(c.out_buf, c.output_length, "subdir"),
 	    "listing must include the subdirectory entry");
 
 	/* Dotfiles are excluded — no entry should be exactly "." or "..". */
-	cr_assert_null(strstr(c.out_buf, ">..<"),
+	cr_assert_null(bounded_find(c.out_buf, c.output_length, ">..<"),
 	    "listing must not include the .. parent-dir entry");
 	free(c.out_buf);
 	OKAY_CLEANUP();
@@ -324,7 +386,9 @@ Test(build_okay, listing_links_are_absolute_paths)
 {
 	RESOLVE_AND_BUILD("/nolisting", HTTP_GET);
 	cr_assert_eq(rc, 0);
-	cr_assert_not_null(strstr(c.out_buf, "href=\"/nolisting/afile.txt\""),
+	cr_assert_not_null(bounded_find(c.out_buf,
+			       c.output_length,
+			       "href=\"/nolisting/afile.txt\""),
 	    "listing links must be absolute (/nolisting/afile.txt), "
 	    "not relative (./afile.txt), so browser navigation resolves "
 	    "correctly regardless of current URL depth");
@@ -340,7 +404,7 @@ Test(build_okay, head_request_directory_listing_no_body_no_leak)
 	RESOLVE_AND_BUILD("/nolisting", HTTP_HEAD);
 	cr_assert_eq(rc, 0);
 
-	const char *body = strstr(c.out_buf, "\r\n\r\n");
+	const char *body = bounded_find(c.out_buf, c.output_length, "\r\n\r\n");
 	cr_assert_not_null(body);
 	size_t header_len = (size_t)(body + 4 - c.out_buf);
 	cr_assert_eq(c.output_length,
