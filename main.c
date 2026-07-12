@@ -22,6 +22,15 @@
 /* load global flags variables */
 extern uint32_t app_flags;
 
+static char running = 1;
+
+static void
+shutdown_server()
+{
+	DBG("Shutdown_server() called!\n");
+	running = 0;
+}
+
 /**
  * @brief Configure SIGCHLD disposition to auto-reap children
  *
@@ -35,19 +44,31 @@ extern uint32_t app_flags;
  * @note Exits program on failure to install the disposition
  */
 static void
-setup_sigchld_handler()
+setup_signal_handler()
 {
-	struct sigaction sa;
-	sa.sa_handler = SIG_IGN;
+	struct sigaction sa = {0};
 	sigemptyset(&sa.sa_mask);
 
+	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = SA_NOCLDWAIT;
+
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
 		perror("sigaction");
 		exit(EXIT_FAILURE);
 	}
 
-	DBG("Sigchild handler setup\n");
+	sa.sa_flags = 0;
+	sa.sa_handler = shutdown_server;
+	if (sigaction(SIGTERM, &sa, NULL) == -1) {
+		perror("sigaction SIGTERM. ");
+		exit(EXIT_FAILURE);
+	}
+	if (sigaction(SIGINT, &sa, NULL) == -1) {
+		perror("sigaction SIGINT. ");
+		exit(EXIT_FAILURE);
+	}
+
+	DBG("Signal handlers setup\n");
 }
 
 /**
@@ -82,7 +103,7 @@ main(int argc, char *argv[])
 {
 	DBG("Loaded in debug mode\n");
 
-	setup_sigchld_handler();
+	setup_signal_handler();
 
 	if (setFlags(argc, argv) < 0) {
 		printf("incorrect flags\nWrite some nice message here\n");
@@ -119,6 +140,7 @@ main(int argc, char *argv[])
 
 	struct pollfd *pfds = malloc(sizeof(*pfds) * fd_size);
 	Client *clients = malloc(sizeof(Client) * fd_size);
+
 	if (!pfds || !clients) {
 		perror("malloc");
 		exit(EXIT_FAILURE);
@@ -159,7 +181,7 @@ main(int argc, char *argv[])
 	fd_count = num_listeners;
 
 	// Let's get this baby spinnin!
-	for (;;) {
+	while (running) {
 		DBG("Entering first for loop\n");
 		int poll_count = poll(pfds, fd_count, -1);
 		if (-1 == poll_count) {
@@ -222,5 +244,9 @@ main(int argc, char *argv[])
 		}
 	}
 
-	return (0);
+	magic_close(magic);
+	free(pfds);
+	free(clients);
+
+	exit(EXIT_SUCCESS);
 }
