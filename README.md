@@ -10,7 +10,7 @@ information on the assignment specifics, see the
 
 This implementation uses a single-process `poll()`-based event loop instead
 of the original fork-per-connection model, which was benchmarked at
-approximately 60,000 req/s on the development machine versus ~20,000 req/s
+approximately 60,000 req/s on the development machine versus less than 1,000 req/s 
 for the fork model.
 
 > **Important:** This is not a production server. It has limited
