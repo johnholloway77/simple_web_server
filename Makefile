@@ -308,6 +308,13 @@ VALGRIND_FIXTURE  = /tmp/simple_server_valgrind_root
 
 .PHONY: memcheck
 memcheck: $(VALGRIND_BINARY)
+
+	# Valgrind unavailable on some systems
+	@if ! command -v valgrind >/dev/null 2>&1; then \
+		    echo "valgrind not available on this platform ($(UNAME_S)) — skipping memcheck"; \
+		    exit 0; \
+	fi
+
 	@echo "Setting up fixture directory for memcheck..."
 	@mkdir -p $(VALGRIND_FIXTURE)/emptydir
 	@echo "<html><body><h1>memcheck</h1></body></html>" > $(VALGRIND_FIXTURE)/index.html
@@ -332,7 +339,7 @@ clean-memcheck:
 
 # ─── Aggregate test targets ────────────────────────────────────────────
 .PHONY: test
-test: test-parse test-resolve test-build-error memcheck
+test: test-parse test-resolve test-build-error
 
 .PHONY: test-all
 test-all: test-parse test-resolve test-build-error memcheck

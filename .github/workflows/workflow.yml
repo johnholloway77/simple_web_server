@@ -19,7 +19,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang libmagic-dev pkg-config libbsd-dev
+          sudo apt-get install -y clang libmagic-dev pkg-config libbsd-dev valgrind
           # Criterion: package name is libcriterion-dev on recent Ubuntu.
           # CONFIRM it exists on ubuntu-latest; if not, build from source.
           sudo apt-get install -y libcriterion-dev
@@ -37,6 +37,10 @@ jobs:
 
       - name: Test
         run: make test-all
+
+      - name: Test (ASan)
+        if: runner.os == 'macOS'
+        run: make test-all-asan
 
       - name: Smoke test
         run: |
@@ -81,9 +85,10 @@ jobs:
             export IGNORE_OSVERSION=yes
             export ASSUME_ALWAYS_YES=yes
             sudo -E pkg update -f
-            sudo -E pkg install -y gmake llvm pkgconf criterion
+            sudo -E pkg install -y gmake llvm pkgconf criterion valgrind
             gmake
             gmake test-all
+            gmake test-all-asan
 
             echo "<html><body><h1>smoke test</h1></body></html>" > index.html
 
