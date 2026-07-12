@@ -147,12 +147,34 @@ $(DEBUG_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(DEBUG_CFLAGS) -c -o $@ $<
 
+#═══════════════════════════════════════════════════════════════════════
+#  Valgrind build (symbols, NO sanitizer — Valgrind and ASan conflict)
+#
+#═══════════════════════════════════════════════════════════════════════
+
+VALGRIND_CFLAGS  = $(CFLAGS) -g
+VALGRIND_BINARY  = simple_server_valgrind
+VALGRIND_DIR     = build/valgrind
+VALGRIND_OBJECTS = $(SOURCES:%.c=$(VALGRIND_DIR)/%.o)
+
+.PHONY: valgrind-build
+valgrind-build: $(VALGRIND_BINARY)
+
+$(VALGRIND_BINARY): $(VALGRIND_OBJECTS)
+	$(CC) $(LDFLAGS) -o $@ $(VALGRIND_OBJECTS) $(LIBS)
+
+$(VALGRIND_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(VALGRIND_CFLAGS) -c -o $@ $<
+
+
 # ─── Clean ─────────────────────────────────────────────────────────────
 .PHONY: clean
 clean:
 	rm -rf $(BINARY) $(DEBUG_BINARY) build \
 	       $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
 	       $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
+		   $(VALGRIND_BINARY) $(VALGRIND_OBJECTS \
 	       test_cases/fixtures
 
 .PHONY: clean-obj
@@ -266,12 +288,54 @@ $(BUILD_ERR_BINARY_ASAN): $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT)
 	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
 	    $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT) $(TEST_ASAN_LDFLAGS)
 
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Memory leak testing (Valgrind)
+# ═══════════════════════════════════════════════════════════════════════
+#  Starts the server, hammers it with a mix of file and directory
+#  requests, sends a graceful shutdown signal, then asserts Valgrind
+#  reports zero definitely/indirectly/possibly-lost bytes.
+#
+#  This is NOT a substitute for the single-request Valgrind checks during
+#  development — it specifically catches PER-REQUEST leaks that only show
+#  up at volume (a single request leaking 88 bytes looks identical to zero
+#  leaked bytes until you multiply by request count).
+# ═══════════════════════════════════════════════════════════════════════
+VALGRIND_PORT     = 8099
+VALGRIND_REQUESTS = 500
+VALGRIND_LOG      = /tmp/simple_server_valgrind.log
+VALGRIND_FIXTURE  = /tmp/simple_server_valgrind_root
+
+.PHONY: memcheck
+memcheck: $(VALGRIND_BINARY)
+	@echo "Setting up fixture directory for memcheck..."
+	@mkdir -p $(VALGRIND_FIXTURE)/emptydir
+	@echo "<html><body><h1>memcheck</h1></body></html>" > $(VALGRIND_FIXTURE)/index.html
+	@echo "Starting simple_server under Valgrind (port $(VALGRIND_PORT))..."
+	@cd $(VALGRIND_FIXTURE) && valgrind --leak-check=full --error-exitcode=1 $(CURDIR)/$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT) > $(VALGRIND_LOG) 2>&1 &
+	@sleep 1
+	@echo "Firing $(VALGRIND_REQUESTS) mixed requests..."
+	@for i in $$(seq 1 $(VALGRIND_REQUESTS)); do curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/index.html; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/emptydir/; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/no-such-file; done
+	@echo "Sending graceful shutdown (SIGTERM)..."
+	@pkill -TERM -f "valgrind.*$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT)" || true
+	@sleep 2
+	@echo "--- Valgrind report ---"
+	@cat $(VALGRIND_LOG)
+	@echo "-----------------------"
+	@grep -q "definitely lost: 0 bytes in 0 blocks" $(VALGRIND_LOG) && grep -q "indirectly lost: 0 bytes in 0 blocks" $(VALGRIND_LOG) && grep -q "ERROR SUMMARY: 0 errors" $(VALGRIND_LOG) && echo "memcheck OK - no leaks across $(VALGRIND_REQUESTS) requests" || (echo "memcheck FAIL - see $(VALGRIND_LOG)"; exit 1)
+	@rm -rf $(VALGRIND_FIXTURE)
+
+.PHONY: clean-memcheck
+clean-memcheck:
+	@rm -f $(VALGRIND_LOG)
+	@rm -rf $(VALGRIND_FIXTURE)
+
 # ─── Aggregate test targets ────────────────────────────────────────────
 .PHONY: test
-test: test-parse test-resolve test-build-error
+test: test-parse test-resolve test-build-error memcheck
 
 .PHONY: test-all
-test-all: test-parse test-resolve test-build-error
+test-all: test-parse test-resolve test-build-error memcheck
 
 # FIXED: was 'test-asan' (nonexistent) -> 'test-parse-asan'
 .PHONY: test-all-asan
@@ -280,7 +344,8 @@ test-all-asan: test-parse-asan test-resolve-asan test-build-error-asan
 .PHONY: clean-test
 clean-test:
 	rm -f $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
-	      $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN)
+	      $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
+		  $(VALGRIND_LOG) $(VALGRIND_FIXTURE)
 	rm -rf test_cases/fixtures
 # ═══════════════════════════════════════════════════════════════════════
 #  Code quality and formatting
@@ -541,6 +606,13 @@ help:
 	@echo "  make test-all         Run every test suite"
 	@echo "  make test-all-asan    Run every suite under ASan"
 	@echo "  make clean-test       Remove test binaries and fixtures"
+	@echo ""
+	@echo "🧠 Memory Leak Testing (Valgrind):"
+	@echo "  make memcheck         Run server under Valgrind, fire $$VALGRIND_REQUESTS"
+	@echo "                        mixed requests, verify zero leaks on shutdown"
+	@echo "  make clean-memcheck   Remove memcheck logs and fixtures"
+	@echo ""
+	@echo "  Override request count: make memcheck VALGRIND_REQUESTS=2000"
 	@echo ""
 	@echo "  Output flags: override TEST_RUN_FLAGS (default '-j1 --quiet')."
 	@echo "  e.g. make test TEST_RUN_FLAGS='-j1 --verbose'"
