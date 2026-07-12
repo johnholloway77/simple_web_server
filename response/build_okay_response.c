@@ -10,9 +10,17 @@
 #include "../requests/parse_request.h"
 
 #define MAX_HEADER_BUF 750
+
 #define START_HTML_STRING "<html><body><h1>Directory:</h1><ul>"
 #define END_HTML_STRING "</ul></body></html>"
 #define HTML_STRING_LEN strlen(START_HTML_STRING) + strlen(END_HTML_STRING)
+#define DIR_ICON                                                                \
+	"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" " \
+	"viewBox=\"0 0 16 16\"><path d=\"M1 3h5l2 2h7v8H1z\"/></svg>"
+
+#define FILE_ICON                                                               \
+	"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" " \
+	"viewBox=\"0 0 16 16\"><path d=\"M3 1h7l3 3v11H3z\"/></svg>"
 
 static int
 check_resolve_args(const Client *c, const ResolvedPath *rp, const Request *req)
@@ -108,9 +116,12 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 			if (dirp->d_name[0] == '.') {
 				continue;
 			}
+			const char *icon = (dirp->d_type == DT_DIR) ? DIR_ICON
+								    : FILE_ICON;
 			offset += snprintf(response_body + offset,
 			    buf_capacity - offset,
-			    "<li><a href=\"/%s/%s\">%s</a></li>",
+			    "<li>%s <a href=\"/%s/%s\">%s</a></li>",
+			    icon,
 			    dir_path,
 			    dirp->d_name,
 			    dirp->d_name);
