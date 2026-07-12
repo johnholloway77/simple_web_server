@@ -14,6 +14,13 @@
 #define START_HTML_STRING "<html><body><h1>Directory:</h1><ul>"
 #define END_HTML_STRING "</ul></body></html>"
 #define HTML_STRING_LEN strlen(START_HTML_STRING) + strlen(END_HTML_STRING)
+
+#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__linux__)
+#define HAVE_DIRENT_D_TYPE 1
+#else
+#define HAVE_DIRENT_D_TYPE 0
+#endif
+
 #define DIR_ICON                                                                \
 	"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" " \
 	"viewBox=\"0 0 16 16\"><path d=\"M1 3h5l2 2h7v8H1z\"/></svg>"
@@ -116,8 +123,14 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 			if (dirp->d_name[0] == '.') {
 				continue;
 			}
+
+#if HAVE_DIRENT_D_TYPE
 			const char *icon = (dirp->d_type == DT_DIR) ? DIR_ICON
 								    : FILE_ICON;
+#else
+			const char *icon = "";
+#endif
+
 			offset += snprintf(response_body + offset,
 			    buf_capacity - offset,
 			    "<li>%s <a href=\"/%s/%s\">%s</a></li>",
