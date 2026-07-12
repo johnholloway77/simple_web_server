@@ -1,12 +1,18 @@
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/dirent.h>
 #include "../client_conn/connections.h"
 #include "../requests/resolve_path.h"
 #include "../debug/debug.h"
 #include "../requests/parse_request.h"
 
 #define MAX_HEADER_BUF 750
+#define START_HTML_STRING "<html><body><h1>Directory:</h1><ul>"
+#define END_HTML_STRING "</ul></body></html>"
+#define HTML_STRING_LEN strlen(START_HTML_STRING) + strlen(END_HTML_STRING)
 
 static int
 check_resolve_args(const Client *c, const ResolvedPath *rp, const Request *req)
@@ -49,11 +55,124 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 		return -1;
 	}
 
-	DBG("dir path: %s\n", req->path);
+	char *dir_path = req->path + 1;
+	unsigned long dir_path_len = strlen(dir_path);
 
-	printf("build_response_dir not finished, exiting\n");
-	exit(EXIT_FAILURE);
-	return -1;
+	DBG("dir path: %s\n", dir_path);
+
+	DIR *dir = NULL;
+	struct dirent *dirp;
+	char *response_body;
+	int response_body_on_heap =
+	    0; // to be used when dynamically allocating response
+
+	char header[MAX_HEADER_BUF];
+	int header_len;
+
+	dir = opendir(dir_path);
+	if (!dir) {
+		DBG("Dir null!\n");
+		closedir(dir);
+		return -1;
+	}
+
+	uint32_t count = 0;
+	while ((dirp = readdir(dir)) != NULL) {
+		if (dirp->d_name[0] != '.') {
+			count++;
+		}
+	}
+
+	if (count) {
+		// To do!
+		rewinddir(dir);
+		size_t buf_capacity = HTML_STRING_LEN + dir_path_len +
+				      (PATH_MAX + 64) * count;
+		response_body = (char *)malloc(buf_capacity);
+
+		if (!response_body) {
+			DBG("Error allocating dynamic response body\n");
+			closedir(dir);
+			return -1;
+		}
+
+		response_body_on_heap = 1;
+
+		unsigned long offset = 0;
+
+		offset += snprintf(response_body,
+		    buf_capacity - offset,
+		    START_HTML_STRING);
+
+		while ((dirp = readdir(dir)) != NULL) {
+			if (dirp->d_name[0] == '.') {
+				continue;
+			}
+			offset += snprintf(response_body + offset,
+			    buf_capacity - offset,
+			    "<li><a href=\"/%s/%s\">%s</a></li>",
+			    dir_path,
+			    dirp->d_name,
+			    dirp->d_name);
+		}
+
+		offset += snprintf(response_body + offset,
+		    buf_capacity - offset,
+		    END_HTML_STRING);
+	}
+	else {
+		response_body =
+		    "<html><body><h2>Empty directory</h2></body></html>";
+	}
+
+	unsigned long resp_len = strlen(response_body);
+
+	header_len = snprintf(header,
+	    MAX_HEADER_BUF,
+	    "HTTP/1.0 200 OK\r\n"
+	    "Content-Type: text/HTML\r\n"
+	    "Content-Length: %zu\r\n"
+	    "Connection: close\r\n"
+	    "\r\n",
+	    resp_len);
+
+	DBG("# of files in dir: %u\n", count);
+
+	if (HTTP_HEAD == req->method) {
+		c->out_buf = malloc(header_len + 1);
+		if (!c->out_buf) {
+			perror("error build response file: ");
+			return -1;
+		}
+		memcpy(c->out_buf, header, header_len);
+		c->output_length = header_len;
+
+		if (response_body_on_heap) {
+			free(response_body);
+		}
+
+		closedir(dir);
+		return 0;
+	}
+
+	c->out_buf = malloc(header_len + resp_len + 1);
+	if (!c->out_buf) {
+		perror("error build response file: ");
+		return -1;
+	}
+
+	memcpy(c->out_buf, header, header_len);
+	memcpy(c->out_buf + header_len, response_body, resp_len);
+
+	c->output_length = header_len + resp_len;
+
+	// free dynamic response buffer if created
+	if (response_body_on_heap) {
+		free(response_body);
+	}
+
+	closedir(dir);
+	return 0;
 }
 
 static int
