@@ -214,7 +214,7 @@ main(int argc, char *argv[])
 			}
 
 			if (CLOSING == clients[i].state) {
-				printf("Closign connection\n");
+				DBG("Closing connection\n");
 				close_conn(i, &fd_count, pfds, clients);
 				i--;
 				continue;
