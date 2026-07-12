@@ -108,6 +108,8 @@ resolve_path()       URI → filesystem: file / directory / cgi-bin
     │  flags/  │      │ client_conn/ │     │ sockets/  │
     │ setFlags │      │ connections  │     │get_listener│
     └──────────┘      │ accept_conn  │     └───────────┘
+                      │ do_read      │
+                      │ do_write     │
                       └──────┬───────┘
                              │
                ┌─────────────┼──────────────┐
@@ -115,9 +117,8 @@ resolve_path()       URI → filesystem: file / directory / cgi-bin
                ▼             ▼              ▼
         ┌──────────┐  ┌──────────┐  ┌──────────────┐
         │requests/ │  │response/ │  │    cgi/      │
-        │ do_read  │  │do_write  │  │   cgiExe     │
-        │parse_req │  │build_okay│  └──────────────┘
-        │resolve_  │  │build_err │
+        │parse_req │  │build_okay│  │   cgiExe     │
+        │resolve_  │  │build_err │  └──────────────┘
         │  path    │  └──────────┘
         └──────────┘
 ```
@@ -142,11 +143,13 @@ server_revision/
 ├── client_conn/
 │   ├── connections.h               Client struct, enums, function declarations
 │   ├── connections.c               add_to_lists(), close_conn()
-│   └── accept_new_conn.c           Drain listener, set O_NONBLOCK, record peer addr
+│   ├── accept_new_conn.c           Drain listener, set O_NONBLOCK, record peer addr
+│   ├── do_read.h                   do_read() declaration
+│   ├── do_read.c                   recv() loop → parse → resolve → build response
+│   ├── do_write.h                  do_write() declaration
+│   └── do_write.c                  send() loop, shutdown(SHUT_WR) on completion
 │
 ├── requests/
-│   ├── request2.h                  do_read() declaration
-│   ├── do_read.c                   recv() loop → parse → resolve → build response
 │   ├── parse_request.h             Request struct, http_method/version enums
 │   ├── parse_request.c             HTTP request-line parser and validator
 │   ├── resolve_path.h              ResolvedPath struct, resolve_path() declaration
@@ -157,8 +160,6 @@ server_revision/
 │   ├── build_response.h            build_okay_response() / build_error_response() decls
 │   ├── build_okay_response.c       200 OK: static files, directory listings, CGI (stub)
 │   ├── build_error_response.c      4xx/5xx error responses
-│   ├── do_write.h                  do_write() declaration
-│   ├── do_write.c                  send() loop, shutdown(SHUT_WR) on completion
 │   └── version_info.h              SERVER_VERSION macro
 │
 ├── cgi/

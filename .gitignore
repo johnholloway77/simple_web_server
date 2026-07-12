@@ -26,7 +26,8 @@ test_questions/
 benchmark_results/*
 build/*
 dtrace_scripts/*
-docs/*
+docs/html
+docs/design_ideas.md
 markdown_files/*
 requests/OLD-parseRequest.cpp
 .cache/clangd/index/connections.h.07FA7B234EFA7069.idx

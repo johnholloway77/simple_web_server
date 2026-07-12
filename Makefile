@@ -106,15 +106,15 @@ SOURCES = main.c \
     flags/setFlags.c \
     client_conn/connections.c \
     client_conn/accept_new_conn.c \
+    client_conn/do_read.c \
+    client_conn/do_write.c \
     sockets/get_listener_v4.c \
     sockets/get_listener_v6.c \
-    requests/do_read.c \
     requests/parse_request.c \
     requests/resolve_path.c \
     requests/close_resolve_path.c \
     response/build_okay_response.c \
-    response/build_error_response.c \
-    response/do_write.c
+    response/build_error_response.c
 
 BINARY       = simple_server
 DEBUG_BINARY = simple_server_debug

@@ -1,9 +1,10 @@
-#include "../client_conn/connections.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
 #include <sys/socket.h>
+
+#include "./connections.h"
 #include "../debug/debug.h"
 
 void

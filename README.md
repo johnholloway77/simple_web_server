@@ -85,11 +85,13 @@ server_revision/
 ├── client_conn/
 │   ├── connections.h               # Client struct, state/response enums, function decls
 │   ├── connections.c               # add_to_lists(), close_conn()
-│   └── accept_new_conn.c           # accept_new_conn(): drain listener, set O_NONBLOCK
+│   ├── accept_new_conn.c           # accept_new_conn(): drain listener, set O_NONBLOCK
+│   ├── do_read.h                   # do_read() declaration
+│   ├── do_read.c                   # recv() loop, header detection, parse→resolve→build
+│   ├── do_write.h                  # do_write() declaration
+│   └── do_write.c                  # send() loop, graceful shutdown(SHUT_WR)
 │
 ├── requests/
-│   ├── request2.h                  # do_read() declaration
-│   ├── do_read.c                   # recv() loop, header detection, parse→resolve→build
 │   ├── parse_request.h             # Request struct, http_method/version enums, parse_request() decl
 │   ├── parse_request.c             # HTTP request-line parser and validator
 │   ├── resolve_path.h              # ResolvedPath struct, resolve_path() decl
@@ -100,8 +102,6 @@ server_revision/
 │   ├── build_response.h            # build_okay_response() and build_error_response() decls
 │   ├── build_okay_response.c       # 200 OK: static files, directory listings, CGI (stub)
 │   ├── build_error_response.c      # 4xx/5xx error responses
-│   ├── do_write.h                  # do_write() declaration
-│   ├── do_write.c                  # send() loop, graceful shutdown(SHUT_WR)
 │   └── version_info.h              # SERVER_VERSION macro
 │
 ├── cgi/

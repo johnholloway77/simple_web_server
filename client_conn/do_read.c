@@ -5,9 +5,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include "../client_conn/connections.h"
-#include "./parse_request.h"
-#include "./resolve_path.h"
+#include "./connections.h"
+#include "../requests/parse_request.h"
+#include "../requests/resolve_path.h"
 #include "../response/build_response.h"
 
 #ifdef __linux__
