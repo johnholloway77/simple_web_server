@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
-#include <sys/dirent.h>
+#include <dirent.h>
 #include "../client_conn/connections.h"
 #include "../requests/resolve_path.h"
 #include "../debug/debug.h"
