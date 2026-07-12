@@ -101,6 +101,8 @@ get_mime_type_by_ext(const char *filename, magic_t magic, int file_des)
 		return "image/jpeg";
 	if (strcasecmp(ext, ".jpg") == 0)
 		return "image/jpeg";
+	if (strcasecmp(ext, ".gif") == 0)
+		return "image/gif";
 	if (strcasecmp(ext, ".svg") == 0)
 		return "image/svg+xml";
 	if (strcasecmp(ext, ".webp") == 0)
