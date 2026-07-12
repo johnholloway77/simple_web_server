@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <limits.h>
 #include <limits.h>
+#include <sys/syslimits.h>
 
 #ifdef __linux__
 #include <bsd/string.h>
@@ -181,9 +182,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 	query_buffer = strtok(NULL, request_delim);
 
 	if (query_buffer) {
-		strlcpy(rp->query_string,
-		    query_buffer,
-		    strlen(query_buffer) + 1);
+		strlcpy(rp->query_string, query_buffer, PATH_MAX);
 	}
 
 	struct stat st = {0};
