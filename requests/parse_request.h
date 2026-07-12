@@ -1,5 +1,6 @@
 #pragma once
 #include <limits.h>
+#include <time.h>
 #include <unistd.h>
 #include "../client_conn/connections.h"
 
@@ -31,6 +32,7 @@ typedef struct Request
 {
 	enum http_method method;
 	enum http_version version;
+	time_t time_received;
 	char path[PATH_MAX];
 } Request;
 

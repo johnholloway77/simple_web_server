@@ -1,6 +1,7 @@
 #include "../client_conn/connections.h"
 #include "../requests/parse_request.h"
 #include "../debug/debug.h"
+#include "./version_info.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,16 +66,24 @@ build_error_response(Client *c, Request *req)
 
 	int resp_len;
 
+	struct tm *utc_time = gmtime(&req->time_received);
+	char time_buf[32];
+	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", utc_time);
+
 	if (HTTP_HEAD != req->method) {
 		resp_len = snprintf(c->out_buf,
 		    MAX_RESPONSE_BUF,
 		    "HTTP/1.0 %s\r\n"
+		    "Date: %s\r\n"
+		    "Server: %s\r\n"
 		    "Content-Type: %s\r\n"
 		    "Content-Length: %zu\r\n"
 		    "Connection: close\r\n"
 		    "\r\n"
 		    "%s",
 		    error_resp.status_line,
+		    time_buf,
+		    SERVER_VERSION,
 		    error_resp.mime_type,
 		    strlen(error_resp.body),
 		    error_resp.body);
@@ -83,11 +92,15 @@ build_error_response(Client *c, Request *req)
 		resp_len = snprintf(c->out_buf,
 		    MAX_RESPONSE_BUF,
 		    "HTTP/1.0 %s\r\n"
+		    "Date: %s\r\n"
+		    "Server: %s\r\n"
 		    "Content-Type: %s\r\n"
 		    "Content-Length: %zu\r\n"
 		    "Connection: close\r\n"
 		    "\r\n",
 		    error_resp.status_line,
+		    time_buf,
+		    SERVER_VERSION,
 		    error_resp.mime_type,
 		    strlen(error_resp.body));
 	}

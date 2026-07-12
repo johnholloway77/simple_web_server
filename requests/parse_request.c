@@ -94,6 +94,8 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
+	out->time_received = time(NULL);
+
 	const char *first_line = strnstr(buf, "\r\n", len);
 	size_t line_length = first_line ? (size_t)(first_line - buf) : len;
 	char line_buf[MAX_REQUEST_SIZE + 1];
