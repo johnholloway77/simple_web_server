@@ -48,6 +48,7 @@ do_write(int i, Client *clients)
 		}
 	}
 
+	DBG("Output sent: %zu\n", c->output_sent);
 	DBG("Finished writing to socket, closing client\n");
 
 	shutdown(c->fd, SHUT_WR);
