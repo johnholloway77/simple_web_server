@@ -35,11 +35,7 @@ jobs:
         # 'make' = gmake. OR just call 'make' on macOS+Linux (GNU make is
         # the system make on both). Only FreeBSD needs the gmake distinction.
 
-      - name: Test
-        run: make test-all
-
-      - name: Test (ASan)
-        if: runner.os == 'macOS'
+      - name: Test (Asan Included)
         run: make test-all-asan
 
       - name: Smoke test
@@ -87,8 +83,7 @@ jobs:
             sudo -E pkg update -f
             sudo -E pkg install -y gmake llvm pkgconf criterion valgrind
             gmake
-            gmake test-all
-            gmake test-all-asan
+            gmake test-all-asan CC=clang19
 
             echo "<html><body><h1>smoke test</h1></body></html>" > index.html
 

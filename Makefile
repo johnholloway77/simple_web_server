@@ -174,7 +174,7 @@ clean:
 	rm -rf $(BINARY) $(DEBUG_BINARY) build \
 	       $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
 	       $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
-		   $(VALGRIND_BINARY) $(VALGRIND_OBJECTS \
+		   $(VALGRIND_BINARY) $(VALGRIND_OBJECTS) \
 	       test_cases/fixtures
 
 .PHONY: clean-obj
@@ -289,6 +289,50 @@ $(BUILD_ERR_BINARY_ASAN): $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT)
 	    $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT) $(TEST_ASAN_LDFLAGS)
 
 
+# ─── build_okay_response suite ──────────────────────────────────────────
+# Unit layer: exercises the REAL resolve_path -> build_okay_response
+# handoff (not mocked) — this is the layer that catches struct-ownership
+# bugs between the two functions.
+#
+# Integration layer: forks + execs a REAL server binary, fires real HTTP
+# requests via curl, sends SIGTERM, asserts clean shutdown. Which binary
+# gets spawned is controlled by SIMPLE_SERVER_BIN (set below per target),
+# so the memory-checking tool that matters (ASan vs Valgrind) is selected
+# by which server binary the integration test is told to exec.
+BUILD_OKAY_SRC  = test_cases/test_build_okay_response.c
+BUILD_OKAY_UNIT = response/build_okay_response.c \
+                  requests/resolve_path.c \
+                  requests/close_resolve_path.c \
+                  requests/parse_request.c
+BUILD_OKAY_BINARY      = test_cases/test_build_okay_response
+BUILD_OKAY_BINARY_ASAN = test_cases/test_build_okay_response_asan
+
+.PHONY: test-build-okay
+test-build-okay: $(BUILD_OKAY_BINARY) $(BINARY)
+	@echo "Running build_okay_response unit + integration tests..."
+	@echo "(integration layer spawns $(CURDIR)/$(BINARY))"
+	@SIMPLE_SERVER_BIN=$(CURDIR)/$(BINARY) ./$(BUILD_OKAY_BINARY) $(TEST_RUN_FLAGS)
+
+# ASan variant: the TEST BINARY is compiled with ASan (covers the unit
+# layer directly, in-process). The INTEGRATION layer's spawned child is
+# pointed at $(DEBUG_BINARY) — your existing ASan server build — so the
+# real accept/do_read/resolve_path/build_okay_response/do_write pipeline
+# also runs under ASan, not just the isolated unit calls.
+.PHONY: test-build-okay-asan
+test-build-okay-asan: $(BUILD_OKAY_BINARY_ASAN) $(DEBUG_BINARY)
+	@echo "Running build_okay_response unit + integration tests under AddressSanitizer..."
+	@echo "(integration layer spawns $(CURDIR)/$(DEBUG_BINARY), ASan build)"
+	@SIMPLE_SERVER_BIN=$(CURDIR)/$(DEBUG_BINARY) ./$(BUILD_OKAY_BINARY_ASAN) $(TEST_RUN_FLAGS)
+
+$(BUILD_OKAY_BINARY): $(BUILD_OKAY_SRC) $(BUILD_OKAY_UNIT)
+	$(CC) $(TEST_CFLAGS) -o $@ \
+	    $(BUILD_OKAY_SRC) $(BUILD_OKAY_UNIT) $(TEST_LDFLAGS) $(TEST_MAGIC_LIB)
+
+$(BUILD_OKAY_BINARY_ASAN): $(BUILD_OKAY_SRC) $(BUILD_OKAY_UNIT)
+	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
+	    $(BUILD_OKAY_SRC) $(BUILD_OKAY_UNIT) $(TEST_ASAN_LDFLAGS) $(TEST_MAGIC_LIB)
+
+
 # ═══════════════════════════════════════════════════════════════════════
 #  Memory leak testing (Valgrind)
 # ═══════════════════════════════════════════════════════════════════════
@@ -308,23 +352,21 @@ VALGRIND_FIXTURE  = /tmp/simple_server_valgrind_root
 
 .PHONY: memcheck
 memcheck: $(VALGRIND_BINARY)
-
 	# Valgrind unavailable on some systems
 	@if ! command -v valgrind >/dev/null 2>&1; then \
 		    echo "valgrind not available on this platform ($(UNAME_S)) — skipping memcheck"; \
 		    exit 0; \
 	fi
-
 	@echo "Setting up fixture directory for memcheck..."
 	@mkdir -p $(VALGRIND_FIXTURE)/emptydir
 	@echo "<html><body><h1>memcheck</h1></body></html>" > $(VALGRIND_FIXTURE)/index.html
 	@echo "Starting simple_server under Valgrind (port $(VALGRIND_PORT))..."
-	@cd $(VALGRIND_FIXTURE) && valgrind --leak-check=full --error-exitcode=1 $(CURDIR)/$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT) > $(VALGRIND_LOG) 2>&1 &
+	@( cd $(VALGRIND_FIXTURE) && valgrind --leak-check=full --error-exitcode=1 $(CURDIR)/$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT) > $(VALGRIND_LOG) 2>&1 & echo $$! > $(VALGRIND_FIXTURE)/vg.pid )
 	@sleep 1
 	@echo "Firing $(VALGRIND_REQUESTS) mixed requests..."
 	@for i in $$(seq 1 $(VALGRIND_REQUESTS)); do curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/index.html; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/emptydir/; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/no-such-file; done
 	@echo "Sending graceful shutdown (SIGTERM)..."
-	@pkill -TERM -f "valgrind.*$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT)" || true
+	@kill -TERM $$(cat $(VALGRIND_FIXTURE)/vg.pid 2>/dev/null) 2>/dev/null || true
 	@sleep 2
 	@echo "--- Valgrind report ---"
 	@cat $(VALGRIND_LOG)
@@ -339,10 +381,10 @@ clean-memcheck:
 
 # ─── Aggregate test targets ────────────────────────────────────────────
 .PHONY: test
-test: test-parse test-resolve test-build-error
+test: test-parse test-resolve test-build-error test-build-okay
 
 .PHONY: test-all
-test-all: test-parse test-resolve test-build-error memcheck
+test-all: test-parse test-resolve test-build-error test-build-okay memcheck
 
 # FIXED: was 'test-asan' (nonexistent) -> 'test-parse-asan'
 .PHONY: test-all-asan
@@ -352,6 +394,7 @@ test-all-asan: test-parse-asan test-resolve-asan test-build-error-asan
 clean-test:
 	rm -f $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
 	      $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
+		  $(BUILD_OKAY_BINARY) $(BUILD_OKAY_BINARY_ASAN) \
 		  $(VALGRIND_LOG) $(VALGRIND_FIXTURE)
 	rm -rf test_cases/fixtures
 # ═══════════════════════════════════════════════════════════════════════
@@ -610,10 +653,39 @@ help:
 	@echo "  make test-asan        ...under AddressSanitizer"
 	@echo "  make test-resolve     Run resolve_path unit tests"
 	@echo "  make test-resolve-asan ...under AddressSanitizer"
+	@echo ""
+	@echo "🧪 build_okay_response (file/directory serving):"
+	@echo "  make test-build-okay       Run unit + integration tests"
+	@echo "  make test-build-okay-asan  ...under AddressSanitizer"
+	@echo ""
+	@echo "  Two layers, both run by either target:"
+	@echo "    unit layer         - calls the REAL resolve_path() then the"
+	@echo "                         REAL build_okay_response() directly, no"
+	@echo "                         sockets. Fast. Catches struct-ownership"
+	@echo "                         bugs between the two functions."
+	@echo "    integration layer  - forks + execs a REAL server binary,"
+	@echo "                         fires actual HTTP requests via curl over"
+	@echo "                         a real socket, sends SIGTERM, and"
+	@echo "                         requires a clean graceful exit."
+	@echo ""
+	@echo "  test-build-okay spawns $(BINARY) (plain release build) for the"
+	@echo "  integration layer -- fast, correctness-only, no sanitizer."
+	@echo ""
+	@echo "  test-build-okay-asan compiles the TEST BINARY itself with ASan"
+	@echo "  (covers the unit layer in-process) AND spawns $(DEBUG_BINARY)"
+	@echo "  (your ASan server build) for the integration layer -- so the"
+	@echo "  real accept/do_read/resolve_path/build_okay_response/do_write"
+	@echo "  pipeline runs under ASan too, not just the isolated unit calls."
+	@echo ""
+	@echo "  Point the integration layer at a different binary directly:"
+	@echo "    SIMPLE_SERVER_BIN=/path/to/binary make test-build-okay"
+	@echo "  e.g. to run it under Valgrind, wrap the TEST invocation:"
+	@echo "    valgrind --trace-children=yes ./test_cases/test_build_okay_response"
+	@echo "    (with SIMPLE_SERVER_BIN pointed at \$$(VALGRIND_BINARY))"
+	@echo ""
 	@echo "  make test-all         Run every test suite"
 	@echo "  make test-all-asan    Run every suite under ASan"
 	@echo "  make clean-test       Remove test binaries and fixtures"
-	@echo ""
 	@echo "🧠 Memory Leak Testing (Valgrind):"
 	@echo "  make memcheck         Run server under Valgrind, fire $$VALGRIND_REQUESTS"
 	@echo "                        mixed requests, verify zero leaks on shutdown"
