@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <limits.h>
-#include <limits.h>
-#include <sys/syslimits.h>
 
 #ifdef __linux__
 #include <bsd/string.h>
@@ -236,7 +234,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 				return 0;
 			}
 
-			rp->last_mod = st.st_mtim.tv_sec;
+			rp->last_mod = st.st_mtime;
 
 			rp->is_dir_listing = 1;
 			rp->file_ptr = NULL;
