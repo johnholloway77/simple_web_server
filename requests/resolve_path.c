@@ -26,7 +26,12 @@
 	rp->file_size = st.st_size;                                            \
 	rp->mime_type = "text/html";                                           \
 	c->file_ptr = rp->file_ptr;                                            \
-	c->file_size = st.st_size;
+	c->file_size = st.st_size;                                             \
+	if (-1 == fstat(fileno(index), &st)) {                                 \
+		perror("dir Index resolve_path fstat");                        \
+		exit(EXIT_FAILURE);                                            \
+	};                                                                     \
+	rp->last_mod = st.st_mtim.tv_sec;
 
 #include "../debug/debug.h"
 
@@ -232,10 +237,14 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 				return 0;
 			}
 
+			rp->last_mod = st.st_mtim.tv_sec;
+
 			rp->is_dir_listing = 1;
 			rp->file_ptr = NULL;
 			return 0;
 		}
+
+		rp->last_mod = st.st_mtim.tv_sec;
 
 		rp->mime_type = get_mime_type_by_ext(local_path,
 		    magic,

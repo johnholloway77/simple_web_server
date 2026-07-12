@@ -1,6 +1,7 @@
 #pragma once
 #include <limits.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <magic.h>
@@ -15,6 +16,7 @@ typedef struct ResolvedPath
 	FILE *file_ptr;
 	off_t file_size;
 	const char *mime_type; /* from get_mime_type_by_ext or magic */
+	time_t last_mod;
 	int is_dir_listing; /* 1 if no index found, needs listing */
 	int is_cgi_bin; /* 1 if true */
 } ResolvedPath;

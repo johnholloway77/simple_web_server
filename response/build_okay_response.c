@@ -157,17 +157,26 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 	char time_buf[32];
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", utc_time);
 
+	utc_time = gmtime(&rp->last_mod);
+	char mod_time_buf[32];
+	strftime(mod_time_buf,
+	    sizeof(mod_time_buf),
+	    "%Y-%m-%dT%H:%M:%SZ",
+	    utc_time);
+
 	header_len = snprintf(header,
 	    MAX_HEADER_BUF,
 	    "HTTP/1.0 200 OK\r\n"
 	    "Date: %s\r\n"
 	    "Server: %s\r\n"
+	    "Last-Modified: %s\r\n"
 	    "Content-Type: text/HTML\r\n"
 	    "Content-Length: %zu\r\n"
 	    "Connection: close\r\n"
 	    "\r\n",
 	    time_buf,
 	    SERVER_VERSION,
+	    mod_time_buf,
 	    resp_len);
 
 	DBG("# of files in dir: %u\n", count);
@@ -221,17 +230,26 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 	char time_buf[32];
 	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", utc_time);
 
+	utc_time = gmtime(&rp->last_mod);
+	char mod_time_buf[32];
+	strftime(mod_time_buf,
+	    sizeof(mod_time_buf),
+	    "%Y-%m-%dT%H:%M:%SZ",
+	    utc_time);
+
 	int header_len = snprintf(header,
 	    MAX_HEADER_BUF,
 	    "HTTP/1.0 200 OK\r\n"
 	    "Date: %s\r\n"
 	    "Server: %s\r\n"
+	    "Last-Modified: %s\r\n"
 	    "Content-Type: %s\r\n"
 	    "Content-Length: %zu\r\n"
 	    "Connection: close\r\n"
 	    "\r\n",
 	    time_buf,
 	    SERVER_VERSION,
+	    mod_time_buf,
 	    rp->mime_type,
 	    rp->file_size);
 
