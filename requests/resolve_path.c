@@ -31,7 +31,7 @@
 		perror("dir Index resolve_path fstat");                        \
 		exit(EXIT_FAILURE);                                            \
 	};                                                                     \
-	rp->last_mod = st.st_mtim.tv_sec;
+	rp->last_mod = st.st_mtime;
 
 #include "../debug/debug.h"
 
@@ -244,7 +244,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 			return 0;
 		}
 
-		rp->last_mod = st.st_mtim.tv_sec;
+		rp->last_mod = st.st_mtime;
 
 		rp->mime_type = get_mime_type_by_ext(local_path,
 		    magic,
