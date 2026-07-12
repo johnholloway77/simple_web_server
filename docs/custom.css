@@ -1,0 +1,418 @@
+/*
+ * custom.css — Doxygen style overrides for the FreeBSD Web Server docs.
+ *
+ * Applied via HTML_EXTRA_STYLESHEET in docs/Doxyfile.
+ * Full dark-mode theme: navy sidebar, dark slate content area, orange accent.
+ */
+
+/* ── Fonts ───────────────────────────────────────────────────────────── */
+
+body, div, p, td, th, li, dt, dd {
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+h1, h2, h3, h4 {
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+code, pre, tt, kbd, .fragment {
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code",
+                 "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+}
+
+/* ── Colour palette ──────────────────────────────────────────────────── */
+
+:root {
+    --accent:        #e07b39;   /* warm orange                        */
+    --accent-dark:   #c4622a;   /* hover / active                     */
+
+    --nav-bg:        #131b2e;   /* deepest navy — sidebar             */
+    --nav-text:      #c8d4e8;   /* muted blue-white                   */
+    --nav-hover:     #e07b39;
+
+    --header-bg:     #131b2e;
+    --header-text:   #ffffff;
+
+    --content-bg:    #1c2333;   /* dark slate — main content          */
+    --content-alt:   #222d42;   /* slightly lighter — cards / rows    */
+    --content-deep:  #161e2e;   /* deeper shade — code, memproto      */
+
+    --body-text:     #d0daea;   /* bright enough to read comfortably  */
+    --muted-text:    #7a8eb0;   /* secondary labels, meta info        */
+
+    --border:        #2e3f5c;   /* subtle dividers                    */
+
+    --code-bg:       #161e2e;
+    --code-text:     #cdd6f4;
+
+    --note-bg:       #1a2d47;
+    --note-border:   #4a90d9;
+    --warn-bg:       #2a2010;
+    --warn-border:   #e07b39;
+}
+
+/* ── Global body / page background ──────────────────────────────────── */
+
+body {
+    background: var(--content-bg);
+    color: var(--body-text);
+}
+
+/* Catch any Doxygen-generated elements that set their own white bg */
+.contents, #doc-content, div.contents,
+.textblock, div.textblock,
+.doxygen-docs {
+    background: var(--content-bg);
+    color: var(--body-text);
+}
+
+/* ── Top navigation bar ──────────────────────────────────────────────── */
+
+#top {
+    background: var(--header-bg);
+    border-bottom: 3px solid var(--accent);
+    padding: 0;
+}
+
+#titlearea {
+    background: var(--header-bg);
+    padding: 14px 20px 10px 20px;
+    border-bottom: none;
+}
+
+#projectname {
+    color: var(--header-text);
+    font-size: 22px;
+    font-weight: 700;
+}
+
+#projectbrief {
+    color: var(--nav-text);
+    font-size: 12px;
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+#projectnumber {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Tab bar */
+.tabs, .tabs2, .tabs3 {
+    background: #1a2540;
+    border-bottom: 2px solid var(--accent);
+}
+
+.tablist a, .tablist a:visited {
+    color: var(--nav-text);
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+}
+
+.tablist a:hover, .tablist li.current a {
+    color: var(--accent);
+    background: transparent;
+}
+
+/* ── Left sidebar / tree ─────────────────────────────────────────────── */
+
+#side-nav, #nav-tree, .ui-resizable-e {
+    background: var(--nav-bg);
+}
+
+#nav-sync {
+    background: var(--nav-bg);
+}
+
+#nav-tree .selected {
+    background: #1e2d47;
+    border-left: 3px solid var(--accent);
+}
+
+#nav-tree a, #nav-tree a:visited {
+    color: var(--nav-text);
+    font-size: 13px;
+}
+
+#nav-tree a:hover, #nav-tree .selected a {
+    color: var(--nav-hover);
+}
+
+#nav-tree img {
+    filter: brightness(0.6) invert(0.2);
+}
+
+/* ── Main content headings ───────────────────────────────────────────── */
+
+.title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #e8edf5;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+}
+
+h1, h2, h3, h4 {
+    color: #dce5f0;
+}
+
+h2.groupheader {
+    font-size: 17px;
+    color: #c8d4e8;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    margin-top: 28px;
+}
+
+p, li, dt, dd {
+    color: var(--body-text);
+}
+
+a, a:visited {
+    color: #6aadff;
+}
+
+a:hover {
+    color: var(--accent);
+}
+
+/* ── Code blocks ─────────────────────────────────────────────────────── */
+
+div.fragment, pre.fragment {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border: none;
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 12px 0;
+    overflow-x: auto;
+}
+
+/* Inline code */
+code {
+    background: #1e2d47;
+    color: #f38c65;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 92%;
+}
+
+/* Syntax highlighting tokens */
+span.keyword     { color: #7aa2f7; }
+span.keywordtype { color: #bb9af7; }
+span.keywordflow { color: #f7768e; }
+span.comment     { color: #5a6a8a; font-style: italic; }
+span.preprocessor { color: #9ece6a; }
+span.stringliteral { color: #e0af68; }
+span.charliteral   { color: #e0af68; }
+span.vhdldigit     { color: #ff9e64; }
+
+/* Line numbers in source view */
+div.line { color: var(--body-text); }
+span.lineno { color: var(--muted-text); background: var(--content-deep); }
+span.lineno a { color: #6aadff; }
+
+/* ── Function / member documentation cards ───────────────────────────── */
+
+.memitem {
+    background: var(--content-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.memproto {
+    background: var(--content-deep);
+    border-bottom: 1px solid var(--border);
+    border-radius: 7px 7px 0 0;
+    padding: 10px 16px;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 13px;
+    color: var(--code-text);
+}
+
+/* Function name in prototype */
+.memproto td.memname {
+    color: #7aa2f7;
+    font-weight: 600;
+}
+
+.memdoc {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--body-text);
+}
+
+/* Parameter / return tables inside memdoc */
+.params th, .retval th, .exception th {
+    background: #1a2540;
+    color: #c8d4e8;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.params td, .retval td, .exception td {
+    padding: 6px 10px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+    color: var(--body-text);
+}
+
+/* Direction labels — [in] / [out] */
+.paramdir { color: var(--accent); font-weight: 600; }
+.paramname { color: #9ece6a; font-style: normal; }
+
+/* ── Notes / warnings / attention boxes ──────────────────────────────── */
+
+dl.note, div.note {
+    background: var(--note-bg);
+    border-left: 4px solid var(--note-border);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    color: var(--body-text);
+}
+
+dl.warning, div.warning, dl.attention, div.attention {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--warn-border);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    color: var(--body-text);
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────── */
+
+table.doxtable {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+table.doxtable th {
+    background: #131b2e;
+    color: #c8d4e8;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 9px 14px;
+    border: none;
+}
+
+table.doxtable td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--body-text);
+}
+
+table.doxtable tr:nth-child(even) td {
+    background: var(--content-alt);
+}
+
+table.doxtable tr:hover td {
+    background: #1e2d47;
+}
+
+/* Markdown tables rendered by Doxygen use the same class */
+table.markdownTable th {
+    background: #131b2e;
+    color: #c8d4e8;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+}
+
+table.markdownTable td {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    color: var(--body-text);
+}
+
+table.markdownTable tr:nth-child(even) td {
+    background: var(--content-alt);
+}
+
+table.markdownTable tr:hover td {
+    background: #1e2d47;
+}
+
+/* ── Section / member index summaries ────────────────────────────────── */
+
+div.summary {
+    font-size: 12px;
+    color: var(--muted-text);
+    background: var(--content-bg);
+}
+
+div.summary a {
+    color: var(--accent);
+}
+
+.memberdecls td {
+    color: var(--body-text);
+    border-bottom: 1px solid var(--border);
+}
+
+.memberdecls td.memItemLeft, .memberdecls td.memItemRight {
+    background: var(--content-alt);
+}
+
+.memberdecls td.memSeparator {
+    background: var(--content-bg);
+    border: none;
+}
+
+/* ── Search box ──────────────────────────────────────────────────────── */
+
+#MSearchBox {
+    border: 1px solid #3a5080;
+    border-radius: 20px;
+    background: #1a2540;
+    padding: 3px 10px;
+}
+
+#MSearchField {
+    background: transparent;
+    color: var(--nav-text);
+    font-size: 13px;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+address.footer {
+    background: var(--nav-bg);
+    color: var(--muted-text);
+    font-size: 11px;
+    padding: 10px 20px;
+    border-top: 2px solid var(--accent);
+    text-align: right;
+}
+
+address.footer a {
+    color: var(--accent);
+}

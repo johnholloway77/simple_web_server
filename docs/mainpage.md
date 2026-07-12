@@ -259,19 +259,64 @@ gmake memcheck                # start server under Valgrind, fire 500 requests
 
 ---
 
-## Performance
+## Performance & Roadmap
 
-**Current (Phase 1 — poll() implementation):**
-- ~60,000 req/sec measured on the development machine
-- Zero socket errors (RFC-compliant Content-Length and graceful shutdown)
-- Valgrind-clean across 500 mixed requests (`gmake memcheck`)
+### Achieved
 
-**Original fork-per-connection baseline:** ~2,450 req/sec
+Benchmarked with `wrk` on the development laptop (`wrk -t8 -d30s`):
 
-**Planned improvements:**
-- **Phase 3** — kqueue → ~30,000 req/sec target
-- **Phase 4** — memory arenas → ~80,000 req/sec target
-- **Phase 5** — sendfile() zero-copy → ~100,000+ req/sec target
+| Phase | Implementation | Concurrency | Req/sec | Latency (avg) |
+|---|---|---|---|---|
+| Baseline | fork-per-connection | c8 | ~277 | ~17 ms |
+| **Phase 1** | **poll() event loop** | **c8** | **~111,000** | **56 µs** |
+| Phase 1 | poll() event loop | c200 | ~114,000 | 9.4 ms |
+| Phase 1 | poll() event loop | c1000 | ~111,000 | 23 ms |
+| nginx (reference) | event-driven, multi-worker | c200 | ~124,000 | 1.6 ms |
+| nginx (reference) | event-driven, multi-worker | c1000 | ~108,000\* | 9.5 ms |
+
+\* nginx produced 284,000 read errors at c1000; our server had 11 timeouts and zero read errors.
+
+**Notable:** the poll() server matches nginx throughput at high concurrency on this machine
+and beats it at c1000 on error-free delivery, despite being single-process and having no
+sendfile or kernel-tuned worker model. The baseline fork server couldn't accept connections
+fast enough to sustain load — `hey -c100` showed 5,936 "connection refused" errors against
+100 successful responses.
+
+### Planned
+
+| Phase | Focus | Target | Key technique |
+|---|---|---|---|
+| Phase 2 | Platform-native I/O multiplexing | >125,000 req/sec | kqueue (FreeBSD/macOS), epoll (Linux), event ports (illumos); poll() fallback |
+| Phase 3 | Zero-copy file transfer | >150,000 req/sec | sendfile(2) on FreeBSD/Linux/macOS, sendfilev() on illumos |
+| Phase 4 | Memory arenas | uncapped | Per-connection arena allocators; eliminate per-request malloc/free |
+
+### Cross-platform I/O multiplexing strategy (Phase 2)
+
+The event-loop backend will be selected at compile time based on platform:
+
+```
+FreeBSD / macOS  →  kqueue(2) + kevent(2)
+Linux            →  io_uring(2) with epoll(7) fallback
+illumos          →  event ports (port_create / port_associate)
+everything else  →  poll(2)   (current implementation, always available)
+```
+
+A thin abstraction layer (`event_backend.h`) will expose a uniform
+interface so `main.c` and `do_read.c`/`do_write.c` are unaffected by the
+backend in use.
+
+### Zero-copy sendfile strategy (Phase 3)
+
+Static file serving will bypass the `read()` → `out_buf` → `send()`
+pipeline and hand the file descriptor directly to the kernel:
+
+```
+FreeBSD   →  sendfile(2)            (sf_hdtr for combined header+body send)
+Linux     →  sendfile(2)            (splice(2) as fallback for pipes)
+macOS     →  sendfile(2)            (Darwin variant, same fd-based API)
+illumos   →  sendfilev(3EXT)
+fallback  →  current read+send path (always available)
+```
 
 ---
 
@@ -296,4 +341,4 @@ gmake memcheck                # start server under Valgrind, fire 500 requests
 
 **Version:** Phase 1 (poll revision)
 **Course:** CS631 Advanced Programming in the Unix Environment
-**Platform:** FreeBSD (also builds on Linux, macOS)
+**Platform:** FreeBSD (also builds on Linux, macOS, Illumos)

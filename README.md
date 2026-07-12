@@ -313,6 +313,59 @@ confirms zero definitely-lost blocks across single and multi-request runs
 
 ---
 
+## Performance & Roadmap
+
+### Achieved
+
+Benchmarked with `wrk -t8 -d30s` on the development laptop:
+
+| Phase | Implementation | Concurrency | Req/sec | Latency (avg) |
+|---|---|---|---|---|
+| Baseline | fork-per-connection | c8 | ~277 | ~17 ms |
+| **Phase 1** | **poll() event loop** | **c8** | **~111,000** | **56 µs** |
+| Phase 1 | poll() event loop | c200 | ~114,000 | 9.4 ms |
+| Phase 1 | poll() event loop | c1000 | ~111,000 | 23 ms |
+| nginx (reference) | event-driven, multi-worker | c200 | ~124,000 | 1.6 ms |
+| nginx (reference) | event-driven, multi-worker | c1000 | ~108,000\* | 9.5 ms |
+
+\* nginx produced 284,000 read errors at c1000; the poll() server had 11 timeouts and zero
+read errors at the same load. The baseline fork server could not sustain concurrent load —
+`hey -c100` recorded 5,936 "connection refused" errors against 100 successful responses.
+
+### Planned
+
+| Phase | Focus | Target | Key technique |
+|---|---|---|---|
+| Phase 2 | Platform-native I/O multiplexing | >125,000 req/sec | kqueue (FreeBSD/macOS), epoll (Linux), event ports (illumos); poll() fallback |
+| Phase 3 | Zero-copy file transfer | >150,000 req/sec | sendfile(2) on FreeBSD/Linux/macOS, sendfilev() on illumos |
+| Phase 4 | Memory arenas | uncapped | Per-connection arena allocators; eliminate per-request malloc/free |
+
+### Cross-platform I/O multiplexing (Phase 2)
+
+The poll() loop will be replaced by a thin backend abstraction that selects
+the best available mechanism at compile time:
+
+| Platform | Backend |
+|---|---|
+| FreeBSD / macOS | `kqueue(2)` + `kevent(2)` |
+| Linux | `io_uring(2)`, falling back to `epoll(7)` |
+| illumos | event ports (`port_create` / `port_associate`) |
+| everything else | `poll(2)` — current implementation, always available |
+
+### Zero-copy sendfile (Phase 3)
+
+Static file serving will bypass the `fread()` → `out_buf` → `send()` path:
+
+| Platform | API |
+|---|---|
+| FreeBSD | `sendfile(2)` with `sf_hdtr` (combined header + body in one call) |
+| Linux | `sendfile(2)` / `splice(2)` |
+| macOS | `sendfile(2)` (Darwin variant) |
+| illumos | `sendfilev(3EXT)` |
+| fallback | current read + send path |
+
+---
+
 ## Use of AI Tools (Claude)
 
 This project uses Claude as a knowledgeable reviewer and tutor, in a

@@ -1,7 +1,7 @@
 # Project identification
 PROJECT_NAME           = "FreeBSD Web Server"
-PROJECT_BRIEF          = "High-performance HTTP/1.0 web server for FreeBSD"
-PROJECT_VERSION        = "0.1-baseline"
+PROJECT_BRIEF          = "Single-process poll()-based HTTP/1.0 server — FreeBSD / Linux / macOS"
+PROJECT_VERSION        = "Phase 1"
 PROJECT_LOGO           =
 
 # Input configuration
@@ -42,11 +42,11 @@ HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
 HTML_STYLESHEET        =
-HTML_EXTRA_STYLESHEET  =
+HTML_EXTRA_STYLESHEET  = ./custom.css
 HTML_EXTRA_FILES       =
-HTML_COLORSTYLE_HUE    = 220
-HTML_COLORSTYLE_SAT    = 100
-HTML_COLORSTYLE_GAMMA  = 80
+HTML_COLORSTYLE_HUE    = 209
+HTML_COLORSTYLE_SAT    = 75
+HTML_COLORSTYLE_GAMMA  = 40
 HTML_TIMESTAMP         = YES
 HTML_DYNAMIC_SECTIONS  = YES
 HTML_INDEX_NUM_ENTRIES = 100
@@ -54,8 +54,9 @@ HTML_INDEX_NUM_ENTRIES = 100
 # Navigation
 DISABLE_INDEX          = NO
 GENERATE_TREEVIEW      = YES
+FULL_SIDEBAR           = NO
 ENUM_VALUES_PER_LINE   = 4
-TREEVIEW_WIDTH         = 250
+TREEVIEW_WIDTH         = 280
 EXT_LINKS_IN_WINDOW    = NO
 
 # LaTeX output (disabled for web server docs)
