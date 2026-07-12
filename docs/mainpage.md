@@ -2,333 +2,298 @@
 
 ## Overview
 
-This is a high-performance HTTP/1.0 web server designed specifically for FreeBSD systems as part of the CS631 Advanced Programming in the Unix Environment coursework. The server implements a subset of the HTTP/1.0 protocol as defined in [RFC 1945](https://www.rfc-editor.org/rfc/rfc1945.html) and demonstrates advanced Unix systems programming concepts.
+This is an HTTP/1.0 web server designed for FreeBSD as part of CS631
+Advanced Programming in the Unix Environment coursework. It implements a
+subset of HTTP/1.0 as defined in
+[RFC 1945](https://www.rfc-editor.org/rfc/rfc1945.html).
 
-**⚠️ Important:** This is an educational project, not a production server. It has limited functionality and should not be exposed to the internet.
+The server runs as a **single process using a `poll()`-based event loop**.
+There are no forked child processes for request handling — all connections
+are served concurrently within one process across parallel non-blocking
+sockets. CGI execution still forks, as required by the CGI specification.
 
-## Key Features
-
-- **Dual-Stack IPv4/IPv6 Support** - Simultaneous listening on both protocol versions
-- **Fork-per-Connection Model** - Each client connection handled in a separate process
-- **CGI Script Execution** - Dynamic content generation with security validation
-- **Directory Listing** - Automatic HTML directory browsing when no index.html exists
-- **MIME Type Detection** - Automatic content-type detection using libmagic
-- **Comprehensive Logging** - Request logging with timestamps and response codes
-- **Daemon Mode** - Background operation with proper process management
-- **Signal Handling** - Zombie process reaping with SIGCHLD handling
-- **Memory Safety** - Valgrind-clean implementation with no memory leaks
-
-## Architecture Overview
-
-The server uses a modular design with clear separation of concerns:
-
-### Core Components
-
-- **main.c** - Server initialization, socket management, and main event loop
-- **sockets/** - IPv4/IPv6 socket creation and connection handling
-- **requests/** - HTTP request parsing and protocol validation
-- **response/** - HTTP response generation and directory listings
-- **cgi/** - CGI script execution with security controls
-- **flags/** - Command-line argument processing
-- **sig_handlers/** - Process signal management
-
-### Process Model
-
-1. **Main Process** - Listens on IPv4 and IPv6 sockets using select()
-2. **Child Processes** - Fork per connection for request handling
-3. **CGI Processes** - Separate processes for dynamic content execution
-
-## Architecture Diagrams
-
-### Request Processing Flow
-
-```
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│   Client    │    │ Main Process │    │ Child Process   │
-│  (Browser)  │    │   (select)   │    │ (handleConn)    │
-└──────┬──────┘    └──────┬───────┘    └─────────┬───────┘
-       │                  │                      │
-       │ HTTP Request     │                      │
-       ├─────────────────►│                      │
-       │                  │ accept()             │
-       │                  ├─────────────────────►│
-       │                  │ fork()               │
-       │                  │◄─────────────────────┤
-       │                  │                      │
-       │                  │                      │ parseRequest()
-       │                  │                      ├──────────┐
-       │                  │                      │          │
-       │                  │                      │◄─────────┘
-       │                  │                      │
-       │ HTTP Response    │                      │ send()
-       │◄─────────────────────────────────────────┤
-       │                  │                      │
-       │                  │                      │ exit()
-       │                  │                      ├──────────┐
-       │                  │ SIGCHLD              │          │
-       │                  │◄─────────────────────┘          │
-       │                  │ waitpid()            │          │
-       │                  ├─────────────┐        │          │
-       │                  │             │        │          │
-       │                  │◄────────────┘        │          X
-       │                  │                      │
-```
-
-### Module Dependency Structure
-
-```
-                    ┌─────────────┐
-                    │    main.c   │
-                    │ (entry point│
-                    │   select)   │
-                    └──────┬──────┘
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-          ▼                ▼                ▼
-    ┌──────────┐    ┌─────────────┐   ┌──────────┐
-    │ flags/   │    │  sockets/   │   │sig_handlers/│
-    │ setFlags │    │handleSocket │   │   reap.c   │
-    └──────────┘    └──────┬──────┘   └──────────┘
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │    sockets/     │
-                  │ handleConnection│
-                  └────────┬────────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-              ▼            ▼            ▼
-         ┌──────────┐ ┌──────────┐ ┌──────────┐
-         │requests/ │ │response/ │ │   cgi/   │
-         │parseReq  │ │dirResponse│ │ cgiExe   │
-         └────┬─────┘ └──────────┘ └──────────┘
-              │
-         ┌────┼────┐
-         │    │    │
-         ▼    ▼    ▼
-    ┌────────┬────────┬────────┐
-    │checkHttp checkMethod   │
-    └─────────────────────────┘
-```
-
-### File Organization
-
-```
-server_revision/
-├── main.c ...................... Server initialization & main loop
-├── Makefile .................... Build configuration
-├── setup.sh .................... Environment setup script
-├── flags/
-│   ├── flags.h ................. Command-line flag definitions
-│   └── setFlags.c .............. Argument parsing & validation
-├── sockets/
-│   ├── socket.h ................ Socket interface definitions
-│   ├── createSocket_v4.c ....... IPv4 socket creation
-│   ├── createSocket_v6.c ....... IPv6 socket creation
-│   ├── handleSocket.c .......... Connection acceptance
-│   └── handleConnection.c ...... HTTP request processing
-├── requests/
-│   ├── requests.h .............. Request parsing interface
-│   ├── parseRequest.c .......... HTTP request parser
-│   ├── checkHttp.c ............. HTTP version validation
-│   └── checkMethod.c ........... HTTP method validation
-├── response/
-│   ├── response.h .............. Response interface
-│   ├── dirResponse.c ........... Directory listing generator
-│   └── dirResponse.h ........... Directory response definitions
-├── cgi/
-│   ├── cgi.h ................... CGI interface
-│   └── cgiExe.c ................ CGI script execution
-└── sig_handlers/
-    ├── reap.h .................. Signal handler interface
-    └── reap.c .................. SIGCHLD handler (legacy)
-```
-
-## Security Features
-
-- **Path Traversal Protection** - Blocks attempts to access files outside document root
-- **Input Validation** - Comprehensive validation of HTTP methods and versions
-- **CGI Security** - Command injection prevention and environment sanitization
-- **Buffer Overflow Protection** - Safe string operations and bounds checking
-- **Memory Management** - Proper cleanup and leak prevention
-
-## Performance Characteristics
-
-**Current Performance (Phase 0 Baseline):**
-- ~2,450 requests/second (10.7x improvement from initial 229 req/sec)
-- Low latency: ~3.3ms average response time
-- Efficient MIME type detection with caching optimizations
-- Memory-efficient operation with zero definitely lost bytes (Valgrind-verified)
-
-**Planned Performance Improvements:**
-- **Phase 1**: HTTP/1.0 protocol compliance → ~500 req/sec target
-- **Phase 2**: Event-driven poll() implementation → ~10,000 req/sec target
-- **Phase 3**: FreeBSD kqueue implementation → ~30,000 req/sec target
-- **Phase 4**: Memory arena allocation → ~80,000 req/sec target
-- **Phase 5**: Zero-copy sendfile() → ~100,000+ req/sec target
-
-## Building and Installation
-
-### Prerequisites
-- FreeBSD 14.1+ (designed and tested on FreeBSD)
-- Standard development tools (make, gcc/clang)
-- libmagic for MIME type detection
-
-### Platform Compatibility
-While designed specifically for FreeBSD 14.1, this server should run on any POSIX-compliant Unix-like system with little to no modification. The code uses standard POSIX APIs and avoids FreeBSD-specific extensions where possible.
-
-**Tested on:** FreeBSD 14.1
-**Should work on:** Linux, macOS, OpenBSD, NetBSD, Solaris, and other POSIX systems
-
-### Build Steps
-```bash
-# Quick setup with example content
-./setup.sh
-
-# Or build manually
-make
-
-# Clean build artifacts
-make clean
-```
-
-### Directory Structure After Setup
-```
-├── cgi-bin/          # CGI scripts
-├── cgi-data/         # CGI data storage
-├── index.html        # Default index page
-├── simple_server/    # Build output directory
-├── subNoIndex/       # Example directory without index
-└── subWithIndex/     # Example directory with index
-```
-
-## Usage
-
-```bash
-./simple_server [options]
-```
-
-### Command Line Options
-
-| Option | Description |
-|--------|-------------|
-| `-c dir` | Enable CGI execution from specified directory |
-| `-d` | Debug mode: no daemon, single connection, stdout logging |
-| `-l file` | Log all requests to specified file |
-| `-p port` | Listen on specified port (default: 8080) |
-
-### Example Usage
-
-```bash
-# Start in daemon mode on port 8080
-./simple_server
-
-# Debug mode with CGI and logging
-./simple_server -d -c ./cgi-bin -l server.log -p 3000
-
-# Production mode with CGI on port 80 (requires root)
-sudo ./simple_server -c ./cgi-bin -l /var/log/webserver.log -p 80
-```
-
-### Accessing the Server
-
-- **Web Browser**: http://localhost:8080
-- **cURL**: `curl -v http://localhost:8080/`
-- **Telnet**: `telnet localhost 8080` (for manual HTTP testing)
-
-## Logging Format
-
-All requests are logged in Common Log Format:
-```
-IP_ADDRESS TIMESTAMP "REQUEST_LINE" STATUS_CODE BYTES_SENT
-```
-
-Example:
-```
-127.0.0.1 2024-01-26T15:30:45Z "GET /index.html HTTP/1.1" 200 1024
-::1 2024-01-26T15:30:46Z "GET /cgi-bin/hello.cgi HTTP/1.0" 200 256
-```
-
-## Process Management
-
-### Starting as Daemon
-```bash
-./simple_server
-# Server detaches and runs in background
-```
-
-### Finding and Stopping Daemon
-```bash
-# Find process ID
-sockstat | grep 8080
-
-# Stop server
-kill <process_id>
-
-# Or use pkill
-pkill simple_server
-```
-
-## Testing and Verification
-
-### Memory Testing with Valgrind
-```bash
-valgrind --leak-check=full --show-leak-kinds=all ./simple_server -d
-```
-
-### Performance Benchmarking
-```bash
-# Install hey benchmarking tool
-# FreeBSD: pkg install hey
-
-# Basic benchmark
-hey -n 1000 -c 10 http://localhost:8080/
-
-# Stress test
-hey -n 10000 -c 100 -t 30 http://localhost:8080/
-```
-
-## Development Notes
-
-This project demonstrates several advanced Unix programming concepts:
-
-- **Socket Programming** - IPv4/IPv6 dual-stack implementation
-- **Process Management** - Fork, exec, signal handling, zombie reaping
-- **I/O Multiplexing** - select() for handling multiple sockets
-- **Inter-Process Communication** - Pipes for CGI communication
-- **Memory Management** - Malloc/free discipline with Valgrind verification
-- **Security Programming** - Input validation and attack prevention
-- **Performance Analysis** - Profiling and optimization techniques
-
-## Learning Objectives Achieved
-
-- Understanding of HTTP protocol internals
-- Mastery of BSD socket programming
-- Process lifecycle management in Unix
-- Security-conscious C programming
-- Performance profiling and optimization
-- Professional debugging practices
-
-## Contributing
-
-This is an educational project. For learning purposes, examine the code to understand:
-- How HTTP requests are parsed and validated
-- How the fork-per-connection model works
-- How CGI scripts are executed securely
-- How memory management is handled safely
-
-## References
-
-- [RFC 1945 - HTTP/1.0](https://www.rfc-editor.org/rfc/rfc1945.html)
-- [Stevens CS631 Assignment](https://stevens.netmeister.org/631/f23-group-project.html)
-- [FreeBSD Developer's Handbook](https://docs.freebsd.org/en/books/developers-handbook/)
-- [Secure Coding in C](https://www.securecoding.cert.org/)
+**⚠️ Important:** This is an educational project, not a production server.
+It has limited functionality and should not be exposed to the internet.
 
 ---
 
-**Version:** 0.1-baseline
+## Key Features
+
+- **Single-process poll() event loop** — non-blocking I/O, no fork per connection
+- **Dual-stack IPv4/IPv6** — simultaneous listeners on both protocol versions
+- **Dynamic connection array** — grows via realloc as connections arrive
+- **HTTP/1.0 and HTTP/1.1 accepted** — responses always sent as HTTP/1.0
+- **Content-Length on all responses** — full headers per RFC 1945
+- **MIME type detection** — extension table with libmagic fallback
+- **Directory listings** — HTML browsing when no index.htm/index.html exists
+- **CGI execution** — fork/exec with pipe I/O and URL-decoded env vars
+- **Daemon mode** — background operation, suppressed by `-v`
+- **SIGTERM/SIGINT handled** — clean event-loop exit, all memory freed
+- **Memory safety** — Valgrind-clean and AddressSanitizer-clean
+
+---
+
+## Architecture
+
+### Event Loop
+
+`main()` creates one IPv4 and one IPv6 listening socket (both
+`O_NONBLOCK`), allocates parallel `pollfd` and `Client` arrays, then
+enters the `poll()` loop:
+
+```
+while (running) {
+    poll(pfds, fd_count, -1);
+
+    for each fd:
+        if listener fd  → accept_new_conn()   // drain all pending accepts
+        if POLLERR/HUP  → close_conn()
+        if POLLIN  + READING        → do_read()
+        if POLLOUT + SENDING_HEADER
+                   or SENDING_BODY  → do_write()
+        if CLOSING                  → close_conn()
+}
+```
+
+### Connection State Machine
+
+Each connection follows a linear path through the `client_state` enum:
+
+```
+READING ──► (PROCESSING) ──► SENDING_HEADER ──► SENDING_BODY ──► CLOSING
+   │                                                                  ▲
+   └──────────────────── error / EOF ───────────────────────────────►┘
+```
+
+`PROCESSING` is transient — it occurs inside `do_read()` while the
+response is being built and is never observed by the poll loop.
+
+### Request Handling Pipeline
+
+All of the following happens inside a single `do_read()` call once
+`"\r\n\r\n"` is detected in the input buffer:
+
+```
+recv() loop → append to in_buf
+     │
+     ▼
+parse_request()      validate method, version, path, traversal check
+     │
+     ▼
+resolve_path()       URI → filesystem: file / directory / cgi-bin
+     │
+     ├─ success → build_okay_response()   assemble 200 + body into out_buf
+     └─ error   → build_error_response()  assemble 4xx/5xx into out_buf
+                          │
+                          ▼
+              pfds[i].events = POLLOUT
+              client.state   = SENDING_HEADER
+```
+
+`do_write()` then drains `out_buf` via `send()` and issues
+`shutdown(SHUT_WR)` on completion.
+
+### Module Dependency
+
+```
+                        ┌───────────┐
+                        │  main.c   │
+                        │ poll loop │
+                        └─────┬─────┘
+                              │
+          ┌───────────────────┼───────────────────┐
+          │                   │                   │
+          ▼                   ▼                   ▼
+    ┌──────────┐      ┌──────────────┐     ┌───────────┐
+    │  flags/  │      │ client_conn/ │     │ sockets/  │
+    │ setFlags │      │ connections  │     │get_listener│
+    └──────────┘      │ accept_conn  │     └───────────┘
+                      └──────┬───────┘
+                             │
+               ┌─────────────┼──────────────┐
+               │             │              │
+               ▼             ▼              ▼
+        ┌──────────┐  ┌──────────┐  ┌──────────────┐
+        │requests/ │  │response/ │  │    cgi/      │
+        │ do_read  │  │do_write  │  │   cgiExe     │
+        │parse_req │  │build_okay│  └──────────────┘
+        │resolve_  │  │build_err │
+        │  path    │  └──────────┘
+        └──────────┘
+```
+
+---
+
+## File Structure
+
+```
+server_revision/
+├── main.c                          Entry point: signal setup, poll() loop
+│
+├── flags/
+│   ├── flags.h                     Flag bit definitions (C_FLAG, V_FLAG, …)
+│   └── setFlags.c                  Command-line argument parsing
+│
+├── sockets/
+│   ├── socket.h                    get_listener_v4/v6 declarations
+│   ├── get_listener_v4.c           Non-blocking IPv4 listening socket
+│   └── get_listener_v6.c           Non-blocking IPv6 listening socket
+│
+├── client_conn/
+│   ├── connections.h               Client struct, enums, function declarations
+│   ├── connections.c               add_to_lists(), close_conn()
+│   └── accept_new_conn.c           Drain listener, set O_NONBLOCK, record peer addr
+│
+├── requests/
+│   ├── request2.h                  do_read() declaration
+│   ├── do_read.c                   recv() loop → parse → resolve → build response
+│   ├── parse_request.h             Request struct, http_method/version enums
+│   ├── parse_request.c             HTTP request-line parser and validator
+│   ├── resolve_path.h              ResolvedPath struct, resolve_path() declaration
+│   ├── resolve_path.c              URI→filesystem, MIME detection, CGI routing
+│   └── close_resolve_path.c        close_resolve_path_ptr() — fclose wrapper
+│
+├── response/
+│   ├── build_response.h            build_okay_response() / build_error_response() decls
+│   ├── build_okay_response.c       200 OK: static files, directory listings, CGI (stub)
+│   ├── build_error_response.c      4xx/5xx error responses
+│   ├── do_write.h                  do_write() declaration
+│   ├── do_write.c                  send() loop, shutdown(SHUT_WR) on completion
+│   └── version_info.h              SERVER_VERSION macro
+│
+├── cgi/
+│   ├── cgi.h                       cgiExe() declaration
+│   └── cgiExe.c                    CGI fork/exec, pipe I/O, URL decode
+│
+├── debug/
+│   └── debug.h                     DBG/DBG_DEC/DBG_DO — no-op in release builds
+│
+└── test_cases/
+    ├── test_parse_request.c        Criterion suite: parse_request() (~40 cases)
+    ├── test_resolve_path.c         Criterion suite: resolve_path()
+    ├── test_build_error.c          Criterion suite: build_error_response()
+    └── test_build_okay_response.c  Criterion suite + integration: build_okay_response()
+```
+
+Build output goes into `build/release/`, `build/debug/`, and
+`build/valgrind/`. Binaries are placed in the project root:
+`simple_server`, `simple_server_debug`, `simple_server_valgrind`.
+
+---
+
+## Building
+
+GNU make is required. On FreeBSD use `gmake`:
+
+```sh
+gmake                 # release build  →  ./simple_server
+gmake debug           # ASan + -DDEBUG →  ./simple_server_debug
+gmake valgrind-build  # symbols only   →  ./simple_server_valgrind
+gmake clean
+```
+
+### Dependencies
+
+| Package | Purpose |
+|---|---|
+| `libmagic` | MIME-type detection fallback (base system on FreeBSD) |
+| `criterion` | Unit testing framework |
+| `doxygen` | This documentation |
+| `graphviz` | Call/dependency diagrams (optional) |
+| `llvm` | clang-format for code formatting (optional) |
+| `cppcheck` / `cpplint` | Static analysis (optional) |
+
+```sh
+pkg install doxygen graphviz llvm cppcheck py39-cpplint criterion
+```
+
+---
+
+## Usage
+
+```sh
+./simple_server [options]
+```
+
+| Flag | Argument | Description |
+|---|---|---|
+| `-c` | `dir` | Enable CGI execution from the given directory |
+| `-v` | — | Verbose: skip daemonizing, log to stdout |
+| `-bind4` | `addr` | Bind IPv4 listener to a specific address (default: all) |
+| `-bind6` | `addr` | Bind IPv6 listener to a specific address (default: all) |
+| `-l` | `file` | Log all requests to a file |
+| `-p` | `port` | Listen port (default: 8080; root required below 1024) |
+
+```sh
+# Verbose mode, all interfaces, port 8000
+./simple_server -v -p 8000
+
+# Specific addresses
+./simple_server -bind4 192.168.1.10 -bind6 ::1 -p 8080
+
+# CGI + logging
+./simple_server -c ./cgi-bin -l ./server.log
+```
+
+### Stopping the server
+
+```sh
+sockstat | grep 8080
+kill <pid>      # SIGTERM triggers a clean event-loop exit
+```
+
+---
+
+## Testing
+
+```sh
+gmake test-parse              # parse_request suite
+gmake test-resolve            # resolve_path suite
+gmake test-build-error        # build_error_response suite
+gmake test-build-okay         # build_okay_response unit + integration
+gmake test                    # all unit suites
+gmake test-all                # all suites + Valgrind memcheck
+gmake test-all-asan           # all suites under AddressSanitizer
+gmake memcheck                # start server under Valgrind, fire 500 requests
+```
+
+---
+
+## Performance
+
+**Current (Phase 1 — poll() implementation):**
+- ~60,000 req/sec measured on the development machine
+- Zero socket errors (RFC-compliant Content-Length and graceful shutdown)
+- Valgrind-clean across 500 mixed requests (`gmake memcheck`)
+
+**Original fork-per-connection baseline:** ~2,450 req/sec
+
+**Planned improvements:**
+- **Phase 3** — kqueue → ~30,000 req/sec target
+- **Phase 4** — memory arenas → ~80,000 req/sec target
+- **Phase 5** — sendfile() zero-copy → ~100,000+ req/sec target
+
+---
+
+## Security
+
+- Path traversal blocked in `parse_request()` (`../` detection)
+- Absolute-path URIs rejected (path must start with `/`)
+- CGI parameter names restricted to alphanumeric + underscore
+- All string operations use bounds-checked functions (`strlcpy`, `snprintf`)
+- AddressSanitizer and Valgrind used continuously during development
+
+---
+
+## References
+
+- [RFC 1945 — HTTP/1.0](https://www.rfc-editor.org/rfc/rfc1945.html)
+- [Stevens CS631 Assignment](https://stevens.netmeister.org/631/f23-group-project.html)
+- [poll(2) — FreeBSD man page](https://man.freebsd.org/cgi/man.cgi?query=poll&sektion=2)
+- [FreeBSD Developer's Handbook](https://docs.freebsd.org/en/books/developers-handbook/)
+
+---
+
+**Version:** Phase 1 (poll revision)
 **Course:** CS631 Advanced Programming in the Unix Environment
-**Institution:** Stevens Institute of Technology
-**Instructor:** Jan Schaumann
+**Platform:** FreeBSD (also builds on Linux, macOS)

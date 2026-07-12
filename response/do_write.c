@@ -9,7 +9,7 @@
 void
 do_write(int i, Client *clients)
 {
-	DBG("Writing error response to socket\n");
+	DBG("Writing response to socket\n");
 
 	Client *c = &clients[i];
 	if (!c) {

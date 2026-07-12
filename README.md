@@ -27,26 +27,28 @@ This project requires GNU make. On FreeBSD, install it with
 ```sh
 gmake          # release build  →  ./simple_server
 gmake debug    # debug build    →  ./simple_server_debug
+gmake valgrind-build  # symbols-only build (no ASan) →  ./simple_server_valgrind
 gmake clean
 gmake test-all
 ```
 
-Object files live in `build/release/` and `build/debug/` so the two builds
-never collide — switching between them does not require a `gmake clean`.
+Object files live in `build/release/`, `build/debug/`, and `build/valgrind/`
+so the builds never collide — switching between them does not require a
+`gmake clean`.
 
 ```sh
 gmake clean        # remove all binaries and build/ objects
-gmake clean-obj    # remove only object files
+gmake clean-obj    # remove only object files (keep binaries)
 ```
 
 ### Dependencies
 
 | Package | Purpose |
 |---|---|
-| `libmagic` | MIME-type detection fallback |
+| `libmagic` | MIME-type detection fallback (optional, on by default) |
 | `criterion` | Unit testing framework |
 | `doxygen` | Documentation generation (optional) |
-| `graphviz` | Call/dependency diagrams (optional) |
+| `graphviz` | Call/dependency diagrams for docs (optional) |
 | `llvm` / `clang-format` | Code formatting (optional) |
 | `cppcheck` / `cpplint` | Static analysis (optional) |
 
@@ -55,6 +57,118 @@ Install on FreeBSD:
 ```sh
 pkg install doxygen graphviz llvm cppcheck py39-cpplint criterion
 ```
+
+`libmagic` is part of the FreeBSD base system. Pass `USE_LIBMAGIC=0` to
+disable it (OmniOS/illumos users may need to do this):
+
+```sh
+gmake USE_LIBMAGIC=0
+```
+
+---
+
+## Source Layout
+
+```
+server_revision/
+├── main.c                          # Entry point: signal setup, poll() event loop
+│
+├── flags/
+│   ├── flags.h                     # Flag bit definitions (C_FLAG, V_FLAG, etc.)
+│   └── setFlags.c                  # Command-line argument parsing
+│
+├── sockets/
+│   ├── socket.h                    # get_listener_v4/v6 declarations
+│   ├── get_listener_v4.c           # Non-blocking IPv4 listening socket
+│   └── get_listener_v6.c           # Non-blocking IPv6 listening socket (IPV6_V6ONLY)
+│
+├── client_conn/
+│   ├── connections.h               # Client struct, state/response enums, function decls
+│   ├── connections.c               # add_to_lists(), close_conn()
+│   └── accept_new_conn.c           # accept_new_conn(): drain listener, set O_NONBLOCK
+│
+├── requests/
+│   ├── request2.h                  # do_read() declaration
+│   ├── do_read.c                   # recv() loop, header detection, parse→resolve→build
+│   ├── parse_request.h             # Request struct, http_method/version enums, parse_request() decl
+│   ├── parse_request.c             # HTTP request-line parser and validator
+│   ├── resolve_path.h              # ResolvedPath struct, resolve_path() decl
+│   ├── resolve_path.c              # URI→filesystem mapping, MIME detection, CGI routing
+│   └── close_resolve_path.c        # close_resolve_path_ptr(): fclose wrapper
+│
+├── response/
+│   ├── build_response.h            # build_okay_response() and build_error_response() decls
+│   ├── build_okay_response.c       # 200 OK: static files, directory listings, CGI (stub)
+│   ├── build_error_response.c      # 4xx/5xx error responses
+│   ├── do_write.h                  # do_write() declaration
+│   ├── do_write.c                  # send() loop, graceful shutdown(SHUT_WR)
+│   └── version_info.h              # SERVER_VERSION macro
+│
+├── cgi/
+│   ├── cgi.h                       # cgiExe() declaration
+│   └── cgiExe.c                    # CGI fork/exec, pipe I/O, URL decode
+│
+├── debug/
+│   └── debug.h                     # DBG/DBG_DEC/DBG_DO macros (no-op in release)
+│
+└── test_cases/
+    ├── test_parse_request.c        # Criterion suite: parse_request() (~40 cases)
+    ├── test_resolve_path.c         # Criterion suite: resolve_path()
+    ├── test_build_error.c          # Criterion suite: build_error_response()
+    └── test_build_okay_response.c  # Criterion suite + integration: build_okay_response()
+```
+
+Build artifacts go into `build/release/`, `build/debug/`, and
+`build/valgrind/` (not committed). The output binaries are placed in the
+project root: `simple_server`, `simple_server_debug`,
+`simple_server_valgrind`.
+
+---
+
+## Architecture
+
+The server is a single-process, single-thread `poll()` event loop. There
+are no worker threads and no forked child processes for request handling
+(CGI still forks, as required by the CGI spec).
+
+**Connection lifecycle:**
+
+```
+READING → (PROCESSING) → SENDING_HEADER / SENDING_BODY → CLOSING
+```
+
+All states map directly to the `client_state` enum in `connections.h`.
+`PROCESSING` is transient — it occurs inside `do_read()` while the response
+is being built and is not visible to the poll loop.
+
+**Per-connection state (`Client` struct in `connections.h`):**
+
+| Field | Purpose |
+|---|---|
+| `in_buf` / `input_length` / `input_capacity` | Heap buffer accumulating the inbound request |
+| `out_buf` / `output_length` / `output_sent` | Heap buffer holding the complete outbound response |
+| `file_ptr` / `file_size` / `body_sent` | Open file being streamed as response body |
+| `fd` | Socket file descriptor |
+| `state` | Current lifecycle state |
+| `resp_val` | Response code determined during parsing |
+| `client_addr` | Peer address string (IPv4 or IPv6) |
+
+The `pfds[]` and `clients[]` arrays are kept parallel and grow together via
+`realloc()` (geometric doubling). Slot removal is done by swapping the
+removed entry with the last active entry so the arrays stay dense.
+
+**Request handling pipeline (all inside `do_read()`):**
+
+1. `recv()` loop drains the non-blocking socket into `in_buf`
+2. Scan for `\r\n\r\n` to detect end of headers
+3. `parse_request()` — validates method, version, path; detects traversal
+4. `resolve_path()` — maps URI to filesystem; detects MIME type
+5. `build_okay_response()` or `build_error_response()` — writes full
+   response into `out_buf`
+6. Transition poll event mask to `POLLOUT`, client state to `SENDING_HEADER`
+
+`do_write()` then drains `out_buf` to the socket via a `send()` loop and
+calls `shutdown(SHUT_WR)` on completion.
 
 ---
 
@@ -101,24 +215,51 @@ exits immediately with an error message.
 ## Testing
 
 Unit tests use the [Criterion](https://github.com/Snaipe/Criterion) framework.
-Each test suite links only the unit under test — never `main.c` — so a
+Each test suite links only the units under test — never `main.c` — so a
 break in one unit never blocks another suite from running.
 
 ```sh
-gmake test-parse          # parse_request suite (39 tests)
-gmake test-parse-asan     # ...under AddressSanitizer
-gmake test-resolve        # resolve_path suite
-gmake test-resolve-asan   # ...under AddressSanitizer
-gmake test-all            # all suites
-gmake test-all-asan       # all suites under ASan
+gmake test-parse               # parse_request suite (~40 tests)
+gmake test-parse-asan          # ...under AddressSanitizer
+gmake test-resolve             # resolve_path suite
+gmake test-resolve-asan        # ...under AddressSanitizer
+gmake test-build-error         # build_error_response suite
+gmake test-build-error-asan    # ...under AddressSanitizer
+gmake test-build-okay          # build_okay_response unit + integration tests
+gmake test-build-okay-asan     # ...under AddressSanitizer
+gmake test                     # all unit suites (no memcheck)
+gmake test-all                 # all unit suites + memcheck (Valgrind)
+gmake test-all-asan            # all suites under ASan
 ```
 
-Output defaults to `-j1 --quiet` (failures only, deterministic order).
-Override with `TEST_RUN_FLAGS`:
+The `test-build-okay` target has two layers:
+
+- **Unit layer** — calls `resolve_path()` → `build_okay_response()` directly,
+  in-process, no sockets. Catches struct-ownership bugs between the two
+  functions.
+- **Integration layer** — forks and execs a real server binary, fires actual
+  HTTP requests via curl over a real socket, sends `SIGTERM`, and requires a
+  clean graceful exit. The binary used is controlled by `SIMPLE_SERVER_BIN`
+  (defaults to `./simple_server`; `test-build-okay-asan` points it at
+  `./simple_server_debug`).
+
+Output defaults to `-j1 --verbose`. Override with `TEST_RUN_FLAGS`:
 
 ```sh
-gmake test-parse TEST_RUN_FLAGS='-j1 --verbose'
+gmake test-parse TEST_RUN_FLAGS='-j1 --quiet'
 ```
+
+### Memory leak testing
+
+```sh
+gmake valgrind-build   # build symbols-only binary (no ASan — they conflict)
+gmake memcheck         # fire 500 mixed requests, assert zero leaks on shutdown
+gmake memcheck VALGRIND_REQUESTS=2000   # override request count
+```
+
+`memcheck` starts the server under Valgrind, fires a mix of file, directory,
+and 404 requests, sends `SIGTERM`, then asserts that Valgrind reports zero
+definitely-lost, indirectly-lost, and error-summary counts.
 
 ---
 
@@ -140,7 +281,7 @@ gmake fix            # apply formatting
 gmake docs           # generate Doxygen docs with call graphs (requires Graphviz)
 gmake docs-no-graphs # generate without diagrams (faster)
 gmake docs-init      # create initial Doxyfile
-ggmake docs-clean     # remove generated docs
+gmake docs-clean     # remove generated docs
 ```
 
 Generated output is at `docs/html/index.html`.
@@ -157,14 +298,18 @@ sockstat | grep 8080
 kill 31863
 ```
 
+Or send `SIGTERM` / `SIGINT` — both are handled gracefully (the event loop
+exits cleanly and frees all allocations).
+
 ---
 
 ## Memory Management
 
 Memory safety is validated with both Valgrind and AddressSanitizer as part
 of normal development. Per-connection allocations (`in_buf`, `out_buf`,
-`file_ptr`) are freed in `close_conn` on every connection close. Valgrind
-confirms zero definitely-lost blocks across single and multi-request runs.
+`file_ptr`) are freed in `close_conn()` on every connection close. Valgrind
+confirms zero definitely-lost blocks across single and multi-request runs
+(`gmake memcheck`).
 
 ---
 
