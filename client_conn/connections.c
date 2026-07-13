@@ -90,6 +90,7 @@ add_to_lists(struct pollfd **pfds,
 	(*clients)[index].output_sent = 0;
 
 	(*clients)[index].header_len = 0;
+	(*clients)[index].body_len = 0;
 	(*clients)[index].body_sent = 0;
 
 	(*clients)[index].file_size = 0;

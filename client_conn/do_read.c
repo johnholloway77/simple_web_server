@@ -6,11 +6,13 @@
 #include <sys/types.h>
 
 #include "./connections.h"
+#include "../debug/debug.h"
 #include "../flags/flags.h"
 #include "../logging/logging.h"
 #include "../requests/parse_request.h"
 #include "../requests/resolve_path.h"
 #include "../response/build_response.h"
+#include "../logging/logging.h"
 
 #ifdef __linux__
 #include <bsd/string.h>
@@ -135,8 +137,14 @@ do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 
 	Request req = {0};
 	ResolvedPath rp = {0};
+	LogEntry le = {0};
 
-	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val) == 0 &&
+	if ((app_flags & V_FLAG) || (app_flags & L_FLAG)) {
+		log_append(&le, "%s ", c->client_addr);
+	}
+
+	if (parse_request(c->in_buf, c->header_len, &req, &c->resp_val, &le) ==
+		0 &&
 	    resolve_path(c, &req, &rp, magic) == 0) {
 		// TO DO
 		build_okay_response(c, &rp, &req);
@@ -144,12 +152,17 @@ do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 	else {
 		build_error_response(c, &req);
 
-		printf("successfully built error response for client:\n\n%s\n",
+		DBG("successfully built error response for client:\n\n%s\n",
 		    c->out_buf);
 	}
 
 	if ((app_flags & V_FLAG) || (app_flags & L_FLAG)) {
-		do_logging(c, &req, &rp);
+		log_append(&le,
+		    "%s %d\n",
+		    resp_val_to_status_string(c->resp_val),
+		    c->body_len);
+		DBG("Writing log\n");
+		do_logging(&le);
 	}
 
 	close_resolve_path_ptr(&rp);

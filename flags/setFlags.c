@@ -142,7 +142,21 @@ setFlags(const int argc, char *argv[])
 		}
 
 		else if (strcmp(argv[i], "-v") == 0) {
+			// Only opening one log at a time.
+			if (log_ptr != NULL && log_ptr != stdout) {
+				fclose(log_ptr);
+			}
+
+			log_ptr = stdout;
+			if (log_ptr == NULL) {
+				perror(
+				    "Unable to create set log_ptr to standard out. ");
+				exit(EXIT_FAILURE);
+			}
+
+			app_flags &= ~L_FLAG;
 			app_flags |= V_FLAG;
+
 			continue;
 		}
 
@@ -200,14 +214,20 @@ setFlags(const int argc, char *argv[])
 			}
 
 			log_addr = argv[i + 1];
+
+			// Only opening one log at a time.
+			if (log_ptr != NULL && log_ptr != stdout) {
+				fclose(log_ptr);
+			}
+
 			log_ptr = fopen(log_addr, "a");
 			if (log_ptr == NULL) {
 				perror("Unable to create logfile: ");
-				fclose(log_ptr);
 				exit(EXIT_FAILURE);
 			}
 
 			app_flags |= L_FLAG;
+			app_flags &= ~V_FLAG;
 
 			i++;
 			continue;

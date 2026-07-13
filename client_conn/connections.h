@@ -77,7 +77,7 @@ typedef struct Client
 			    *   (including the trailing \r\n\r\n), set by
 			    *   do_read() once the end-of-headers marker
 			    *   is found */
-
+	size_t body_len;
 	int fd; /**< Socket file descriptor */
 	enum client_state state; /**< Current lifecycle state */
 	enum client_response

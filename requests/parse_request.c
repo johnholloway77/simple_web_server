@@ -1,4 +1,4 @@
-#include "./parse_request.h"
+
 #include <stddef.h>
 #include <stdio.h>
 #include <limits.h>
@@ -9,6 +9,9 @@
 #include <string.h>
 #endif
 
+#include "../flags/flags.h"
+#include "../logging/logging.h"
+#include "./parse_request.h"
 #include "../debug/debug.h"
 
 #define METHOD_MAX 10
@@ -35,6 +38,8 @@
 #define DETERMINED_505                                                         \
 	*resp = RESP_505;                                                      \
 	return -1;
+
+extern const uint32_t app_flags;
 
 static enum http_method
 method_from_token(const char *tok, size_t len)
@@ -71,6 +76,8 @@ version_from_token(const char *tok, size_t len)
 		return HTTP_VERSION_UNSUPPORTED;
 	if (len == strlen("HTTP/2.0") && strncmp(tok, "HTTP/2.0", len) == 0)
 		return HTTP_VERSION_UNSUPPORTED;
+	if (len == strlen("HTTP/3.0") && strncmp(tok, "HTTP/3.0", len) == 0)
+		return HTTP_VERSION_UNSUPPORTED;
 
 	return HTTP_VERSION_UNKNOWN; // use for junk/incorrect
 }
@@ -85,7 +92,8 @@ int
 parse_request(const char *buf,
     size_t len,
     Request *out,
-    enum client_response *resp)
+    enum client_response *resp,
+    LogEntry *le)
 {
 	DBG("Entering parse_request()\n");
 
@@ -106,10 +114,14 @@ parse_request(const char *buf,
 	size_t line_length = first_line ? (size_t)(first_line - buf) : len;
 
 	char line_buf[MAX_REQUEST_SIZE + 1];
+
 	memcpy(line_buf, buf, line_length);
 	line_buf[line_length] = '\0';
-
 	DBG("request:\n%s\n", line_buf);
+
+	if ((app_flags & V_FLAG) || (app_flags & L_FLAG)) {
+		log_append(le, "%s \"%s\" ", out->time_received, line_buf);
+	}
 
 	const char *method = NULL;
 	const char *path = NULL;
@@ -156,16 +168,16 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
+	if ((*out).version == HTTP_VERSION_UNSUPPORTED) {
+		DETERMINED_505
+	}
+
 	if (path_has_traversal((*out).path, strlen((*out).path))) {
 		DETERMINED_403
 	}
 
 	if ((*out).method == HTTP_METHOD_UNKNOWN) {
 		DETERMINED_501
-	}
-
-	if ((*out).version == HTTP_VERSION_UNSUPPORTED) {
-		DETERMINED_505
 	}
 
 	// Implement this in the future johnnyboy

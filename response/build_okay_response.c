@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <dirent.h>
 #include <time.h>
+
 #include "../client_conn/connections.h"
 #include "../requests/resolve_path.h"
 #include "../debug/debug.h"
@@ -160,7 +161,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 		    "<html><body><h2>Empty directory</h2></body></html>";
 	}
 
-	unsigned long resp_len = strlen(response_body);
+	c->body_len = strlen(response_body);
 
 	struct tm *utc_time = gmtime(&rp->last_mod);
 	char mod_time_buf[32];
@@ -182,7 +183,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 	    req->time_received,
 	    SERVER_VERSION,
 	    mod_time_buf,
-	    resp_len);
+	    c->body_len);
 
 	DBG("# of files in dir: %u\n", count);
 
@@ -203,16 +204,16 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 		return 0;
 	}
 
-	c->out_buf = malloc(header_len + resp_len + 1);
+	c->out_buf = malloc(header_len + c->body_len + 1);
 	if (!c->out_buf) {
 		perror("error build response file: ");
 		return -1;
 	}
 
 	memcpy(c->out_buf, header, header_len);
-	memcpy(c->out_buf + header_len, response_body, resp_len);
+	memcpy(c->out_buf + header_len, response_body, c->body_len);
 
-	c->output_length = header_len + resp_len;
+	c->output_length = header_len + c->body_len;
 
 	// free dynamic response buffer if created
 	if (response_body_on_heap) {
@@ -262,6 +263,7 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 		}
 		memcpy(c->out_buf, header, header_len);
 		c->output_length = header_len;
+		c->body_len = c->file_size;
 
 		return 0;
 	}
@@ -283,6 +285,7 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 	size_t n = fread(c->out_buf + header_len, 1, c->file_size, c->file_ptr);
 
 	c->output_length = header_len + n;
+	c->body_len = c->file_size;
 
 	return 0;
 }
@@ -290,6 +293,8 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 int
 build_okay_response(Client *c, ResolvedPath *rp, Request *req)
 {
+	c->resp_val = RESP_200;
+
 	if (rp->is_cgi_bin) {
 		return build_response_cgi(c, rp, req);
 	}

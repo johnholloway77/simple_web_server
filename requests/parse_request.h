@@ -1,15 +1,16 @@
 #pragma once
+
 #include <limits.h>
 #include <time.h>
 #include <unistd.h>
 #include "../client_conn/connections.h"
+#include "../logging/logging.h"
+#include "./max_request.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
 #endif
 
-#define MAX_REQUEST_SIZE                                                       \
-	8192 /**< Hard ceiling on inbound request size (bytes) */
 #define TIME_RECEIVED_LENGTH 32
 /**
  * @brief HTTP methods recognised by the server.
@@ -22,6 +23,8 @@ enum http_method
 	HTTP_GET, /**< GET — retrieve a resource */
 	HTTP_POST, /**< POST — currently returns 501 Not Implemented */
 	HTTP_HEAD, /**< HEAD — headers only, no body sent */
+	HTTP_PUT, // Not supported
+	HTTP_DELETE, // Not supported
 	HTTP_METHOD_UNKNOWN, /**< Unrecognised method token */
 	NUM_HTTP_METHOD
 };
@@ -36,8 +39,11 @@ enum http_method
  */
 enum http_version
 {
+	HTTP_0_9, // Unsupported
 	HTTP_1_0, /**< HTTP/1.0 — fully supported */
 	HTTP_1_1, /**< HTTP/1.1 — accepted, served as 1.0 */
+	HTTP_2,
+	HTTP_3,
 	HTTP_VERSION_UNSUPPORTED, /**< Recognised but not supported (0.9, 2.0)
 				   */
 	HTTP_VERSION_UNKNOWN, /**< Unrecognisable version string */
@@ -58,7 +64,6 @@ typedef struct Request
 						   * were fully received
 						   */
 	char path[PATH_MAX]; /**< URI path component (no query string) */
-
 } Request;
 
 /**
@@ -88,4 +93,5 @@ typedef struct Request
 int parse_request(const char *buf,
     size_t len,
     Request *out,
-    enum client_response *resp);
+    enum client_response *resp,
+    LogEntry *le);
