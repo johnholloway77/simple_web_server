@@ -108,6 +108,7 @@ build_error_response(Client *c, Request *req)
 		return -1;
 	}
 
+	c->body_len = strlen(error_resp.body);
 	c->header_len = resp_len;
 	c->output_length = c->header_len + (size_t)c->file_size;
 
