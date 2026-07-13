@@ -85,7 +85,8 @@ get_listener_v6(void)
 	}
 
 	if (app_flags & V_FLAG) {
-		(void)printf("listener_v6 has port #%d\n",
+		(void)fprintf(stdout,
+		    "listener_v6 has port #%d\n",
 		    ntohs(server_v6.sin6_port));
 	}
 

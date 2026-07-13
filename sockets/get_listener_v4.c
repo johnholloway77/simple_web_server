@@ -77,7 +77,8 @@ get_listener_v4(void)
 		exit(EXIT_FAILURE);
 	}
 	if (app_flags & V_FLAG) {
-		(void)printf("listener_v4 has port #%d\n",
+		(void)fprintf(stdout,
+		    "listener_v4 has port #%d\n",
 		    ntohs(server_v4.sin_port));
 	}
 
