@@ -34,8 +34,8 @@
 
 #include "../debug/debug.h"
 
-extern char *cgi_addr;
-extern uint32_t app_flags;
+extern const char *cgi_addr;
+extern const uint32_t app_flags;
 
 enum trailing_char
 {

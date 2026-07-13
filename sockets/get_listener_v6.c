@@ -12,9 +12,9 @@
 
 #define BACKLOG SOMAXCONN
 
-extern uint32_t app_flags;
-extern uint32_t port_addr;
-extern char *bind_addr6;
+extern const uint32_t app_flags;
+extern const uint32_t port_addr;
+extern const char *bind_addr6;
 
 int
 get_listener_v6(void)
