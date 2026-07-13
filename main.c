@@ -20,7 +20,8 @@
 #define INITIAL_SIZE 32
 
 /* load global flags variables */
-extern uint32_t app_flags;
+extern const uint32_t app_flags;
+extern FILE *log_ptr;
 
 static volatile sig_atomic_t running = 1;
 
@@ -242,11 +243,19 @@ main(int argc, char *argv[])
 				continue;
 			}
 		}
+
+		if (log_ptr) {
+			fflush(log_ptr);
+		}
 	}
 
 	magic_close(magic);
 	free(pfds);
 	free(clients);
+	if (log_ptr) {
+		fflush(log_ptr);
+		fclose(log_ptr);
+	}
 
 	exit(EXIT_SUCCESS);
 }

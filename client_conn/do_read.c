@@ -6,6 +6,8 @@
 #include <sys/types.h>
 
 #include "./connections.h"
+#include "../flags/flags.h"
+#include "../logging/logging.h"
 #include "../requests/parse_request.h"
 #include "../requests/resolve_path.h"
 #include "../response/build_response.h"
@@ -19,6 +21,8 @@
 #define TEMP_BUFFER 2048 /**< Stack scratch buffer for each recv() call */
 #define MAX_REQUEST_SIZE                                                       \
 	8192 /**< Hard ceiling on inbound request size (bytes) */
+
+extern const uint32_t app_flags;
 
 /**
  * @brief Append received bytes to a client's input buffer, growing it as
@@ -142,6 +146,10 @@ do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 
 		printf("successfully built error response for client:\n\n%s\n",
 		    c->out_buf);
+	}
+
+	if ((app_flags & V_FLAG) || (app_flags & L_FLAG)) {
+		do_logging(c, &req, &rp);
 	}
 
 	close_resolve_path_ptr(&rp);

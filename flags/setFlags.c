@@ -15,10 +15,11 @@
 // load or create global variables
 uint32_t app_flags = 0;
 uint32_t port_addr = 8080;
-char *bind_addr4;
-char *bind_addr6;
-char *cgi_addr;
-char *log_addr;
+const char *bind_addr4;
+const char *bind_addr6;
+const char *cgi_addr;
+const char *log_addr;
+FILE *log_ptr;
 
 static void
 print_flag_error(const char *bad_flag)
@@ -199,13 +200,12 @@ setFlags(const int argc, char *argv[])
 			}
 
 			log_addr = argv[i + 1];
-			FILE *log_ptr = fopen(log_addr, "a");
+			log_ptr = fopen(log_addr, "a");
 			if (log_ptr == NULL) {
 				perror("Unable to create logfile: ");
+				fclose(log_ptr);
 				exit(EXIT_FAILURE);
 			}
-
-			fclose(log_ptr);
 
 			app_flags |= L_FLAG;
 

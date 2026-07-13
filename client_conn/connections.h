@@ -84,7 +84,7 @@ typedef struct Client
 	    resp_val; /**< Response code to send; NUM_CLIENT_RESP
 		       *   until determined by request processing */
 
-	char timestamp[24]; /**< RFC-formatted timestamp string */
+	char timestamp[32]; /**< RFC-formatted timestamp string */
 	char client_addr[INET6_ADDRSTRLEN]; /**< Dotted-decimal / colon-hex peer
 					     *   address string */
 } Client;

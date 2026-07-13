@@ -103,11 +103,12 @@ DEBUG_LDFLAGS = $(LDFLAGS) -fsanitize=address
 
 # ─── Source files ──────────────────────────────────────────────────────
 SOURCES = main.c \
-    flags/setFlags.c \
     client_conn/connections.c \
     client_conn/accept_new_conn.c \
     client_conn/do_read.c \
     client_conn/do_write.c \
+    flags/setFlags.c \
+    logging/logging.c \
     sockets/get_listener_v4.c \
     sockets/get_listener_v6.c \
     requests/parse_request.c \
