@@ -95,7 +95,7 @@ build_error_response(Client *c, Request *req)
 		    "Connection: close\r\n"
 		    "\r\n",
 		    error_resp.status_line,
-		    time_buf,
+		    req->time_received,
 		    SERVER_VERSION,
 		    error_resp.mime_type,
 		    strlen(error_resp.body));

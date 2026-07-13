@@ -27,7 +27,7 @@ do_logging(Client *c, Request *req, ResolvedPath *rp)
 	fprintf(tmp,
 	    "Log: %s %s\nend of log\n",
 	    c->client_addr,
-	    req->first_line);
+	    req->time_received);
 
 	return 0;
 }
