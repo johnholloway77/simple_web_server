@@ -21,15 +21,16 @@
 
 #define HANDLE_DIR_INDEX                                                       \
 	rp->file_ptr = index;                                                  \
-	fstat(fileno(rp->file_ptr), &st);                                      \
+	if (-1 == fstat(fileno(index), &st)) {                                 \
+		DBG("Unable to get index fstat");                              \
+		c->resp_val = RESP_500;                                        \
+		fclose(rp->file_ptr);                                          \
+		return -1;                                                     \
+	};                                                                     \
 	rp->file_size = st.st_size;                                            \
 	rp->mime_type = "text/html";                                           \
 	c->file_ptr = rp->file_ptr;                                            \
 	c->file_size = st.st_size;                                             \
-	if (-1 == fstat(fileno(index), &st)) {                                 \
-		perror("dir Index resolve_path fstat");                        \
-		exit(EXIT_FAILURE);                                            \
-	};                                                                     \
 	rp->last_mod = st.st_mtime;
 
 #include "../debug/debug.h"
@@ -212,16 +213,21 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 		DBG("file opened!\n");
 
 		if (-1 == fstat(fileno(rp->file_ptr), &st)) {
-			perror("resolve_path fstat");
-			exit(EXIT_FAILURE);
+			DBG("resolve_path fstat");
+			c->resp_val = RESP_500;
+			fclose(rp->file_ptr);
+			return -1;
 		};
 
 		if (S_ISDIR(st.st_mode)) {
+			FILE *dir_fp = rp->file_ptr;
+
 			FILE *index = get_file_path[trailing_char](local_path,
 			    DIR_INDEX);
 
 			if (index) {
 				DBG("Index.htm found!\n");
+				fclose(dir_fp);
 				HANDLE_DIR_INDEX
 				return 0;
 			}
@@ -230,12 +236,13 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 			    DIR_INDEX2);
 			if (index) {
 				DBG("Index.html found!\n");
+				fclose(dir_fp);
 				HANDLE_DIR_INDEX
 				return 0;
 			}
 
+			fclose(dir_fp);
 			rp->last_mod = st.st_mtime;
-
 			rp->is_dir_listing = 1;
 			rp->file_ptr = NULL;
 			return 0;

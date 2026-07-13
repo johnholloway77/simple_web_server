@@ -207,6 +207,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 	c->out_buf = malloc(header_len + c->body_len + 1);
 	if (!c->out_buf) {
 		perror("error build response file: ");
+		closedir(dir);
 		return -1;
 	}
 
