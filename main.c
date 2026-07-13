@@ -22,7 +22,7 @@
 /* load global flags variables */
 extern uint32_t app_flags;
 
-static char running = 1;
+static volatile sig_atomic_t running = 1;
 
 static void
 shutdown_server()
