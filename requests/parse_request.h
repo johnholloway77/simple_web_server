@@ -10,7 +10,7 @@
 
 #define MAX_REQUEST_SIZE                                                       \
 	8192 /**< Hard ceiling on inbound request size (bytes) */
-
+#define TIME_RECEIVED_LENGTH 32
 /**
  * @brief HTTP methods recognised by the server.
  *
@@ -54,9 +54,11 @@ typedef struct Request
 {
 	enum http_method method; /**< HTTP verb */
 	enum http_version version; /**< Protocol version */
-	time_t
-	    time_received; /**< Wall-clock time headers were fully received */
+	char time_received[TIME_RECEIVED_LENGTH]; /**< Wall-clock time headers
+						   * were fully received
+						   */
 	char path[PATH_MAX]; /**< URI path component (no query string) */
+
 } Request;
 
 /**

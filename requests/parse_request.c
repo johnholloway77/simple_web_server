@@ -94,10 +94,17 @@ parse_request(const char *buf,
 		DETERMINED_400
 	}
 
-	out->time_received = time(NULL);
+	time_t current = time(NULL);
+	struct tm *utc_time = gmtime(&current);
+	strftime(out->time_received,
+	    TIME_RECEIVED_LENGTH,
+	    "%Y-%m-%dT%H:%M:%SZ",
+	    utc_time);
 
 	const char *first_line = strnstr(buf, "\r\n", len);
+	// out->first_line = strnstr(buf, "\r\n", len);
 	size_t line_length = first_line ? (size_t)(first_line - buf) : len;
+
 	char line_buf[MAX_REQUEST_SIZE + 1];
 	memcpy(line_buf, buf, line_length);
 	line_buf[line_length] = '\0';

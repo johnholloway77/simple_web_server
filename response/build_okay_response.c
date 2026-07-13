@@ -162,11 +162,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 
 	unsigned long resp_len = strlen(response_body);
 
-	struct tm *utc_time = gmtime(&req->time_received);
-	char time_buf[32];
-	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", utc_time);
-
-	utc_time = gmtime(&rp->last_mod);
+	struct tm *utc_time = gmtime(&rp->last_mod);
 	char mod_time_buf[32];
 	strftime(mod_time_buf,
 	    sizeof(mod_time_buf),
@@ -183,7 +179,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 	    "Content-Length: %zu\r\n"
 	    "Connection: close\r\n"
 	    "\r\n",
-	    time_buf,
+	    req->time_received,
 	    SERVER_VERSION,
 	    mod_time_buf,
 	    resp_len);
@@ -235,11 +231,7 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 	}
 
 	char header[MAX_HEADER_BUF];
-	struct tm *utc_time = gmtime(&req->time_received);
-	char time_buf[32];
-	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", utc_time);
-
-	utc_time = gmtime(&rp->last_mod);
+	struct tm *utc_time = gmtime(&rp->last_mod);
 	char mod_time_buf[32];
 	strftime(mod_time_buf,
 	    sizeof(mod_time_buf),
@@ -256,7 +248,7 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 	    "Content-Length: %zu\r\n"
 	    "Connection: close\r\n"
 	    "\r\n",
-	    time_buf,
+	    req->time_received,
 	    SERVER_VERSION,
 	    mod_time_buf,
 	    rp->mime_type,

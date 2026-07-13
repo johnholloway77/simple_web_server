@@ -66,10 +66,6 @@ build_error_response(Client *c, Request *req)
 
 	int resp_len;
 
-	struct tm *utc_time = gmtime(&req->time_received);
-	char time_buf[32];
-	strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", utc_time);
-
 	if (HTTP_HEAD != req->method) {
 		resp_len = snprintf(c->out_buf,
 		    MAX_RESPONSE_BUF,
@@ -82,7 +78,7 @@ build_error_response(Client *c, Request *req)
 		    "\r\n"
 		    "%s",
 		    error_resp.status_line,
-		    time_buf,
+		    req->time_received,
 		    SERVER_VERSION,
 		    error_resp.mime_type,
 		    strlen(error_resp.body),
