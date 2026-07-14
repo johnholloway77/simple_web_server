@@ -100,13 +100,9 @@ server_revision/
 │
 ├── response/
 │   ├── build_response.h            # build_okay_response() and build_error_response() decls
-│   ├── build_okay_response.c       # 200 OK: static files, directory listings, CGI (stub)
+│   ├── build_okay_response.c       # 200 OK: static files, directory listings, CGI execution
 │   ├── build_error_response.c      # 4xx/5xx error responses
 │   └── version_info.h              # SERVER_VERSION macro
-│
-├── cgi/
-│   ├── cgi.h                       # cgiExe() declaration
-│   └── cgiExe.c                    # CGI fork/exec, pipe I/O, URL decode
 │
 ├── debug/
 │   └── debug.h                     # DBG/DBG_DEC/DBG_DO macros (no-op in release)
