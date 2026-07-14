@@ -9,6 +9,14 @@
 #include "../client_conn/connections.h"
 #include "./parse_request.h"
 
+typedef enum Path_type
+{
+	UNKNOWN = 0,
+	IS_FILE,
+	IS_DIR,
+	IS_CGI,
+} Path_type;
+
 /**
  * @brief Result of resolving a request URI to a filesystem resource.
  *
@@ -17,10 +25,9 @@
  * transferred to Client.file_ptr (both pointers may refer to the same FILE).
  *
  * Exactly one of the following describes the resolved resource:
- *   - file_ptr non-NULL and is_dir_listing == 0 and is_cgi_bin == 0:
- *       a regular file ready to be sent
- *   - is_dir_listing == 1: directory with no index file; caller builds listing
- *   - is_cgi_bin == 1: URI maps to the cgi-bin; caller invokes CGI execution
+ *   - path_type == IS_FILE: a regular file ready to be sent; file_ptr is open
+ *   - path_type == IS_DIR: directory with no index file; caller builds listing
+ *   - path_type == IS_CGI: URI maps to cgi-bin; caller invokes CGI execution
  */
 typedef struct ResolvedPath
 {
@@ -33,9 +40,7 @@ typedef struct ResolvedPath
 	const char *mime_type; /**< MIME type string from extension table or
 				*   libmagic; NULL for dirs and CGI */
 	time_t last_mod; /**< st_mtime of the resolved filesystem entry */
-	int is_dir_listing; /**< 1 when the URI resolves to a directory
-			     *   that has no index.htm / index.html */
-	int is_cgi_bin; /**< 1 when the URI path is under cgi-bin */
+	Path_type path_type;
 } ResolvedPath;
 
 /**
@@ -56,12 +61,12 @@ void close_resolve_path_ptr(ResolvedPath *rp);
  *
  * Resolution rules:
  *   - If the path is under "./cgi-bin/" and C_FLAG is set, sets
- *     rp->is_cgi_bin = 1 and returns 0 (no file opened).
+ *     rp->path_type = IS_CGI and returns 0 (no file opened).
  *   - If the path is under "./cgi-bin/" and C_FLAG is NOT set, sets
  *     c->resp_val = RESP_501 and returns -1.
  *   - If the path resolves to a directory, looks for index.htm then
  *     index.html.  If found, opens that file and populates rp normally.
- *     If not found, sets rp->is_dir_listing = 1, leaves rp->file_ptr NULL,
+ *     If not found, sets rp->path_type = IS_DIR, leaves rp->file_ptr NULL,
  *     and returns 0.
  *   - If the path resolves to a regular file, opens it, detects the MIME
  *     type (extension table falling back to libmagic), and populates rp and
