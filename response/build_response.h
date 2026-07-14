@@ -6,10 +6,11 @@
 /**
  * @brief Build a 200 OK response and stage it in the client's output buffer.
  *
- * Dispatches to one of three internal builders based on the resolved resource:
- *   - CGI:           build_response_cgi()   (not yet implemented; exits)
- *   - Directory:     build_response_dir()   (generates an HTML listing)
- *   - Regular file:  build_response_file()  (serves file contents)
+ * Dispatches to one of three internal builders based on rp->path_type:
+ *   - IS_CGI:   build_response_cgi()  — fork/exec the script, pipe stdout,
+ *               wait for exit, assemble a 200 response from the output
+ *   - IS_DIR:   build_response_dir()  — generate an HTML directory listing
+ *   - IS_FILE:  build_response_file() — serve the file contents
  *
  * For HEAD requests, only the response headers are written into c->out_buf
  * (no body).  For GET requests, both headers and body are written.

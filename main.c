@@ -84,7 +84,7 @@ setup_signal_handler()
  *   - Client slots: CLOSING state → close_conn() + index decrement.
  *   - POLLERR / POLLHUP / POLLNVAL → close_conn() + index decrement.
  *   - POLLIN + READING state → do_read().
- *   - POLLOUT + SENDING_HEADER or SENDING_BODY state → (response send, TODO).
+ *   - POLLOUT + SENDING_HEADER or SENDING_BODY state → do_write().
  *
  * @param argc  Argument count from the shell
  * @param argv  Argument vector from the shell

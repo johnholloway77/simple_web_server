@@ -26,7 +26,7 @@ It has limited functionality and should not be exposed to the internet.
 - **Content-Length on all responses** — full headers per RFC 1945
 - **MIME type detection** — extension table with libmagic fallback
 - **Directory listings** — HTML browsing when no index.htm/index.html exists
-- **CGI execution** — fork/exec with pipe I/O and URL-decoded env vars
+- **CGI execution** — fork/exec in `build_okay_response.c`; pipes stdout, waits for exit, assembles response
 - **Daemon mode** — background operation, suppressed by `-v`
 - **SIGTERM/SIGINT handled** — clean event-loop exit, all memory freed
 - **Memory safety** — Valgrind-clean and AddressSanitizer-clean
@@ -80,9 +80,12 @@ recv() loop → append to in_buf
 parse_request()      validate method, version, path, traversal check
      │
      ▼
-resolve_path()       URI → filesystem: file / directory / cgi-bin
+resolve_path()       URI → filesystem: sets rp.path_type (IS_FILE/IS_DIR/IS_CGI)
      │
-     ├─ success → build_okay_response()   assemble 200 + body into out_buf
+     ├─ success → build_okay_response()   dispatches on path_type:
+     │                IS_FILE → serve file bytes
+     │                IS_DIR  → generate HTML directory listing
+     │                IS_CGI  → fork/exec script, pipe stdout, assemble response
      └─ error   → build_error_response()  assemble 4xx/5xx into out_buf
                           │
                           ▼
@@ -112,15 +115,15 @@ resolve_path()       URI → filesystem: file / directory / cgi-bin
                       │ do_write     │
                       └──────┬───────┘
                              │
-               ┌─────────────┼──────────────┐
-               │             │              │
-               ▼             ▼              ▼
-        ┌──────────┐  ┌──────────┐  ┌──────────────┐
-        │requests/ │  │response/ │  │    cgi/      │
-        │parse_req │  │build_okay│  │   cgiExe     │
-        │resolve_  │  │build_err │  └──────────────┘
-        │  path    │  └──────────┘
-        └──────────┘
+                   ┌─────────┴──────────┐
+                   │                    │
+                   ▼                    ▼
+            ┌──────────┐        ┌──────────────┐
+            │requests/ │        │  response/   │
+            │parse_req │        │ build_okay   │
+            │resolve_  │        │ build_err    │
+            │  path    │        └──────────────┘
+            └──────────┘
 ```
 
 ---
@@ -158,13 +161,9 @@ server_revision/
 │
 ├── response/
 │   ├── build_response.h            build_okay_response() / build_error_response() decls
-│   ├── build_okay_response.c       200 OK: static files, directory listings, CGI (stub)
+│   ├── build_okay_response.c       200 OK: static files, directory listings, CGI execution
 │   ├── build_error_response.c      4xx/5xx error responses
 │   └── version_info.h              SERVER_VERSION macro
-│
-├── cgi/
-│   ├── cgi.h                       cgiExe() declaration
-│   └── cgiExe.c                    CGI fork/exec, pipe I/O, URL decode
 │
 ├── debug/
 │   └── debug.h                     DBG/DBG_DEC/DBG_DO — no-op in release builds
@@ -325,7 +324,7 @@ fallback  →  current read+send path (always available)
 
 - Path traversal blocked in `parse_request()` (`../` detection)
 - Absolute-path URIs rejected (path must start with `/`)
-- CGI parameter names restricted to alphanumeric + underscore
+- CGI query string length capped at `PATH_MAX` before fork
 - All string operations use bounds-checked functions (`strlcpy`, `snprintf`)
 - AddressSanitizer and Valgrind used continuously during development
 
