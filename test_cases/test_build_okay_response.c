@@ -341,8 +341,8 @@ Test(build_okay, serves_directory_with_index_transparently)
 {
 	RESOLVE_AND_BUILD("/withindex", HTTP_GET);
 	cr_assert_eq(rc, 0);
-	cr_assert_eq(rp.is_dir_listing,
-	    0,
+	cr_assert_eq(rp.path_type,
+	    IS_FILE,
 	    "a directory with an index.html is NOT a listing");
 	cr_assert_not_null(bounded_find(c.out_buf,
 			       c.output_length,
@@ -358,8 +358,8 @@ Test(build_okay, lists_directory_with_file_and_subdirectory)
 {
 	RESOLVE_AND_BUILD("/nolisting", HTTP_GET);
 	cr_assert_eq(rc, 0);
-	cr_assert_eq(rp.is_dir_listing,
-	    1,
+	cr_assert_eq(rp.path_type,
+	    IS_DIR,
 	    "no index.html present -> must be a listing");
 	cr_assert_not_null(bounded_find(c.out_buf,
 			       c.output_length,

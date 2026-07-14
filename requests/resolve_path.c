@@ -31,7 +31,8 @@
 	rp->mime_type = "text/html";                                           \
 	c->file_ptr = rp->file_ptr;                                            \
 	c->file_size = st.st_size;                                             \
-	rp->last_mod = st.st_mtime;
+	rp->last_mod = st.st_mtime;                                            \
+	rp->path_type = IS_FILE;
 
 #include "../debug/debug.h"
 
@@ -190,19 +191,6 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 	    req->path,
 	    strlen(req->path));
 
-	if (path_includes_cgi(local_path)) {
-		if (app_flags & C_FLAG) {
-			// Will handle cgi-bin
-			rp->is_cgi_bin = 1;
-			// printf("\tCGI-bin path: %s\n", path_buffer);
-		}
-		else {
-			rp->file_ptr = NULL;
-			c->resp_val = RESP_501;
-			return -1;
-		}
-	}
-
 	DBG("local_path: %s\n", local_path);
 
 	enum trailing_char trailing_char = get_last_char(local_path);
@@ -218,6 +206,22 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 			fclose(rp->file_ptr);
 			return -1;
 		};
+
+		rp->path_type = IS_FILE;
+
+		if (path_includes_cgi(local_path)) {
+			if (app_flags & C_FLAG) {
+				// Will handle cgi-bin
+				rp->path_type = IS_CGI;
+				// printf("\tCGI-bin path: %s\n", path_buffer);
+			}
+			else {
+				rp->file_ptr = NULL;
+				rp->path_type = UNKNOWN;
+				c->resp_val = RESP_501;
+				return -1;
+			}
+		}
 
 		if (S_ISDIR(st.st_mode)) {
 			FILE *dir_fp = rp->file_ptr;
@@ -243,7 +247,7 @@ resolve_path(Client *c, const Request *req, ResolvedPath *rp, magic_t magic)
 
 			fclose(dir_fp);
 			rp->last_mod = st.st_mtime;
-			rp->is_dir_listing = 1;
+			rp->path_type = IS_DIR;
 			rp->file_ptr = NULL;
 			return 0;
 		}

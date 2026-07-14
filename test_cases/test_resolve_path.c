@@ -255,8 +255,7 @@ Test(resolve_root, root_serves_index_html)
 	cr_assert_not_null(rp.file_ptr, "/ must open index.html");
 	cr_assert_gt(rp.file_size, 0);
 	cr_assert_not_null(rp.mime_type);
-	cr_assert_eq(rp.is_dir_listing, 0);
-	cr_assert_eq(rp.is_cgi_bin, 0);
+	cr_assert_eq(rp.path_type, IS_FILE);
 	RESOLVE_CLEANUP();
 }
 
@@ -288,8 +287,7 @@ Test(resolve_file, existing_file_succeeds)
 	cr_assert_eq(rc, 0);
 	cr_assert_not_null(rp.file_ptr);
 	cr_assert_gt(rp.file_size, 0);
-	cr_assert_eq(rp.is_dir_listing, 0);
-	cr_assert_eq(rp.is_cgi_bin, 0);
+	cr_assert_eq(rp.path_type, IS_FILE);
 	RESOLVE_CLEANUP();
 }
 
@@ -345,13 +343,13 @@ Test(resolve_file, filename_with_literal_space)
  *  GROUP 3 — directories
  * ================================================================== */
 
-/* Directory with index.html -> open it, is_dir_listing stays 0. */
+/* Directory with index.html -> open it, path_type stays IS_FILE. */
 Test(resolve_dir, dir_with_index_serves_index)
 {
 	RESOLVE_SETUP("/testdir/dir");
 	cr_assert_eq(rc, 0);
 	cr_assert_not_null(rp.file_ptr, "dir with index.html must open it");
-	cr_assert_eq(rp.is_dir_listing, 0);
+	cr_assert_eq(rp.path_type, IS_FILE);
 	RESOLVE_CLEANUP();
 }
 
@@ -360,7 +358,7 @@ Test(resolve_dir, dir_trailing_slash_with_index)
 	RESOLVE_SETUP("/testdir/dir/");
 	cr_assert_eq(rc, 0);
 	cr_assert_not_null(rp.file_ptr);
-	cr_assert_eq(rp.is_dir_listing, 0);
+	cr_assert_eq(rp.path_type, IS_FILE);
 	RESOLVE_CLEANUP();
 }
 
@@ -376,14 +374,14 @@ Test(resolve_dir, dir_dot_segment_finds_index)
 }
 
 /* Directory without index.html -> listing: rc=0, file_ptr=NULL,
-   is_dir_listing=1. build_response will generate the HTML. */
+   path_type=IS_DIR. build_response will generate the HTML. */
 Test(resolve_dir, dir_without_index_triggers_listing)
 {
 	RESOLVE_SETUP("/testdir/dir2/");
 	cr_assert_eq(rc, 0);
 	cr_assert_null(rp.file_ptr,
 	    "no file to stream when listing a directory");
-	cr_assert_eq(rp.is_dir_listing, 1);
+	cr_assert_eq(rp.path_type, IS_DIR);
 	RESOLVE_CLEANUP();
 }
 
@@ -391,7 +389,7 @@ Test(resolve_dir, dir_without_index_no_trailing_slash)
 {
 	RESOLVE_SETUP("/testdir/dir2");
 	cr_assert_eq(rc, 0);
-	cr_assert_eq(rp.is_dir_listing, 1);
+	cr_assert_eq(rp.path_type, IS_DIR);
 	RESOLVE_CLEANUP();
 }
 
@@ -415,7 +413,7 @@ Test(resolve_error, permission_denied_returns_403)
  *  GROUP 5 — CGI-bin routing
  * ================================================================== */
 
-/* C_FLAG unset: 501, is_cgi_bin stays 0, filesystem not touched. */
+/* C_FLAG unset: 501, path_type stays UNKNOWN, filesystem not touched. */
 Test(resolve_cgi, cgi_flag_unset_returns_501)
 {
 	app_flags = 0;
@@ -423,7 +421,7 @@ Test(resolve_cgi, cgi_flag_unset_returns_501)
 	cr_assert_eq(rc, -1);
 	cr_assert_eq(c.resp_val, RESP_501);
 	cr_assert_null(rp.file_ptr);
-	cr_assert_eq(rp.is_cgi_bin, 0);
+	cr_assert_eq(rp.path_type, UNKNOWN);
 	RESOLVE_CLEANUP();
 }
 
@@ -436,14 +434,14 @@ Test(resolve_cgi, cgi_post_flag_unset_returns_501)
 	RESOLVE_CLEANUP();
 }
 
-/* C_FLAG set: rc=0, is_cgi_bin=1. resolve does NOT exec — that's
+/* C_FLAG set: rc=0, path_type=IS_CGI. resolve does NOT exec — that's
    build_response's job when it sees the flag. */
 Test(resolve_cgi, cgi_flag_set_routes_to_cgi)
 {
 	app_flags = C_FLAG;
 	RESOLVE_SETUP("/cgi-bin/env.cgi");
 	cr_assert_eq(rc, 0);
-	cr_assert_eq(rp.is_cgi_bin, 1);
+	cr_assert_eq(rp.path_type, IS_CGI);
 	cr_assert_eq(c.resp_val,
 	    NUM_CLIENT_RESP,
 	    "resp_val must be untouched on success");
@@ -473,7 +471,7 @@ Test(resolve_cgi, cgi_bin_false_prefix_not_routed)
 	cr_assert_eq(c.resp_val,
 	    RESP_404,
 	    "/cgi-bin<garbage> must not match the /cgi-bin/ prefix");
-	cr_assert_eq(rp.is_cgi_bin, 0);
+	cr_assert_eq(rp.path_type, UNKNOWN);
 	RESOLVE_CLEANUP();
 }
 
@@ -514,13 +512,13 @@ Test(resolve_query, no_query_string_leaves_field_empty)
 	RESOLVE_CLEANUP();
 }
 
-/* CGI with query string: query preserved, is_cgi_bin=1. */
+/* CGI with query string: query preserved, path_type=IS_CGI. */
 Test(resolve_query, cgi_query_string_preserved)
 {
 	app_flags = C_FLAG;
 	RESOLVE_SETUP("/cgi-bin/env.cgi?q=foo&food=bacon");
 	cr_assert_eq(rc, 0);
-	cr_assert_eq(rp.is_cgi_bin, 1);
+	cr_assert_eq(rp.path_type, IS_CGI);
 	cr_assert_str_eq(rp.query_string, "q=foo&food=bacon");
 	RESOLVE_CLEANUP();
 }
