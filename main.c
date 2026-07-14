@@ -50,14 +50,6 @@ setup_signal_handler()
 	struct sigaction sa = {0};
 	sigemptyset(&sa.sa_mask);
 
-	sa.sa_handler = SIG_IGN;
-	sa.sa_flags = SA_NOCLDWAIT;
-
-	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-		perror("sigaction");
-		exit(EXIT_FAILURE);
-	}
-
 	sa.sa_flags = 0;
 	sa.sa_handler = shutdown_server;
 	if (sigaction(SIGTERM, &sa, NULL) == -1) {
