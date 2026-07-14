@@ -26,7 +26,7 @@ It has limited functionality and should not be exposed to the internet.
 - **Content-Length on all responses** — full headers per RFC 1945
 - **MIME type detection** — extension table with libmagic fallback
 - **Directory listings** — HTML browsing when no index.htm/index.html exists
-- **CGI execution** — fork/exec in `build_okay_response.c`; pipes stdout, waits for exit, assembles response
+- **CGI execution** — fork/exec in `build_okay_response.c`; pipes stdout, waits for exit, assembles response (blocking; see Known Limitations)
 - **Daemon mode** — background operation, suppressed by `-v`
 - **SIGTERM/SIGINT handled** — clean event-loop exit, all memory freed
 - **Memory safety** — Valgrind-clean and AddressSanitizer-clean
@@ -305,6 +305,13 @@ A thin abstraction layer (`event_backend.h`) will expose a uniform
 interface so `main.c` and `do_read.c`/`do_write.c` are unaffected by the
 backend in use.
 
+Phase 2 will also address the CGI blocking problem by registering the CGI
+stdout pipe read-end as a first-class event source (kqueue `EVFILT_READ`
+on a pipe FD, or epoll `EPOLLIN` on Linux). A new `CGI_READING` client
+state will let the event loop drive CGI output accumulation asynchronously,
+the same way it drives socket reads today. This eliminates the
+`read()`/`waitpid()` stall and allows concurrent CGI requests.
+
 ### Zero-copy sendfile strategy (Phase 3)
 
 Static file serving will bypass the `read()` → `out_buf` → `send()`
@@ -317,6 +324,29 @@ macOS     →  sendfile(2)            (Darwin variant, same fd-based API)
 illumos   →  sendfilev(3EXT)
 fallback  →  current read+send path (always available)
 ```
+
+---
+
+## Known Limitations
+
+### CGI blocks the event loop
+
+CGI execution (`build_response_cgi()`) calls `read()` on the script's stdout
+pipe and `waitpid()` synchronously inside `do_read()`. While a CGI script is
+running, the poll loop cannot service any other connection. This caps CGI
+throughput at approximately one concurrent CGI execution and causes latency
+spikes visible to all other connected clients.
+
+This is a known architectural limitation of the Phase 1 implementation.
+Phase 2 will move CGI pipe I/O onto the poll/kqueue set (non-blocking pipe
+FDs treated as first-class event sources), eliminating the stall.
+
+### `do_write()` exits on send() error
+
+A single client dropping a connection mid-send currently calls
+`exit(EXIT_FAILURE)` and kills the server. This is guarded by the
+`SENDING_HEADER`/`SENDING_BODY` state machine but is a stability risk under
+adversarial or high-drop-rate conditions. To be fixed before Phase 2.
 
 ---
 
