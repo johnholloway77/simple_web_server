@@ -219,7 +219,8 @@ TEST_RUN_FLAGS ?= -j1 --verbose #--quiet
 
 # ─── parse_request suite ───────────────────────────────────────────────
 PARSE_SRC         = test_cases/test_parse_request.c
-PARSE_UNIT        = requests/parse_request.c
+PARSE_UNIT        = requests/parse_request.c \
+					logging/logging.c
 PARSE_BINARY      = test_cases/test_parse_request
 PARSE_BINARY_ASAN = test_cases/test_parse_request_asan
 
@@ -244,7 +245,8 @@ $(PARSE_BINARY_ASAN): $(PARSE_SRC) $(PARSE_UNIT)
 RESOLVE_SRC         = test_cases/test_resolve_path.c
 RESOLVE_UNIT        = requests/resolve_path.c \
 					  requests/close_resolve_path.c \
-				      requests/parse_request.c
+				      requests/parse_request.c \
+                      logging/logging.c
 RESOLVE_BINARY      = test_cases/test_resolve_path
 RESOLVE_BINARY_ASAN = test_cases/test_resolve_path_asan
 
@@ -304,7 +306,8 @@ BUILD_OKAY_SRC  = test_cases/test_build_okay_response.c
 BUILD_OKAY_UNIT = response/build_okay_response.c \
                   requests/resolve_path.c \
                   requests/close_resolve_path.c \
-                  requests/parse_request.c
+                  requests/parse_request.c \
+                  logging/logging.c
 BUILD_OKAY_BINARY      = test_cases/test_build_okay_response
 BUILD_OKAY_BINARY_ASAN = test_cases/test_build_okay_response_asan
 
@@ -362,7 +365,7 @@ memcheck: $(VALGRIND_BINARY)
 	@mkdir -p $(VALGRIND_FIXTURE)/emptydir
 	@echo "<html><body><h1>memcheck</h1></body></html>" > $(VALGRIND_FIXTURE)/index.html
 	@echo "Starting simple_server under Valgrind (port $(VALGRIND_PORT))..."
-	@( cd $(VALGRIND_FIXTURE) && valgrind --leak-check=full --track-fds=yes -- --error-exitcode=1 $(CURDIR)/$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT) > $(VALGRIND_LOG) 2>&1 & echo $$! > $(VALGRIND_FIXTURE)/vg.pid )
+	@( cd $(VALGRIND_FIXTURE) && valgrind --leak-check=full --track-fds=yes --error-exitcode=1 $(CURDIR)/$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT) > $(VALGRIND_LOG) 2>&1 & echo $$! > $(VALGRIND_FIXTURE)/vg.pid )
 	@sleep 1
 	@echo "Firing $(VALGRIND_REQUESTS) mixed requests..."
 	@for i in $$(seq 1 $(VALGRIND_REQUESTS)); do curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/index.html; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/emptydir/; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/no-such-file; done
