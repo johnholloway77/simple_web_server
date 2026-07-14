@@ -249,9 +249,17 @@ main(int argc, char *argv[])
 		}
 	}
 
+	for (int i = num_listeners; i < fd_count; i++) {
+		close_conn(i, &fd_count, pfds, clients);
+		i--;
+	}
+	close(listener_v4);
+	close(listener_v6);
+
 	magic_close(magic);
 	free(pfds);
 	free(clients);
+
 	if (log_ptr) {
 		fflush(log_ptr);
 		fclose(log_ptr);
