@@ -304,6 +304,7 @@ $(BUILD_ERR_BINARY_ASAN): $(BUILD_ERR_SRC) $(BUILD_ERR_UNIT)
 # by which server binary the integration test is told to exec.
 BUILD_OKAY_SRC  = test_cases/test_build_okay_response.c
 BUILD_OKAY_UNIT = response/build_okay_response.c \
+				  response/build_error_response.c \
                   requests/resolve_path.c \
                   requests/close_resolve_path.c \
                   requests/parse_request.c \
