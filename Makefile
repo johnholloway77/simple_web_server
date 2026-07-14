@@ -362,7 +362,7 @@ memcheck: $(VALGRIND_BINARY)
 	@mkdir -p $(VALGRIND_FIXTURE)/emptydir
 	@echo "<html><body><h1>memcheck</h1></body></html>" > $(VALGRIND_FIXTURE)/index.html
 	@echo "Starting simple_server under Valgrind (port $(VALGRIND_PORT))..."
-	@( cd $(VALGRIND_FIXTURE) && valgrind --leak-check=full --error-exitcode=1 $(CURDIR)/$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT) > $(VALGRIND_LOG) 2>&1 & echo $$! > $(VALGRIND_FIXTURE)/vg.pid )
+	@( cd $(VALGRIND_FIXTURE) && valgrind --leak-check=full --track-fds=yes -- --error-exitcode=1 $(CURDIR)/$(VALGRIND_BINARY) -v -p $(VALGRIND_PORT) > $(VALGRIND_LOG) 2>&1 & echo $$! > $(VALGRIND_FIXTURE)/vg.pid )
 	@sleep 1
 	@echo "Firing $(VALGRIND_REQUESTS) mixed requests..."
 	@for i in $$(seq 1 $(VALGRIND_REQUESTS)); do curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/index.html; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/emptydir/; curl -s -o /dev/null http://127.0.0.1:$(VALGRIND_PORT)/no-such-file; done
