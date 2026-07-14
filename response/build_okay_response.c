@@ -1,17 +1,26 @@
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
 #include <dirent.h>
+#include <limits.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
-#include "../client_conn/connections.h"
-#include "../requests/resolve_path.h"
-#include "../debug/debug.h"
-#include "../requests/parse_request.h"
 #include "./version_info.h"
+#include "../client_conn/connections.h"
+#include "../debug/debug.h"
+#include "../flags/flags.h"
+#include "../requests/resolve_path.h"
+#include "../requests/parse_request.h"
+#include "../response/build_response.h"
 
+#define KEY_BUF 64
+#define VALUE_BUF 256
 #define MAX_HEADER_BUF 750
 
 #define START_HTML_STRING "<html><body><h1>Directory:</h1><ul>"
@@ -35,6 +44,8 @@
 
 #define MAX_ICON_LEN strlen(DIR_ICON)
 
+extern const uint32_t app_flags;
+
 static int
 check_resolve_args(const Client *c, const ResolvedPath *rp, const Request *req)
 {
@@ -53,26 +64,210 @@ check_resolve_args(const Client *c, const ResolvedPath *rp, const Request *req)
 	return 0;
 }
 
+static const char *
+method_to_string(enum http_method m)
+{
+	switch (m) {
+	case HTTP_GET:
+		return "GET";
+	case HTTP_POST:
+		return "POST";
+	case HTTP_HEAD:
+		return "HEAD";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+static const char *
+version_to_string(enum http_version v)
+{
+	switch (v) {
+	case HTTP_1_0:
+		return "HTTP/1.0";
+	case HTTP_1_1:
+		return "HTTP/1.1";
+	case HTTP_VERSION_UNSUPPORTED:
+		return "HTTP_UNSUPPORTED";
+	default:
+		return "HTTP_UNKNOWN";
+	}
+}
+
 static int
 build_response_cgi(Client *c, ResolvedPath *rp, Request *req)
 {
 	if (check_resolve_args(c, rp, req) != 0) {
+		c->resp_val = RESP_500;
 		return -1;
 	}
 
-	printf("build_response_cgi not finished, exiting\n");
-	exit(EXIT_FAILURE);
-	return -1;
+	if (!(app_flags & C_FLAG)) {
+		c->resp_val = RESP_501;
+		return -1;
+	}
+
+	int stdout_pipe[2];
+	if (pipe(stdout_pipe) == -1) {
+		c->resp_val = RESP_500;
+		return -1;
+	}
+
+	size_t query_len = strlen(rp->query_string);
+	if (query_len > PATH_MAX) {
+		c->resp_val = RESP_414;
+		return -1;
+	}
+
+	pid_t pid = fork();
+
+	if (pid == -1) {
+		close(stdout_pipe[0]);
+		close(stdout_pipe[1]);
+		c->resp_val = RESP_500;
+		return -1;
+	}
+
+	// check child process first
+	if (pid == 0) {
+		close(stdout_pipe[0]);
+		dup2(stdout_pipe[1], STDOUT_FILENO);
+
+		char query_buf[PATH_MAX + 1];
+		char local_path_buf[PATH_MAX + 1];
+
+		memcpy(query_buf, rp->query_string, query_len);
+		query_buf[query_len] = '\0';
+
+		local_path_buf[0] = '.';
+		uint32_t i = 1;
+		while (req->path[i - 1] && (req->path[i - 1] != '?')) {
+			local_path_buf[i] = req->path[i - 1];
+			i++;
+		}
+		local_path_buf[i] = '\0';
+
+		setenv("QUERY_STRING", rp->query_string, 1);
+		setenv("REQUEST_METHOD", method_to_string(req->method), 1);
+		setenv("SCRIPT_NAME", local_path_buf, 1);
+		setenv("SERVER_PROTOCOL", version_to_string(req->version), 1);
+		setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+		setenv("REMOTE_ADDR", c->client_addr, 1);
+		setenv("SERVER_SOFTWARE", SERVER_VERSION, 1);
+
+		char *argv[] = {local_path_buf, NULL};
+		execvp(local_path_buf, argv);
+
+		perror("exeicv failure!");
+		_exit(EXIT_FAILURE);
+	}
+
+	// in parent
+	close(stdout_pipe[1]);
+
+	// got to read from child! But this is better
+	size_t capacity = 8192;
+	size_t cgi_resp_len = 0;
+
+	char *cgi_response = (char *)malloc(capacity);
+	if (!cgi_response) {
+		close(stdout_pipe[0]);
+		c->resp_val = RESP_500;
+		return -1;
+	}
+
+	for (;;) {
+		if (cgi_resp_len == capacity) {
+			capacity *= 2;
+			char *tmp = realloc(cgi_response, capacity);
+			if (!tmp) {
+				DBG("CGI realloc fail!\n");
+				free(cgi_response);
+				close(stdout_pipe[0]);
+				c->resp_val = RESP_500;
+				return -1;
+			}
+			cgi_response = tmp;
+		}
+
+		ssize_t n = read(stdout_pipe[0],
+		    cgi_response + cgi_resp_len,
+		    capacity - cgi_resp_len);
+		if (n > 0) {
+			cgi_resp_len += (size_t)n;
+			continue;
+		}
+		if (n == 0) {
+			break; // End of file!
+		}
+		if (errno == EINTR) {
+			continue;
+		}
+
+		// if reached error occurred
+		free(cgi_response);
+		close(stdout_pipe[0]);
+		c->resp_val = RESP_500;
+		return -1;
+	}
+
+	// clean up!
+	close(stdout_pipe[0]);
+
+	int status;
+	if (waitpid(pid, &status, 0) == -1) {
+		free(cgi_response);
+		c->resp_val = RESP_500;
+		return -1;
+	}
+
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+		DBG("CGI script exited abnormally: status=%d\n", status);
+		free(cgi_response);
+		c->resp_val = RESP_500;
+		return -1;
+	}
+
+	char header[MAX_HEADER_BUF];
+	int header_len = snprintf(header,
+	    MAX_HEADER_BUF,
+	    "HTTP/1.0 200 OK\r\n"
+	    "Date: %s\r\n"
+	    "Server: %s\r\n"
+	    "Content-Type: text/html\r\n"
+	    "Content-Length: %zu\r\n"
+	    "Connection: close\r\n"
+	    "\r\n",
+	    req->time_received,
+	    SERVER_VERSION,
+	    cgi_resp_len);
+
+	c->out_buf = malloc(header_len + cgi_resp_len);
+	if (!c->out_buf) {
+		free(cgi_response);
+		c->resp_val = RESP_500;
+		return -1;
+	}
+
+	memcpy(c->out_buf, header, header_len);
+	memcpy(c->out_buf + header_len, cgi_response, cgi_resp_len);
+	c->output_length = header_len + cgi_resp_len;
+	c->body_len = cgi_resp_len;
+	c->header_len = header_len;
+
+	return 0;
 }
 
 static int
 build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 {
 	if (check_resolve_args(c, rp, req) != 0) {
+		c->resp_val = RESP_500;
 		return -1;
 	}
 
-	if (!rp->is_dir_listing) {
+	if (IS_DIR != rp->path_type) {
+		c->resp_val = RESP_500;
 		return -1;
 	}
 
@@ -94,6 +289,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 	if (!dir) {
 		DBG("Dir null!\n");
 		closedir(dir);
+		c->resp_val = RESP_500;
 		return -1;
 	}
 
@@ -120,6 +316,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 		if (!response_body) {
 			DBG("Error allocating dynamic response body\n");
 			closedir(dir);
+			c->resp_val = RESP_500;
 			return -1;
 		}
 
@@ -191,6 +388,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 		c->out_buf = malloc(header_len + 1);
 		if (!c->out_buf) {
 			perror("error build response file: ");
+			c->resp_val = RESP_500;
 			return -1;
 		}
 		memcpy(c->out_buf, header, header_len);
@@ -208,6 +406,7 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 	if (!c->out_buf) {
 		perror("error build response file: ");
 		closedir(dir);
+		c->resp_val = RESP_500;
 		return -1;
 	}
 
@@ -229,6 +428,7 @@ static int
 build_response_file(Client *c, ResolvedPath *rp, Request *req)
 {
 	if (check_resolve_args(c, rp, req) != 0) {
+		c->resp_val = RESP_500;
 		return -1;
 	}
 
@@ -260,6 +460,8 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 		c->out_buf = malloc(header_len + 1);
 		if (!c->out_buf) {
 			perror("error build response file: ");
+
+			c->resp_val = RESP_500;
 			return -1;
 		}
 		memcpy(c->out_buf, header, header_len);
@@ -278,6 +480,7 @@ build_response_file(Client *c, ResolvedPath *rp, Request *req)
 	c->out_buf = malloc(header_len + c->file_size + 1);
 	if (!c->out_buf) {
 		perror("error build response file: ");
+		c->resp_val = RESP_500;
 		return -1;
 	}
 
@@ -296,13 +499,33 @@ build_okay_response(Client *c, ResolvedPath *rp, Request *req)
 {
 	c->resp_val = RESP_200;
 
-	if (rp->is_cgi_bin) {
-		return build_response_cgi(c, rp, req);
+	int status = 0;
+
+	if (IS_CGI == rp->path_type) {
+		status = build_response_cgi(c, rp, req);
+	}
+	else if (IS_DIR == rp->path_type) {
+		status = build_response_dir(c, rp, req);
+	}
+	else if (IS_FILE == rp->path_type) {
+		status = build_response_file(c, rp, req);
 	}
 
-	if (rp->is_dir_listing) {
-		return build_response_dir(c, rp, req);
+	if (status < 0) {
+		// shit something went wrong!
+		DBG("shit something went wrong!\n");
+		if (c->resp_val == RESP_200) {
+			c->resp_val = RESP_500;
+		}
+		c->output_length = 0;
+		c->header_len = 0;
+		c->body_len = 0;
+		c->file_size = 0;
+		if (c->out_buf) {
+			free(c->out_buf);
+		}
+		return build_error_response(c, req);
 	}
 
-	return build_response_file(c, rp, req);
+	return status;
 }
