@@ -72,6 +72,7 @@
    these tests (no CGI fixtures here — CGI has its own suite), but must be
    defined for the link to succeed. */
 uint32_t app_flags = 0;
+FILE *log_ptr = NULL;
 
 #define FIXTURE_DIR "test_cases/fixtures_okay"
 

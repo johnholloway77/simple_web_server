@@ -31,6 +31,10 @@
 #include <limits.h>
 
 #include "../requests/parse_request.h"
+#include "../logging/logging.h"
+
+uint32_t app_flags = 0;
+FILE *log_ptr = NULL;
 
 /* ------------------------------------------------------------------ *
  *  ONE place to change if your signature differs, and ONE place to pin
@@ -45,11 +49,15 @@
 #define SETUP()                                                                \
 	Request out;                                                           \
 	enum client_response resp = NUM_CLIENT_RESP;                           \
-	memset(&out, 0, sizeof out)
+	memset(&out, 0, sizeof out);                                           \
+	LogEntry le = {0};
 
 /* sizeof(lit)-1 strips the implicit NUL so len reflects real wire bytes. */
 #define PARSE(literal)                                                         \
-	parse_request((literal), sizeof(literal) - 1, &out, &resp)
+	parse_request((literal), sizeof(literal) - 1, &out, &resp, &le)
+
+#define PARSE_BUF(buffer, length)                                              \
+	parse_request((buffer), (length), &out, &resp, &le)
 
 /* ================================================================== *
  *  GROUP 1 — happy path: well-formed GET requests succeed
@@ -114,7 +122,7 @@ Test(parse_valid, query_string_kept_verbatim)
 Test(parse_400, empty_buffer)
 {
 	SETUP();
-	int rc = parse_request("", 0, &out, &resp);
+	int rc = parse_request("", 0, &out, &resp, &le);
 	cr_assert_eq(rc, -1);
 	cr_assert_eq(resp, RESP_400);
 }
@@ -290,7 +298,7 @@ Test(parse_bounds, path_just_under_path_max)
 	int after = prefix + room;
 	int tail =
 	    snprintf(buf + after, sizeof buf - after, " HTTP/1.0\r\n\r\n");
-	int rc = parse_request(buf, (size_t)(after + tail), &out, &resp);
+	int rc = parse_request(buf, (size_t)(after + tail), &out, &resp, &le);
 	cr_assert_eq(rc, 0);
 	cr_assert(strlen(out.path) < PATH_MAX, "path must fit with NUL");
 }
@@ -305,7 +313,7 @@ Test(parse_bounds, path_overflows_path_max)
 	int after = prefix + huge;
 	int tail =
 	    snprintf(buf + after, sizeof buf - after, " HTTP/1.0\r\n\r\n");
-	int rc = parse_request(buf, (size_t)(after + tail), &out, &resp);
+	int rc = parse_request(buf, (size_t)(after + tail), &out, &resp, &le);
 	cr_assert_eq(rc, -1, "over-long path rejected, not silently truncated");
 	cr_assert_eq(resp, OVERLONG_PATH_RESP);
 	cr_assert(strnlen(out.path, PATH_MAX) < PATH_MAX,
@@ -317,7 +325,7 @@ Test(parse_bounds, no_read_past_len)
 	SETUP();
 	const char full[] = "GET / HTTP/1.1\r\n\r\nGARBAGE";
 	size_t lie = 10; /* "GET / HTTP" — truncated mid-version, no CRLF */
-	int rc = parse_request(full, lie, &out, &resp);
+	int rc = parse_request(full, lie, &out, &resp, &le);
 	cr_assert_eq(rc, -1, "must not see bytes past len");
 }
 
@@ -325,7 +333,7 @@ Test(parse_bounds, embedded_nul_before_crlf)
 {
 	SETUP();
 	const char raw[] = "GET /a\0b HTTP/1.1\r\n\r\n";
-	int rc = parse_request(raw, sizeof raw - 1, &out, &resp);
+	int rc = parse_request(raw, sizeof raw - 1, &out, &resp, &le);
 	/* A length-aware parser keeps going past the NUL; a strchr/strcmp-based
 	   one stops early. Just require a definite reject and no crash. */
 	cr_assert_eq(rc, -1);
@@ -409,7 +417,7 @@ Test(cs631_proto, version_token_absurdly_long)
 	memset(buf + prefix, '0', zeros);
 	int after = prefix + zeros;
 	int tail = snprintf(buf + after, sizeof buf - after, "\r\n\r\n");
-	int rc = parse_request(buf, (size_t)(after + tail), &out, &resp);
+	int rc = parse_request(buf, (size_t)(after + tail), &out, &resp, &le);
 	cr_assert_eq(rc, -1);
 	cr_assert_eq(resp, RESP_400);
 }
@@ -466,7 +474,7 @@ Test(cs631_uri, deeply_nested_path_safe)
 	for (int seg = 1; seg <= 512 && n < (int)sizeof buf - 32; seg++)
 		n += snprintf(buf + n, sizeof buf - n, "%d/", seg);
 	int tail = snprintf(buf + n, sizeof buf - n, " HTTP/1.0\r\n\r\n");
-	int rc = parse_request(buf, (size_t)(n + tail), &out, &resp);
+	int rc = parse_request(buf, (size_t)(n + tail), &out, &resp, &le);
 	if (rc == 0) {
 		cr_assert(strlen(out.path) < PATH_MAX);
 		cr_assert_eq(out.path[0], '/');

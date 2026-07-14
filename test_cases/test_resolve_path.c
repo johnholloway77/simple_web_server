@@ -76,7 +76,7 @@
  *  Reset to 0 in each test's setup so CGI tests don't bleed.
  * ------------------------------------------------------------------ */
 uint32_t app_flags = 0;
-
+FILE *log_ptr = NULL;
 /* ------------------------------------------------------------------ *
  *  Fixture root — resolve_path uses BASEURL "./" so we chdir() into
  *  the fixture directory before each test and restore afterwards.
