@@ -315,7 +315,18 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 		    dir_path,
 		    dirp->d_name,
 		    dirp->d_name);
+
+		DBG("");
+		DBG("<li><a href=\"./%s/%s\">%s</a></li>\n",
+
+		    dir_path,
+		    dirp->d_name,
+		    dirp->d_name);
+		DBG("File name: %s\n", dirp->d_name);
+		DBG("");
 	}
+
+	fflush(body_buffer);
 
 	struct tm *utc_time = gmtime(&rp->last_mod);
 	if (!utc_time) {
@@ -347,6 +358,8 @@ build_response_dir(Client *c, ResolvedPath *rp, Request *req)
 	else {
 		local_body_len = HTML_STRING_LEN + EMPTY_DIR_LEN;
 	}
+
+	fflush(body_buffer);
 
 	fprintf(out_stream,
 	    "HTTP/1.0 200 OK\r\n"
