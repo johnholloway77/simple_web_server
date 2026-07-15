@@ -58,59 +58,39 @@ build_error_response(Client *c, Request *req)
 
 	Response error_resp = error_responses[c->resp_val];
 
-	c->out_buf = (char *)malloc(MAX_RESPONSE_BUF);
-	if (!c->out_buf) {
-		perror("error response malloc");
+	FILE *out_stream = open_memstream(&c->out_buf, &c->output_length);
+	if (out_stream == NULL) {
+		DBG("Error creating out_stream\n");
 		return -1;
 	}
 
-	int resp_len;
+	fprintf(out_stream,
+	    "HTTP/1.0 %s\r\n"
+	    "Date: %s\r\n"
+	    "Server: %s\r\n"
+	    "Content-Type: %s\r\n"
+	    "Content-Length: %zu\r\n"
+	    "Connection: close\r\n"
+	    "\r\n",
+	    error_resp.status_line,
+	    req->time_received,
+	    SERVER_VERSION,
+	    error_resp.mime_type,
+	    strlen(error_resp.body));
 
-	if (HTTP_HEAD != req->method) {
-		resp_len = snprintf(c->out_buf,
-		    MAX_RESPONSE_BUF,
-		    "HTTP/1.0 %s\r\n"
-		    "Date: %s\r\n"
-		    "Server: %s\r\n"
-		    "Content-Type: %s\r\n"
-		    "Content-Length: %zu\r\n"
-		    "Connection: close\r\n"
-		    "\r\n"
-		    "%s",
-		    error_resp.status_line,
-		    req->time_received,
-		    SERVER_VERSION,
-		    error_resp.mime_type,
-		    strlen(error_resp.body),
-		    error_resp.body);
-	}
-	else {
-		resp_len = snprintf(c->out_buf,
-		    MAX_RESPONSE_BUF,
-		    "HTTP/1.0 %s\r\n"
-		    "Date: %s\r\n"
-		    "Server: %s\r\n"
-		    "Content-Type: %s\r\n"
-		    "Content-Length: %zu\r\n"
-		    "Connection: close\r\n"
-		    "\r\n",
-		    error_resp.status_line,
-		    req->time_received,
-		    SERVER_VERSION,
-		    error_resp.mime_type,
-		    strlen(error_resp.body));
+	fflush(out_stream);
+	c->header_len = c->output_length;
+
+	if (HTTP_HEAD == req->method) {
+		c->body_len = strlen(error_resp.body);
+		fclose(out_stream);
+		return 0;
 	}
 
-	if (resp_len < 0 || (size_t)resp_len >= MAX_RESPONSE_BUF) {
-		DBG("error response truncated");
-		free(c->out_buf);
-		c->out_buf = NULL;
-		return -1;
-	}
+	fprintf(out_stream, "%s", error_resp.body);
 
-	c->body_len = strlen(error_resp.body);
-	c->header_len = resp_len;
-	c->output_length = c->header_len + (size_t)c->file_size;
+	fclose(out_stream);
+	c->body_len = c->output_length - c->header_len;
 
 	return 0;
 }
