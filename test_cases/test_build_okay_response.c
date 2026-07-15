@@ -66,7 +66,6 @@
 #include "../requests/parse_request.h"
 #include "../requests/resolve_path.h"
 #include "../response/build_response.h" /* build_okay_response */
-#include "../flags/flags.h"
 
 /* app_flags: resolve_path reads this extern for C_FLAG. Not exercised by
    these tests (no CGI fixtures here — CGI has its own suite), but must be
@@ -363,8 +362,8 @@ Test(build_okay, lists_directory_with_file_and_subdirectory)
 	    "no index.html present -> must be a listing");
 	cr_assert_not_null(bounded_find(c.out_buf,
 			       c.output_length,
-			       "text/HTML"),
-	    "listing response must be HTML");
+			       "text/html"),
+	    "listing response must be html");
 
 	cr_assert_not_null(bounded_find(c.out_buf,
 			       c.output_length,
