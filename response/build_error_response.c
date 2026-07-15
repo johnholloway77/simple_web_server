@@ -60,7 +60,7 @@ build_error_response(Client *c, Request *req)
 
 	FILE *out_stream = open_memstream(&c->out_buf, &c->output_length);
 	if (out_stream == NULL) {
-		DBG("Error creating out_stream\n");
+		DBG("Error creating out_stream - Error Response\n");
 		return -1;
 	}
 
