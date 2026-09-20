@@ -328,37 +328,77 @@ Benchmarked with `wrk -t8 -d30s` on the development laptop:
 read errors at the same load. The baseline fork server could not sustain concurrent load —
 `hey -c100` recorded 5,936 "connection refused" errors against 100 successful responses.
 
+
 ### Planned
 
-| Phase | Focus | Target | Key technique |
-|---|---|---|---|
-| Phase 2 | Platform-native I/O multiplexing | >125,000 req/sec | kqueue (FreeBSD/macOS), epoll (Linux), event ports (illumos); poll() fallback |
-| Phase 3 | Zero-copy file transfer | >150,000 req/sec | sendfile(2) on FreeBSD/Linux/macOS, sendfilev() on illumos |
-| Phase 4 | Memory arenas | uncapped | Per-connection arena allocators; eliminate per-request malloc/free |
+The next phases continue the project as a systems-programming learning exercise rather than a production-server roadmap. Each phase focuses on a different part of the event-driven I/O model.
 
-### Cross-platform I/O multiplexing (Phase 2)
+| Phase                   | Focus                                    | Main concepts                                                                                   |
+| ----------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Phase 1.5 — Current** | Non-blocking CGI and HTTP request bodies | Pipes in the event loop, resumable pipe I/O, child lifecycle, `Content-Length`, request bodies  |
+| **Phase 2**             | Zero-copy/static-file transfer           | `sendfile(2)`, partial transfers, offsets, kernel/file-cache interaction, portable fallbacks    |
+| **Phase 3**             | Platform-native event notification       | `kqueue`, `epoll`, illumos event ports, readiness registration/delivery, `poll()` comparison    |
+| **Later experiments**   | Protocol and architectural extensions    | HTTP/1.1, persistent connections, memory-allocation experiments, worker models, and other ideas |
 
-The poll() loop will be replaced by a thin backend abstraction that selects
-the best available mechanism at compile time:
+These phases are intentionally ordered by learning dependency rather than expected benchmark improvement.
 
-| Platform | Backend |
-|---|---|
-| FreeBSD / macOS | `kqueue(2)` + `kevent(2)` |
-| Linux | `io_uring(2)`, falling back to `epoll(7)` |
-| illumos | event ports (`port_create` / `port_associate`) |
-| everything else | `poll(2)` — current implementation, always available |
+Phase 1 established the core model: one event loop, non-blocking sockets, explicit per-client state, and resumable network I/O. Phase 1.5 applies the same model to CGI pipes and HTTP request bodies before changing either the file-transfer mechanism or the readiness-notification API.
 
-### Zero-copy sendfile (Phase 3)
+#### Phase 1.5 — Non-blocking CGI and request bodies
 
-Static file serving will bypass the `fread()` → `out_buf` → `send()` path:
+The current CGI implementation still introduces blocking work into an otherwise event-driven server. CGI programs require process creation and communication through pipes, so waiting synchronously for CGI output can serialize the event loop even though client sockets themselves are non-blocking.
 
-| Platform | API |
-|---|---|
-| FreeBSD | `sendfile(2)` with `sf_hdtr` (combined header + body in one call) |
-| Linux | `sendfile(2)` / `splice(2)` |
-| macOS | `sendfile(2)` (Darwin variant) |
-| illumos | `sendfilev(3EXT)` |
-| fallback | current read + send path |
+The next revision will extend the existing event loop to track CGI pipe descriptors and preserve CGI progress across `poll()` iterations.
+
+The work is divided into three related pieces:
+
+1. **CGI stdout** — read CGI output asynchronously rather than blocking until the child finishes.
+2. **CGI stdin** — write request data to CGI programs using resumable non-blocking pipe I/O.
+3. **Request bodies** — parse the required HTTP headers and accumulate bodies such as POST/PUT data across multiple socket reads.
+
+This phase is primarily about applying the state-machine model from Phase 1 to additional kinds of file descriptors.
+
+#### Phase 2 — Zero-copy/static-file transfer
+
+Static-file responses currently pass file data through userspace before being written to the client.
+
+A later phase will investigate platform-specific file-to-socket APIs so that static response bodies can avoid this path where practical.
+
+Expected APIs include:
+
+| Platform | Likely API             |
+| -------- | ---------------------- |
+| FreeBSD  | `sendfile(2)`          |
+| Linux    | `sendfile(2)`          |
+| macOS    | `sendfile(2)`          |
+| illumos  | `sendfilev(3EXT)`      |
+| fallback | buffered userspace I/O |
+
+This phase will examine partial transfers, offsets, non-blocking behavior, error handling, caching behavior, and portability rather than assuming that "zero-copy" is automatically faster in every workload.
+
+#### Phase 3 — Native event backends
+
+`poll()` remains the portable baseline and is sufficient for the current server.
+
+After the server's I/O state machine has been exercised with sockets, CGI pipes, request bodies, and static-file transmission, a later phase will compare `poll()` with native event-notification facilities.
+
+Likely targets are:
+
+| Platform          | Backend                   |
+| ----------------- | ------------------------- |
+| FreeBSD / macOS   | `kqueue(2)` / `kevent(2)` |
+| Linux             | `epoll(7)`                |
+| illumos           | event ports               |
+| portable fallback | `poll(2)`                 |
+
+The purpose is not simply to replace `poll()` with a supposedly "faster" API. The phase will examine how the mechanisms differ in registration, readiness delivery, descriptor tracking, scaling characteristics, state management, and portability.
+
+### Beyond the Current Roadmap
+
+Several other directions remain interesting, including HTTP/1.1 persistent connections, additional HTTP methods, memory-allocation experiments, worker-process architectures, and more advanced logging.
+
+These are intentionally not assigned to active phases yet. They can be evaluated after the current roadmap based on what the server and its measurements reveal.
+
 
 ---
 
