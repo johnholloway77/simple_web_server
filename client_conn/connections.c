@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 #include "../debug/debug.h"
-#include "../requests/parse_request.h"
 
 /**
  * @brief Remove a client connection and compact the poll/client arrays.
