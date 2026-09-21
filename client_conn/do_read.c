@@ -74,6 +74,13 @@ append(struct Client *c, const char *data, size_t n)
 Reading_state read_request(Client *client){
 
     Client *c = client;
+    fprintf(stderr,
+           "ENTER read_request: fd=%d state=%d "
+           "input_length=%zu capacity=%zu\n",
+           c->fd,
+           c->state,
+           c->input_length,
+           c->input_capacity);
 
     for (;;) {
 		char tmp[TEMP_BUFFER];
@@ -82,8 +89,16 @@ Reading_state read_request(Client *client){
 		if (n > 0) {
 			append(c, tmp, n);
 
-			if (c->state != READING)
-				return READ_ERROR;
+			if (c->state != READING){
+			    fprintf(stderr,
+                "append changed client state: fd=%d state=%d resp=%d\n",
+                c->fd,
+                c->state,
+                c->resp_val);
+							return READ_ERROR;
+			}
+
+
 		}
 		else if (0 == n) {
 			c->state = CLOSING;
@@ -96,8 +111,12 @@ Reading_state read_request(Client *client){
 			if (EINTR == errno) {
 				continue;
 			}
-			c->state = CLOSING;
-			break;
+			// c->state = CLOSING;
+			// break;
+
+			perror("recv");
+			fprintf(stderr, "recv failed on fd %d\n", c->fd);
+			return READ_ERROR;
 		}
 	}
 
@@ -112,6 +131,10 @@ Reading_state read_request(Client *client){
 		// request not fully received;
 		return READ_INCOMPLETE;
 	}
+
+	c->header_slice.start = c->in_buf;
+	c->header_slice.length = (end - c->in_buf) + 4;
+
 
 	c->header_len = (end - c->in_buf) + 4;
 	return READ_COMPLETE;

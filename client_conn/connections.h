@@ -9,6 +9,7 @@
 #include <magic.h>
 
 
+
 #include "../requests/headers.h"
 
 /**
@@ -50,6 +51,7 @@ enum client_response
 };
 
 typedef struct Header_fields {
+    Slice request_line;
     Slice host;
     Slice content_length;
     Slice content_type;
@@ -83,6 +85,7 @@ typedef struct Client
 			   NULL */
 	off_t file_size;
 	Header_fields headers;
+	Slice header_slice;
 	size_t body_sent;
 	size_t input_length; /**< Bytes written into in_buf so far */
 	size_t input_capacity; /**< Allocated size of in_buf */

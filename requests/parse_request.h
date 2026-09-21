@@ -99,3 +99,5 @@ int parse_request(const char *buf,
     Request *out,
     enum client_response *resp,
     LogEntry *le);
+
+void parse_header_2(Client *client);
