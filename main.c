@@ -217,7 +217,7 @@ main(int argc, char *argv[])
 			    (READING == clients[i].state)) {
 				DBG("Incoming from client detected\n");
 				// handle read for new request
-				do_read(i, clients, pfds, magic);
+				handle_client(i, clients, pfds, magic);
 			}
 
 			if (revents & POLLOUT &&

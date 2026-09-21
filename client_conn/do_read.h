@@ -4,6 +4,14 @@
 #include <magic.h>
 #include <poll.h>
 
+typedef enum Reading_state {
+    READ_EMPTY,
+    READ_INCOMPLETE,
+    READ_COMPLETE,
+    READ_PEER_CLOSED,
+    READ_ERROR
+} Reading_state;
+
 /**
  * @brief Read available bytes from a client socket, detect end-of-headers,
  * and build the response.
@@ -27,3 +35,8 @@
  * detection
  */
 void do_read(int i, Client *clients, struct pollfd pfds[], magic_t magic);
+
+void
+append(struct Client *c, const char *data, size_t n);
+
+Reading_state read_request(Client *client);

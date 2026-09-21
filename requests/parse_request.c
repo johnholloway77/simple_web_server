@@ -14,7 +14,6 @@
 #include "./parse_request.h"
 #include "../debug/debug.h"
 
-#include "slice_practice/slice_practice.h"
 
 #define METHOD_MAX 10
 #define VERSION_MAX 10
@@ -111,14 +110,6 @@ parse_request(const char *buf,
 	    "%Y-%m-%dT%H:%M:%SZ",
 	    utc_time);
 
-//	printf("Request:\n%s\n", buf);
-
-	// printf("\n\nfwrite:\n");
-	// fwrite(buf, 1, len, stdout);
-	// puts(".");
-
-	Slice header_slice = {buf, len};
-	slice_practice(header_slice);
 
 	const char *first_line = strnstr(buf, "\r\n", len);
 	// out->first_line = strnstr(buf, "\r\n", len);

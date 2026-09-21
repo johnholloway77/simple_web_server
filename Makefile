@@ -105,6 +105,7 @@ DEBUG_LDFLAGS = $(LDFLAGS) -fsanitize=address
 SOURCES = main.c \
     client_conn/connections.c \
     client_conn/accept_new_conn.c \
+    client_conn/client_handler.c \
     client_conn/do_read.c \
     client_conn/do_write.c \
     flags/setFlags.c \
