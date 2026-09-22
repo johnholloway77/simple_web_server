@@ -44,6 +44,61 @@ static Header_type parse_header_type(const char **iterator, const char *line_end
 
 }
 
+int parse_request_line(Client *client){
+
+    Slice *request_line = NULL;
+    Request_fields *request_fields = NULL;
+
+    request_line= &(*client).headers.request_line;
+    if (NULL == request_line){
+        fprintf(stderr, "Error, NULL request line\n");
+        return 1;
+    }
+
+    request_fields = &(*client).headers.request_fields;
+    if (NULL == request_fields){
+        fprintf(stderr, "Error, NULL request field\n");
+        return 1;
+    }
+
+    const char *iterator = NULL;
+    const char *line_end = request_line->start + request_line->length;
+
+    request_fields->method.start = request_line->start;
+
+    iterator = strnstr(request_fields->method.start, " ", line_end - request_line->start);
+
+    if(NULL == iterator){
+        fprintf(stderr, "Unable to find first space in request\n");
+        return 1;
+    }
+
+    request_fields->method.length = iterator - request_fields->method.start;
+
+    iterator++;
+    request_fields->uri.start = iterator;
+    iterator = strnstr(request_fields->uri.start, " ", line_end - request_fields->uri.start);
+
+    if(NULL == iterator){
+        fprintf(stderr, "Unable to find second space in request\n");
+        return 1;
+    }
+    request_fields->uri.length = iterator - request_fields->uri.start;
+
+    iterator++;
+    request_fields->version.start = iterator;
+
+    // check for extra word in request line
+    iterator = strnstr(request_fields->version.start, " ", line_end - request_fields->uri.start);
+    if(NULL != iterator){
+        fprintf(stderr, "third space found in request line\nMalformed REQUEST header!!\n");
+        return 1;
+    }
+    request_fields->version.length = line_end - request_fields->version.start;
+
+    return 0;
+}
+
 
 void parse_header_2(Client *client){
 
@@ -65,6 +120,9 @@ void parse_header_2(Client *client){
             .length = line_end - iterator,
         };
 
+        if (0 != parse_request_line(c)){
+            fprintf(stderr, "Something got fucked during the parse request function!\n");
+        }
 
         iterator = line_end + 2;
 
