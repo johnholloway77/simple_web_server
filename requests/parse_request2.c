@@ -3,7 +3,7 @@
 #include "../client_conn/connections.h"
 #include "../requests/headers.h"
 
-Header_type parse_header_type(const char **iterator, const char *line_end){
+static Header_type parse_header_type(const char **iterator, const char *line_end){
     Header_type return_h_type = H_ERROR;
     size_t remaining_line = line_end - *(iterator);
 
