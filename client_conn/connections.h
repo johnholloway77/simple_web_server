@@ -50,6 +50,12 @@ enum client_response
 	NUM_CLIENT_RESP,
 };
 
+typedef struct Request_fields {
+    Slice method;
+    Slice uri;
+    Slice version;
+} Request_fields;
+
 typedef struct Header_fields {
     Slice request_line;
     Slice host;
@@ -60,6 +66,7 @@ typedef struct Header_fields {
     Slice accept;
     Slice accept_Language;
     Slice accept_encoding;
+    Request_fields request_fields;
 } Header_fields;
 
 /**
