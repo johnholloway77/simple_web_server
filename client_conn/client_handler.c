@@ -122,6 +122,27 @@ void handle_client(int i, Client *clients, struct pollfd pfds[], magic_t magic)
     putchar('\n');
 	}
 
+
+	if (c->headers.request_fields.method.start != NULL){
+	    printf("Request tokens:\n");
+
+		printf("Method: ");
+		fwrite(c->headers.request_fields.method.start, 1,c->headers.request_fields.method.length, stdout);
+		putchar('\n');
+
+		if (c->headers.request_fields.uri.start != NULL){
+		    printf("URI: ");
+						fwrite(c->headers.request_fields.uri.start, 1,c->headers.request_fields.uri.length, stdout);
+						putchar('\n');
+		}
+
+		if (c->headers.request_fields.version.start != NULL){
+		    printf("Version: ");
+						fwrite(c->headers.request_fields.version.start, 1,c->headers.request_fields.version.length, stdout);
+						putchar('\n');
+		}
+	}
+
 	Request req = {0};
 	ResolvedPath rp = {0};
 	LogEntry le = {0};
