@@ -89,7 +89,7 @@ int parse_request_line(Client *client){
     request_fields->version.start = iterator;
 
     // check for extra word in request line
-    iterator = strnstr(request_fields->version.start, " ", line_end - request_fields->uri.start);
+    iterator = strnstr(request_fields->version.start, " ", line_end - request_fields->version.start);
     if(NULL != iterator){
         fprintf(stderr, "third space found in request line\nMalformed REQUEST header!!\n");
         return 1;
