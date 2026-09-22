@@ -85,33 +85,13 @@ add_to_lists(struct pollfd **pfds,
 		.events = POLLIN,
 	};
 
-	// Client *client = &(*clients)[index];
-
-	// (*client) = (Client){
-	//     .fd = newfd,
-	// 	.state = READING,
-	// 	.resp_val = NUM_CLIENT_RESP
-	// };
-
-	//(*clients)[index].headers = {0};
-	(*clients)[index].fd = newfd;
-	(*clients)[index].state = READING;
-	(*clients)[index].in_buf = NULL;
-	(*clients)[index].input_capacity = 0;
-	(*clients)[index].input_length = 0;
-	(*clients)[index].out_buf = NULL;
-	(*clients)[index].output_capacity = 0;
-	(*clients)[index].output_length = 0;
-	(*clients)[index].output_sent = 0;
-
-	(*clients)[index].header_len = 0;
-	(*clients)[index].body_len = 0;
-	(*clients)[index].body_sent = 0;
-
-	(*clients)[index].file_size = 0;
-
-	(*clients)[index].file_ptr = NULL;
-	(*clients)[index].resp_val = NUM_CLIENT_RESP;
+	Client *client = &(*clients)[index];
+	(*client) = (Client) {0};
+	(*client) = (Client){
+	    .fd = newfd,
+		.state = READING,
+		.resp_val = NUM_CLIENT_RESP
+	};
 
 	(*fd_count)++;
 
