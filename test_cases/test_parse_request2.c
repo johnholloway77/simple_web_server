@@ -98,6 +98,31 @@ Test(parse2_valid, version_token_excludes_cr)
 	    '\r');
 }
 
+Test(parse2_valid, repeated_spaces_between_fields)
+{
+	const char req[] = "GET   /   HTTP/1.1\r\n\r\n";
+	Client c = PARSE_HEADERS(req);
+
+	assert_slice_eq(c.headers.request_fields.method, req, strlen("GET"));
+	assert_slice_eq(c.headers.request_fields.uri, req + 6, strlen("/"));
+	assert_slice_eq(c.headers.request_fields.version, req + 10,
+	    strlen("HTTP/1.1"));
+}
+
+Test(parse2_valid, trailing_spaces_after_version)
+{
+	const char req[] = "GET / HTTP/1.1   \r\n\r\n";
+	Client c = PARSE_HEADERS(req);
+
+	assert_slice_eq(c.headers.request_fields.method, req, strlen("GET"));
+	assert_slice_eq(c.headers.request_fields.uri, req + 4, strlen("/"));
+	assert_slice_eq(c.headers.request_fields.version, req + 6,
+	    strlen("HTTP/1.1"));
+	cr_assert_eq(c.headers.request_fields.version.start
+		[c.headers.request_fields.version.length],
+	    ' ');
+}
+
 Test(parse2_valid, query_string_kept_verbatim)
 {
 	const char req[] = "GET /search?q=freebsd HTTP/1.1\r\n\r\n";
@@ -158,15 +183,11 @@ Test(parse2_malformed, no_crlf_in_header_slice_leaves_fields_empty)
 	cr_assert_eq(c.headers.request_fields.method.length, 0);
 }
 
-Test(parse2_malformed, empty_method_double_leading_space_is_a_zero_length_slice)
+Test(parse2_malformed, leading_spaces_before_method)
 {
 	SET_REQUEST_LINE("  / HTTP/1.0");
 
-	cr_assert_eq(parse_request_line(&c), 0);
-	assert_slice_eq(c.headers.request_fields.method, c.header_slice.start, 0);
-	assert_slice_eq(c.headers.request_fields.uri, c.header_slice.start + 1, 1);
-	assert_slice_eq(c.headers.request_fields.version, c.header_slice.start + 3,
-	    strlen("HTTP/1.0"));
+	cr_assert_neq(parse_request_line(&c), 0);
 }
 
 /* ================================================================== *

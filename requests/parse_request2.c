@@ -66,6 +66,15 @@ int parse_request_line(Client *client){
 
     request_fields->method.start = request_line->start;
 
+    if (*request_fields->method.start == ' ' || *request_fields->method.start == '\t'){
+        fprintf(stderr, "invalid method\n");
+        return 1;
+    }
+
+    // while ((*request_fields->method.start == ' ' || *request_fields->method.start == '\t')  && request_fields->method.start != line_end){
+    //     request_fields->method.start++;
+    // }
+
     iterator = strnstr(request_fields->method.start, " ", line_end - request_line->start);
 
     if(NULL == iterator){
@@ -75,7 +84,14 @@ int parse_request_line(Client *client){
 
     request_fields->method.length = iterator - request_fields->method.start;
 
-    iterator++;
+    printf("method: ");
+    fwrite(request_fields->method.start, 1, request_fields->method.length, stdout)    ;
+    puts("");
+
+    while ((*iterator == ' ' || *iterator == '\t') && iterator != line_end){
+        iterator++;
+    }
+
     request_fields->uri.start = iterator;
     iterator = strnstr(request_fields->uri.start, " ", line_end - request_fields->uri.start);
 
@@ -85,16 +101,27 @@ int parse_request_line(Client *client){
     }
     request_fields->uri.length = iterator - request_fields->uri.start;
 
-    iterator++;
+    while ((*iterator == ' ' || *iterator == '\t') && iterator != line_end){
+        iterator++;
+    }
     request_fields->version.start = iterator;
 
     // check for extra word in request line
     iterator = strnstr(request_fields->version.start, " ", line_end - request_fields->version.start);
+
     if(NULL != iterator){
-        fprintf(stderr, "third space found in request line\nMalformed REQUEST header!!\n");
-        return 1;
+        request_fields->version.length = iterator - request_fields->version.start;
+
+        while ((*iterator == ' ' || *iterator == '\t') && iterator != line_end){
+            iterator++;
+        }
+        if (iterator != line_end){
+            fprintf(stderr, "Extra token found after HTTP version!!\n");
+            return 1;
+        }
+    } else {
+        request_fields->version.length = line_end - request_fields->version.start;
     }
-    request_fields->version.length = line_end - request_fields->version.start;
 
     return 0;
 }
