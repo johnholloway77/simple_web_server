@@ -176,6 +176,7 @@ $(VALGRIND_DIR)/%.o: %.c
 clean:
 	rm -rf $(BINARY) $(DEBUG_BINARY) build \
 	       $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
+	       $(PARSE2_BINARY) $(PARSE2_BINARY_ASAN) \
 	       $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
 		   $(VALGRIND_BINARY) $(VALGRIND_OBJECTS) \
 	       test_cases/fixtures
@@ -242,6 +243,30 @@ $(PARSE_BINARY): $(PARSE_SRC) $(PARSE_UNIT)
 $(PARSE_BINARY_ASAN): $(PARSE_SRC) $(PARSE_UNIT)
 	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
 	    $(PARSE_SRC) $(PARSE_UNIT) $(TEST_ASAN_LDFLAGS)
+
+# ─── parse_request2 slice suite ────────────────────────────────────────
+PARSE2_SRC         = test_cases/test_parse_request2.c
+PARSE2_UNIT        = requests/parse_request2.c
+PARSE2_BINARY      = test_cases/test_parse_request2
+PARSE2_BINARY_ASAN = test_cases/test_parse_request2_asan
+
+.PHONY: test-parse2
+test-parse2: $(PARSE2_BINARY)
+	@echo "Running parse_request2 slice unit tests..."
+	@./$(PARSE2_BINARY) $(TEST_RUN_FLAGS)
+
+.PHONY: test-parse2-asan
+test-parse2-asan: $(PARSE2_BINARY_ASAN)
+	@echo "Running parse_request2 slice unit tests under AddressSanitizer..."
+	@./$(PARSE2_BINARY_ASAN) $(TEST_RUN_FLAGS)
+
+$(PARSE2_BINARY): $(PARSE2_SRC) $(PARSE2_UNIT)
+	$(CC) $(TEST_CFLAGS) -o $@ \
+	    $(PARSE2_SRC) $(PARSE2_UNIT) $(TEST_LDFLAGS)
+
+$(PARSE2_BINARY_ASAN): $(PARSE2_SRC) $(PARSE2_UNIT)
+	$(CC) $(TEST_ASAN_CFLAGS) -o $@ \
+	    $(PARSE2_SRC) $(PARSE2_UNIT) $(TEST_ASAN_LDFLAGS)
 
 # ─── resolve_path suite (needs libmagic when enabled) ──────────────────
 RESOLVE_SRC         = test_cases/test_resolve_path.c
@@ -388,18 +413,19 @@ clean-memcheck:
 
 # ─── Aggregate test targets ────────────────────────────────────────────
 .PHONY: test
-test: test-parse test-resolve test-build-error test-build-okay
+test: test-parse test-parse2 test-resolve test-build-error test-build-okay
 
 .PHONY: test-all
-test-all: test-parse test-resolve test-build-error test-build-okay memcheck
+test-all: test-parse test-parse2 test-resolve test-build-error test-build-okay memcheck
 
 # FIXED: was 'test-asan' (nonexistent) -> 'test-parse-asan'
 .PHONY: test-all-asan
-test-all-asan: test-parse-asan test-resolve-asan test-build-error-asan
+test-all-asan: test-parse-asan test-parse2-asan test-resolve-asan test-build-error-asan
 
 .PHONY: clean-test
 clean-test:
 	rm -f $(PARSE_BINARY) $(PARSE_BINARY_ASAN) \
+		  $(PARSE2_BINARY) $(PARSE2_BINARY_ASAN) \
 	      $(RESOLVE_BINARY) $(RESOLVE_BINARY_ASAN) \
 		  $(BUILD_OKAY_BINARY) $(BUILD_OKAY_BINARY_ASAN) \
 		  $(VALGRIND_LOG) $(VALGRIND_FIXTURE)
