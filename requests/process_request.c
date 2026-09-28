@@ -12,7 +12,7 @@ method_from_token(Slice method)
 		return HTTP_METHOD_UNKNOWN;
 	}
 
-	if ((memcmp(method.start, "GET", method.length) == 0) && method.length == 4) {
+	if ((memcmp(method.start, "GET", method.length) == 0) && method.length == 3) {
 	    return HTTP_GET;
 	}
 	if ((memcmp(method.start, "POST", method.length) == 0) && method.length == 4) {
@@ -103,7 +103,7 @@ int process_request(Client *client) {
         /*
             skip whitespaces and then check for a leading negative to prevent interer wrap around
         */
-        while((*start == ' ' || *start == '\t') && start <= c->headers.content_length.start + c->headers.content_length.length){
+        while((start <= c->headers.content_length.start + c->headers.content_length.length) && (*start == ' ' || *start == '\t') ){
             start++;
         }
         if (*start != '-'){
