@@ -12,19 +12,19 @@ method_from_token(Slice method)
 		return HTTP_METHOD_UNKNOWN;
 	}
 
-	if (memcmp(method.start, "GET", method.length) == 0) {
+	if ((memcmp(method.start, "GET", method.length) == 0) && method.length == 4) {
 	    return HTTP_GET;
 	}
-	if (memcmp(method.start, "POST", method.length) == 0) {
+	if ((memcmp(method.start, "POST", method.length) == 0) && method.length == 4) {
 	    return HTTP_POST;
 	}
-	if (memcmp(method.start, "HEAD", method.length) == 0) {
+	if ((memcmp(method.start, "HEAD", method.length) == 0)  && method.length == 4) {
 	    return HTTP_HEAD;
 	}
-	if (memcmp(method.start, "PUT", method.length) == 0) {
+	if ((memcmp(method.start, "PUT", method.length) == 0)  && method.length == 3) {
 	    return HTTP_PUT;
 	}
-	if (memcmp(method.start, "DELETE", method.length) == 0) {
+	if ((memcmp(method.start, "DELETE", method.length) == 0)  && method.length == 6) {
 	    return HTTP_DELETE;
 	}
 
@@ -65,6 +65,7 @@ path_has_traversal(Slice path)
 
 static size_t slice_to_size_t(Slice s, char **endptr){
 
+
     size_t num = 0;
 
     (*endptr) = s.start;
@@ -76,7 +77,7 @@ static size_t slice_to_size_t(Slice s, char **endptr){
             return 0;
         }
 
-        num += num * 10 + (s.start[i] - '0') ;
+        num = num * 10 + (s.start[i] - '0') ;
 
         (*endptr)++;
     }
