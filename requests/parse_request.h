@@ -22,16 +22,7 @@
  * HTTP_METHOD_UNKNOWN is returned when the method token does not match any
  * known verb; parse_request() will set resp to RESP_501 in that case.
  */
-enum http_method
-{
-	HTTP_GET, /**< GET — retrieve a resource */
-	HTTP_POST, /**< POST — currently returns 501 Not Implemented */
-	HTTP_HEAD, /**< HEAD — headers only, no body sent */
-	HTTP_PUT, // Not supported
-	HTTP_DELETE, // Not supported
-	HTTP_METHOD_UNKNOWN, /**< Unrecognised method token */
-	NUM_HTTP_METHOD
-};
+
 
 /**
  * @brief HTTP protocol versions the server can receive.
@@ -41,18 +32,7 @@ enum http_method
  * HTTP_VERSION_UNKNOWN is set for completely unrecognisable version strings;
  * parse_request() will set resp to RESP_400.
  */
-enum http_version
-{
-	HTTP_0_9, // Unsupported
-	HTTP_1_0, /**< HTTP/1.0 — fully supported */
-	HTTP_1_1, /**< HTTP/1.1 — accepted, served as 1.0 */
-	HTTP_2,
-	HTTP_3,
-	HTTP_VERSION_UNSUPPORTED, /**< Recognised but not supported (0.9, 2.0)
-				   */
-	HTTP_VERSION_UNKNOWN, /**< Unrecognisable version string */
-	NUM_HTTP_VERSION
-};
+
 
 /**
  * @brief Parsed representation of an HTTP request line.
@@ -101,3 +81,5 @@ int parse_request(const char *buf,
     LogEntry *le);
 
 void parse_header_2(Client *client);
+
+int process_request(Client *client);
