@@ -30,6 +30,30 @@ enum client_state
 	NUM_CLIENT_STATE,
 };
 
+enum http_method
+{
+	HTTP_GET, /**< GET — retrieve a resource */
+	HTTP_POST, /**< POST — currently returns 501 Not Implemented */
+	HTTP_HEAD, /**< HEAD — headers only, no body sent */
+	HTTP_PUT, // Not supported
+	HTTP_DELETE, // Not supported
+	HTTP_METHOD_UNKNOWN, /**< Unrecognised method token */
+	NUM_HTTP_METHOD
+};
+
+enum http_version
+{
+	HTTP_0_9, // Unsupported
+	HTTP_1_0, /**< HTTP/1.0 — fully supported */
+	HTTP_1_1, /**< HTTP/1.1 — accepted, served as 1.0 */
+	HTTP_2,
+	HTTP_3,
+	HTTP_VERSION_UNSUPPORTED, /**< Recognised but not supported (0.9, 2.0)
+				   */
+	HTTP_VERSION_UNKNOWN, /**< Unrecognisable version string */
+	NUM_HTTP_VERSION
+};
+
 /**
  * @brief HTTP response codes that the server can generate.
  *
@@ -104,12 +128,14 @@ typedef struct Client
 			    *   do_read() once the end-of-headers marker
 			    *   is found */
 	size_t body_len;
+	size_t content_length;
 	int fd; /**< Socket file descriptor */
 	enum client_state state; /**< Current lifecycle state */
 	enum client_response
 	    resp_val; /**< Response code to send; NUM_CLIENT_RESP
 		       *   until determined by request processing */
-
+	enum http_method http_method;
+	enum http_version http_version;
 	char timestamp[32]; /**< RFC-formatted timestamp string */
 	char client_addr[INET6_ADDRSTRLEN]; /**< Dotted-decimal / colon-hex peer
 					     *   address string */
