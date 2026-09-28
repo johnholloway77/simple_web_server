@@ -114,6 +114,7 @@ SOURCES = main.c \
     sockets/get_listener_v6.c \
     requests/parse_request.c \
     requests/parse_request2.c \
+    requests/process_request.c \
     requests/resolve_path.c \
     requests/close_resolve_path.c \
     response/build_okay_response.c \
