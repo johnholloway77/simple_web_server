@@ -97,20 +97,25 @@ int process_request(Client *client) {
     c->http_version = version_from_token(c->headers.request_fields.version);
 
     if (c->http_method == HTTP_POST || c->http_method == HTTP_PUT){
-        const char* start = c->headers.content_length.start;
+        Slice s = c->headers.content_length;
         char *endptr = NULL;
 
-        if (start != NULL) {/*
+        if (s.start != NULL) {/*
             skip whitespaces and then check for a leading negative to prevent interer wrap around
         */
-        while((start < c->headers.content_length.start + c->headers.content_length.length) && (*start == ' ' || *start == '\t') ){
-            start++;
+        while((s.length) && (*s.start == ' ' || *s.start == '\t') ){
+            s.start++;
+            s.length--;
         }
-        if (*start != '-'){
-            c->content_length = slice_to_size_t(c->headers.content_length, &endptr);
+
+        if (s.length == 0){
+            fprintf(stderr, "content lenght string is all whitespace\n");
+            c->content_length = 0;
+        }else if (*s.start != '-'){
+            c->content_length = slice_to_size_t(s, &endptr);
 
             //check for malformed string...
-            if (endptr == c->headers.content_length.start){
+            if (endptr == s.start){
                 fprintf(stderr, "invalid content-length string.\n");
             }
         } else {
@@ -118,7 +123,10 @@ int process_request(Client *client) {
             c->content_length = 0;
         }
 
-    }
+        } else {
+            fprintf(stderr, "content length slice is null\n");
+            c->content_length = 0;
+        }
     }
 
     return 0;
