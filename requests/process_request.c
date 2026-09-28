@@ -38,19 +38,19 @@ version_from_token(Slice version){
 		return HTTP_VERSION_UNKNOWN;
 	}
 
-    if (memcmp(version.start, "HTTP/1.0", version.length) == 0){
+    if ((memcmp(version.start, "HTTP/1.0", version.length) == 0) && version.length == 8){
         return HTTP_1_0;
     }
-    if (memcmp(version.start, "HTTP/1.1", version.length) == 0){
+    if ((memcmp(version.start, "HTTP/1.1", version.length) == 0) && version.length == 8){
         return HTTP_1_1;
     }
-    if (memcmp(version.start, "HTTP/0.9", version.length) == 0){
+    if ((memcmp(version.start, "HTTP/0.9", version.length) == 0) && version.length == 8){
         return HTTP_0_9;
     }
-    if (memcmp(version.start, "HTTP/2.0", version.length) == 0){
+    if ((memcmp(version.start, "HTTP/2.0", version.length) == 0) && version.length == 8){
         return HTTP_2;
     }
-    if (memcmp(version.start, "HTTP/3.0", version.length) == 0){
+    if ((memcmp(version.start, "HTTP/3.0", version.length) == 0) && version.length == 8){
         return HTTP_3;
     }
 
