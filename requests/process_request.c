@@ -12,19 +12,19 @@ method_from_token(Slice method)
 		return HTTP_METHOD_UNKNOWN;
 	}
 
-	if ((memcmp(method.start, "GET", method.length) == 0) && method.length == 3) {
+	if (method.length == 3 && (memcmp(method.start, "GET", method.length) == 0)) {
 	    return HTTP_GET;
 	}
-	if ((memcmp(method.start, "POST", method.length) == 0) && method.length == 4) {
+	if (method.length == 4 && (memcmp(method.start, "POST", method.length) == 0)) {
 	    return HTTP_POST;
 	}
-	if ((memcmp(method.start, "HEAD", method.length) == 0)  && method.length == 4) {
+	if (method.length == 4 && (memcmp(method.start, "HEAD", method.length) == 0)) {
 	    return HTTP_HEAD;
 	}
-	if ((memcmp(method.start, "PUT", method.length) == 0)  && method.length == 3) {
+	if (method.length == 3 && (memcmp(method.start, "PUT", method.length) == 0)) {
 	    return HTTP_PUT;
 	}
-	if ((memcmp(method.start, "DELETE", method.length) == 0)  && method.length == 6) {
+	if (method.length == 6 && (memcmp(method.start, "DELETE", method.length) == 0)) {
 	    return HTTP_DELETE;
 	}
 
@@ -38,19 +38,19 @@ version_from_token(Slice version){
 		return HTTP_VERSION_UNKNOWN;
 	}
 
-    if ((memcmp(version.start, "HTTP/1.0", version.length) == 0) && version.length == 8){
+    if (version.length == 8 && (memcmp(version.start, "HTTP/1.0", version.length) == 0)){
         return HTTP_1_0;
     }
-    if ((memcmp(version.start, "HTTP/1.1", version.length) == 0) && version.length == 8){
+    if (version.length == 8 && (memcmp(version.start, "HTTP/1.1", version.length) == 0)){
         return HTTP_1_1;
     }
-    if ((memcmp(version.start, "HTTP/0.9", version.length) == 0) && version.length == 8){
+    if (version.length == 8 && (memcmp(version.start, "HTTP/0.9", version.length) == 0)){
         return HTTP_0_9;
     }
-    if ((memcmp(version.start, "HTTP/2.0", version.length) == 0) && version.length == 8){
+    if (version.length == 8 && (memcmp(version.start, "HTTP/2.0", version.length) == 0)){
         return HTTP_2;
     }
-    if ((memcmp(version.start, "HTTP/3.0", version.length) == 0) && version.length == 8){
+    if (version.length == 8 && (memcmp(version.start, "HTTP/3.0", version.length) == 0)){
         return HTTP_3;
     }
 
@@ -71,7 +71,7 @@ static size_t slice_to_size_t(Slice s, char **endptr){
     (*endptr) = s.start;
 
     for (size_t i = 0; i < s.length; i++){
-        if (!isdigit(s.start[i])){
+        if (!isdigit((unsigned char)s.start[i])){
             fprintf(stderr, "slice to sizet: slice isn't valid\n");
             (*endptr) = s.start;
             return 0;
@@ -100,10 +100,10 @@ int process_request(Client *client) {
         const char* start = c->headers.content_length.start;
         char *endptr = NULL;
 
-        /*
+        if (start != NULL) {/*
             skip whitespaces and then check for a leading negative to prevent interer wrap around
         */
-        while((start <= c->headers.content_length.start + c->headers.content_length.length) && (*start == ' ' || *start == '\t') ){
+        while((start < c->headers.content_length.start + c->headers.content_length.length) && (*start == ' ' || *start == '\t') ){
             start++;
         }
         if (*start != '-'){
@@ -118,7 +118,7 @@ int process_request(Client *client) {
             c->content_length = 0;
         }
 
-
+    }
     }
 
     return 0;
