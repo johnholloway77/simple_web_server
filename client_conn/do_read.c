@@ -90,11 +90,11 @@ Reading_state read_request(Client *client){
 			append(c, tmp, n);
 
 			if (c->state != READING){
-			    fprintf(stderr,
-                "append changed client state: fd=%d state=%d resp=%d\n",
-                c->fd,
-                c->state,
-                c->resp_val);
+			    // fprintf(stderr,
+       //          "append changed client state: fd=%d state=%d resp=%d\n",
+       //          c->fd,
+       //          c->state,
+       //          c->resp_val);
 							return READ_ERROR;
 			}
 

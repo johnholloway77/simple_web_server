@@ -23,13 +23,13 @@ void handle_client(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 	Client *c = &clients[i];
 	struct pollfd *p = &pfds[i];
 
-	fprintf(stderr,
-           "ENTER handle_client: fd=%d state=%d "
-           "input_length=%zu capacity=%zu\n",
-           c->fd,
-           c->state,
-           c->input_length,
-           c->input_capacity);
+	// fprintf(stderr,
+ //           "ENTER handle_client: fd=%d state=%d "
+ //           "input_length=%zu capacity=%zu\n",
+ //           c->fd,
+ //           c->state,
+ //           c->input_length,
+ //           c->input_capacity);
 
 	Reading_state reading_state = read_request(c);
 
@@ -58,90 +58,91 @@ void handle_client(int i, Client *clients, struct pollfd pfds[], magic_t magic)
 	}
 
 	parse_header_2(c);
+	process_request(c);
 
-	if (c->headers.request_line.start != NULL) {
-    printf("Request line: ");
-    fwrite(c->headers.request_line.start, 1,
-        c->headers.request_line.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.request_line.start != NULL) {
+ //    printf("Request line: ");
+ //    fwrite(c->headers.request_line.start, 1,
+ //        c->headers.request_line.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.host.start != NULL) {
-    printf("Host: ");
-    fwrite(c->headers.host.start, 1,
-        c->headers.host.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.host.start != NULL) {
+ //    printf("Host: ");
+ //    fwrite(c->headers.host.start, 1,
+ //        c->headers.host.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.content_length.start != NULL) {
-    printf("Content-Length: ");
-    fwrite(c->headers.content_length.start, 1,
-        c->headers.content_length.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.content_length.start != NULL) {
+ //    printf("Content-Length: ");
+ //    fwrite(c->headers.content_length.start, 1,
+ //        c->headers.content_length.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.content_type.start != NULL) {
-    printf("Content-Type: ");
-    fwrite(c->headers.content_type.start, 1,
-        c->headers.content_type.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.content_type.start != NULL) {
+ //    printf("Content-Type: ");
+ //    fwrite(c->headers.content_type.start, 1,
+ //        c->headers.content_type.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.user_agent.start != NULL) {
-    printf("User-Agent: ");
-    fwrite(c->headers.user_agent.start, 1,
-        c->headers.user_agent.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.user_agent.start != NULL) {
+ //    printf("User-Agent: ");
+ //    fwrite(c->headers.user_agent.start, 1,
+ //        c->headers.user_agent.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.connection.start != NULL) {
-    printf("Connection: ");
-    fwrite(c->headers.connection.start, 1,
-        c->headers.connection.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.connection.start != NULL) {
+ //    printf("Connection: ");
+ //    fwrite(c->headers.connection.start, 1,
+ //        c->headers.connection.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.accept.start != NULL) {
-    printf("Accept: ");
-    fwrite(c->headers.accept.start, 1,
-        c->headers.accept.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.accept.start != NULL) {
+ //    printf("Accept: ");
+ //    fwrite(c->headers.accept.start, 1,
+ //        c->headers.accept.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.accept_Language.start != NULL) {
-    printf("Accept-Language: ");
-    fwrite(c->headers.accept_Language.start, 1,
-        c->headers.accept_Language.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.accept_Language.start != NULL) {
+ //    printf("Accept-Language: ");
+ //    fwrite(c->headers.accept_Language.start, 1,
+ //        c->headers.accept_Language.length, stdout);
+ //    putchar('\n');
+	// }
 
-	if (c->headers.accept_encoding.start != NULL) {
-    printf("Accept-Encoding: ");
-    fwrite(c->headers.accept_encoding.start, 1,
-        c->headers.accept_encoding.length, stdout);
-    putchar('\n');
-	}
+	// if (c->headers.accept_encoding.start != NULL) {
+ //    printf("Accept-Encoding: ");
+ //    fwrite(c->headers.accept_encoding.start, 1,
+ //        c->headers.accept_encoding.length, stdout);
+ //    putchar('\n');
+	// }
 
 
-	if (c->headers.request_fields.method.start != NULL){
-	    printf("Request tokens:\n");
+	// if (c->headers.request_fields.method.start != NULL){
+	//     printf("Request tokens:\n");
 
-		printf("Method: ");
-		fwrite(c->headers.request_fields.method.start, 1,c->headers.request_fields.method.length, stdout);
-		putchar('\n');
+	// 	printf("Method: ");
+	// 	fwrite(c->headers.request_fields.method.start, 1,c->headers.request_fields.method.length, stdout);
+	// 	putchar('\n');
 
-		if (c->headers.request_fields.uri.start != NULL){
-		    printf("URI: ");
-						fwrite(c->headers.request_fields.uri.start, 1,c->headers.request_fields.uri.length, stdout);
-						putchar('\n');
-		}
+	// 	if (c->headers.request_fields.uri.start != NULL){
+	// 	    printf("URI: ");
+	// 					fwrite(c->headers.request_fields.uri.start, 1,c->headers.request_fields.uri.length, stdout);
+	// 					putchar('\n');
+	// 	}
 
-		if (c->headers.request_fields.version.start != NULL){
-		    printf("Version: ");
-						fwrite(c->headers.request_fields.version.start, 1,c->headers.request_fields.version.length, stdout);
-						putchar('\n');
-		}
-	}
+	// 	if (c->headers.request_fields.version.start != NULL){
+	// 	    printf("Version: ");
+	// 					fwrite(c->headers.request_fields.version.start, 1,c->headers.request_fields.version.length, stdout);
+	// 					putchar('\n');
+	// 	}
+	// }
 
 	Request req = {0};
 	ResolvedPath rp = {0};
