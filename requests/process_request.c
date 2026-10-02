@@ -63,7 +63,7 @@ path_has_traversal(Slice path)
 	return strnstr(path.start, "../", path.length) ? 1 : 0;
 }
 
-static size_t slice_to_size_t(Slice s, char **endptr){
+static size_t slice_to_size_t(Slice s, const char **endptr){
 
 
     size_t num = 0;
@@ -98,7 +98,7 @@ int process_request(Client *client) {
 
     if (c->http_method == HTTP_POST || c->http_method == HTTP_PUT){
         Slice s = c->headers.content_length;
-        char *endptr = NULL;
+        const char *endptr = NULL;
 
         if (s.start != NULL) {/*
             skip whitespaces and then check for a leading negative to prevent interer wrap around
