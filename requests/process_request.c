@@ -65,8 +65,9 @@ path_has_traversal(Slice path)
 
 static size_t slice_to_size_t(Slice s, const char **endptr){
 
-
     size_t num = 0;
+    char parsing_started = 0;
+    char trailing_white = 0;
 
     (*endptr) = s.start;
 
@@ -74,10 +75,22 @@ static size_t slice_to_size_t(Slice s, const char **endptr){
     for (size_t i = 0; i < s.length; i++){
         unsigned char c = (unsigned char)s.start[i];
         if (isblank(c)){
+
+            //check for trailing white space
+            if (parsing_started){
+                trailing_white = 1;
+            }
             continue;
         }
 
         if (!isdigit(c)){
+            (*endptr) = s.start;
+            return 0;
+        }
+        parsing_started = 1;
+
+        // check for number after trailing white
+        if (trailing_white){
             (*endptr) = s.start;
             return 0;
         }
