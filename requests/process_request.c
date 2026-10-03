@@ -27,6 +27,17 @@ static int supported_http_method(enum http_method method){
     return 0;
 }
 
+static int support_http_version(enum http_version version){
+    switch (version){
+        case HTTP_1_0:
+        case HTTP_1_1:
+            return 1;
+            break;
+        default:
+            return 0;
+    }
+}
+
 static enum http_method
 method_from_token(Slice method)
 {
@@ -150,6 +161,11 @@ Process_request_status process_request(Client *client) {
     c->http_version = version_from_token(c->headers.request_fields.version);
     if (c->http_version == HTTP_VERSION_UNKNOWN){
         c->resp_val = RESP_400;
+        return PR_VERSION_FAIL;
+    }
+
+    if (!support_http_version(c->http_version)){
+        c->resp_val = RESP_505;
         return PR_VERSION_FAIL;
     }
 
