@@ -131,7 +131,15 @@ static size_t slice_to_size_t(Slice s, const char **endptr){
             return 0;
         }
 
-        num = num * 10 + (c - '0') ;
+        size_t sum = num * 10 + (c - '0') ;
+
+        if (sum < num) {
+            // overflow!
+            (*endptr) = s.start;
+            return 0;
+        } else {
+            num = sum;
+        }
 
         (*endptr)++;
     }
