@@ -5,6 +5,28 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+static int supported_http_method(enum http_method method){
+
+    switch (method){
+        case HTTP_GET:
+        case HTTP_POST:
+        case HTTP_HEAD:
+        case HTTP_PUT:
+        case HTTP_DELETE:
+            return 1;
+            break;
+
+
+        case HTTP_QUERY:
+        // these cases should have already been checked
+        // backup check
+        case HTTP_METHOD_UNKNOWN:
+        case NUM_HTTP_METHOD:
+            return 0;
+    }
+    return 0;
+}
+
 static enum http_method
 method_from_token(Slice method)
 {
@@ -26,6 +48,9 @@ method_from_token(Slice method)
 	}
 	if (method.length == 6 && (memcmp(method.start, "DELETE", method.length) == 0)) {
 	    return HTTP_DELETE;
+	}
+	if (method.length == 5 && (memcmp(method.start, "QUERY", method.length) == 0)) {
+	    return HTTP_QUERY;
 	}
 
 
@@ -114,6 +139,11 @@ Process_request_status process_request(Client *client) {
 
     if (c->http_method == HTTP_METHOD_UNKNOWN){
         c->resp_val = RESP_400;
+        return PR_METHOD_FAIL;
+    }
+
+    if (!supported_http_method(c->http_method)){
+        c->resp_val = RESP_501;
         return PR_METHOD_FAIL;
     }
 

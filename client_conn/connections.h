@@ -37,6 +37,7 @@ enum http_method
 	HTTP_HEAD, /**< HEAD — headers only, no body sent */
 	HTTP_PUT, // Not supported
 	HTTP_DELETE, // Not supported
+	HTTP_QUERY, // Not supported
 	HTTP_METHOD_UNKNOWN, /**< Unrecognised method token */
 	NUM_HTTP_METHOD
 };
