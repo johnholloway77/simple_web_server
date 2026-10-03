@@ -70,6 +70,7 @@ static size_t slice_to_size_t(Slice s, const char **endptr){
 
     (*endptr) = s.start;
 
+
     for (size_t i = 0; i < s.length; i++){
         if (!isdigit((unsigned char)s.start[i])){
             fprintf(stderr, "slice to sizet: slice isn't valid\n");
@@ -119,23 +120,29 @@ Process_request_status process_request(Client *client) {
         if (s.length == 0){
             fprintf(stderr, "content length string is all whitespace\n");
             c->content_length = 0;
+            c->resp_val = RESP_400;
+            return PR_CLENGTH_FAIL;
         }else if (*s.start != '-'){
             c->content_length = slice_to_size_t(s, &endptr);
 
             //check for malformed string...
             if (endptr == s.start){
                 fprintf(stderr, "invalid content-length string.\n");
+
+                c->resp_val = RESP_400;
                 return PR_CLENGTH_FAIL;
             }
         } else {
             fprintf(stderr, "content length is a negative number\n");
             c->content_length = 0;
+            c->resp_val = RESP_400;
             return PR_CLENGTH_FAIL;
         }
 
         } else {
             fprintf(stderr, "content length slice is null\n");
             c->content_length = 0;
+            c->resp_val = RESP_400;
             return PR_CLENGTH_FAIL;
         }
     }
