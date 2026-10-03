@@ -100,11 +100,13 @@ Process_request_status process_request(Client *client) {
     c->http_method = method_from_token(c->headers.request_fields.method);
 
     if (c->http_method == HTTP_METHOD_UNKNOWN){
+        c->resp_val = RESP_400;
         return PR_METHOD_FAIL;
     }
 
     c->http_version = version_from_token(c->headers.request_fields.version);
     if (c->http_version == HTTP_VERSION_UNKNOWN){
+        c->resp_val = RESP_400;
         return PR_VERSION_FAIL;
     }
 
