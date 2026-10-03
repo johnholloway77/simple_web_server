@@ -15,6 +15,15 @@
 
 #define TIME_RECEIVED_LENGTH 32
 
+typedef enum Process_request_status {
+    PR_SUCCESS,
+    PR_NULL_CLIENT,
+    PR_METHOD_FAIL,
+    PR_VERSION_FAIL,
+    PR_CLENGTH_FAIL,
+    PR_ENUM_COUNT
+} Process_request_status;
+
 
 /**
  * @brief HTTP methods recognised by the server.
@@ -82,4 +91,4 @@ int parse_request(const char *buf,
 
 void parse_header_2(Client *client);
 
-int process_request(Client *client);
+Process_request_status process_request(Client *client);

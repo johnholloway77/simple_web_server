@@ -73,8 +73,9 @@ static size_t slice_to_size_t(Slice s, const char **endptr){
     for (size_t i = 0; i < s.length; i++){
         if (!isdigit((unsigned char)s.start[i])){
             fprintf(stderr, "slice to sizet: slice isn't valid\n");
-            (*endptr) = s.start;
-            return 0;
+            // (*endptr) = s.start;
+            // return 0;
+            continue;
         }
 
         num = num * 10 + (s.start[i] - '0') ;
@@ -85,16 +86,23 @@ static size_t slice_to_size_t(Slice s, const char **endptr){
     return num;
 }
 
-int process_request(Client *client) {
+Process_request_status process_request(Client *client) {
     Client *c = client;
 
     if (c == NULL){
-        return 1;
+        return PR_NULL_CLIENT;
     }
 
     c->http_method = method_from_token(c->headers.request_fields.method);
 
+    if (c->http_method == HTTP_METHOD_UNKNOWN){
+        return PR_METHOD_FAIL;
+    }
+
     c->http_version = version_from_token(c->headers.request_fields.version);
+    if (c->http_version == HTTP_VERSION_UNKNOWN){
+        return PR_VERSION_FAIL;
+    }
 
     if (c->http_method == HTTP_POST || c->http_method == HTTP_PUT){
         Slice s = c->headers.content_length;
@@ -109,7 +117,7 @@ int process_request(Client *client) {
         }
 
         if (s.length == 0){
-            fprintf(stderr, "content lenght string is all whitespace\n");
+            fprintf(stderr, "content length string is all whitespace\n");
             c->content_length = 0;
         }else if (*s.start != '-'){
             c->content_length = slice_to_size_t(s, &endptr);
@@ -117,15 +125,18 @@ int process_request(Client *client) {
             //check for malformed string...
             if (endptr == s.start){
                 fprintf(stderr, "invalid content-length string.\n");
+                return PR_CLENGTH_FAIL;
             }
         } else {
             fprintf(stderr, "content length is a negative number\n");
             c->content_length = 0;
+            return PR_CLENGTH_FAIL;
         }
 
         } else {
             fprintf(stderr, "content length slice is null\n");
             c->content_length = 0;
+            return PR_CLENGTH_FAIL;
         }
     }
 
