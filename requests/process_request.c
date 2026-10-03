@@ -72,14 +72,17 @@ static size_t slice_to_size_t(Slice s, const char **endptr){
 
 
     for (size_t i = 0; i < s.length; i++){
-        if (!isdigit((unsigned char)s.start[i])){
-            fprintf(stderr, "slice to sizet: slice isn't valid\n");
-            // (*endptr) = s.start;
-            // return 0;
+        unsigned char c = (unsigned char)s.start[i];
+        if (isblank(c)){
             continue;
         }
 
-        num = num * 10 + (s.start[i] - '0') ;
+        if (!isdigit(c)){
+            (*endptr) = s.start;
+            return 0;
+        }
+
+        num = num * 10 + (c - '0') ;
 
         (*endptr)++;
     }
